@@ -1,0 +1,48 @@
+# Environment files (contain secrets)
+.env
+.env.*
+!.env.example
+
+# Backend sensitive files
+backend/.env
+backend/.env.backup
+backend/.env.production
+backend/vendor/
+backend/node_modules/
+backend/storage/*.key
+backend/storage/pail/
+backend/storage/media-library/
+backend/storage/app/private/
+backend/public/build/
+backend/public/hot/
+backend/public/storage/
+backend/.phpunit.cache/
+
+# Frontend sensitive files
+front/.env
+front/.env.*
+!front/.env.example
+front/node_modules/
+front/.nuxt/
+front/.output/
+front/.data/
+front/.nitro/
+front/.cache/
+front/dist/
+
+# IDE
+.idea/
+.vscode/
+.fleet/
+.zed/
+.nova/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Misc
+git_error.log

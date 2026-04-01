@@ -1,0 +1,55 @@
+/* @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap'); */
+@import 'tailwindcss';
+@import 'flowbite/src/themes/default';
+@plugin "flowbite/plugin";
+@source "../../node_modules/flowbite";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-brand-50: #f6f0fa;
+  --color-brand-100: #eadcf3;
+  --color-brand-200: #d6b9e7;
+  --color-brand-300: #c296db;
+  --color-brand-400: #9a63c3;
+  --color-brand-500: #724193;
+  --color-brand-600: #663a84;
+  --color-brand-700: #573070;
+  --color-brand-800: #48275c;
+  --color-brand-900: #391e48;
+  --color-brand-950: #261332;
+
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 17.14px;
+}
+
+* {
+  font-family: 'ExpoArabic', sans-serif;
+}
+
+html {
+  @apply max-md:scroll-pt-[64px] scroll-pt-[150px];
+}
+
+.container {
+  @apply max-w-[94%] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1140px] 2xl:max-w-[1320px] mx-auto;
+}
+
+a:not(.static-color) {
+  @apply hover:text-brand-500 transition-colors;
+}
+
+.router-link-active:not(.static-color),
+.router-link-exact-active:not(.static-color) {
+  @apply text-brand-500;
+}
+
+button:hover {
+  cursor: pointer;
+}
+
+button:disabled:hover {
+  cursor: unset;
+}
