@@ -62,4 +62,12 @@ return [
     'delete pages' => 'حذف الصفحات',
     // Page permissions end
 
+    // Article permissions start
+    'Articles' => 'المقالات',
+    'view articles' => 'عرض جميع المقالات',
+    'create articles' => 'إنشاء مقالات',
+    'update articles' => 'تعديل المقالات',
+    'delete articles' => 'حذف المقالات',
+    // Article permissions end
+
 ];

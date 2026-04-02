@@ -4,7 +4,7 @@
         <!-- Main Group -->
         <div>
 
-            @canany(['view dashboard', 'manage settings', 'view pages', 'create pages', 'view banners'])
+            @canany(['view dashboard', 'manage settings', 'view pages', 'create pages', 'view banners', 'view articles', 'create articles'])
 
                 <x-dashboard.nav.label name="main" />
 
@@ -74,6 +74,19 @@
                         </x-dashboard.nav.item>
                         <!-- Banners -->
                     @endcan
+
+                    @canany(['viewAny', 'create'], App\Models\Article::class)
+                        <!-- Articles -->
+                        <x-dashboard.nav.item-group
+                            name="articles"
+                            :badge="\App\Models\Article::count()"
+                            :children="[['add_articles', route('dashboard.articles.create'), Gate::allows('create', App\Models\Article::class)], ['view_articles', route('dashboard.articles.index'), Gate::allows('viewAny', App\Models\Article::class)]]">
+                            <!-- mdi:newspaper-variant-outline -->
+                            <!-- Icon from Material Design Icons by Pictogrammers - https://github.com/Templarian/MaterialDesign/blob/master/LICENSE -->
+                            <path fill="currentColor" d="M20 5L20 19L4 19L4 5H20M20 3H4C2.89 3 2 3.89 2 5V19C2 20.11 2.89 21 4 21H20C21.11 21 22 20.11 22 19V5C22 3.89 21.11 3 20 3M18 15H6V17H18V15M10 7H6V13H10V7M18 7H12V9H18V7M18 11H12V13H18V11Z" />
+                        </x-dashboard.nav.item-group>
+                        <!-- Articles -->
+                    @endcanany
 
                 </ul>
 

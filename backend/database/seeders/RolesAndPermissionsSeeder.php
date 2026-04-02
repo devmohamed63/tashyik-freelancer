@@ -72,6 +72,13 @@ class RolesAndPermissionsSeeder extends Seeder
                 'delete pages',
             ],
 
+            'Articles' => [
+                'view articles',
+                'create articles',
+                'update articles',
+                'delete articles',
+            ],
+
         ];
 
         foreach ($permissionsArray as $tag => $permissions) {

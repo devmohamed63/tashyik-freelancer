@@ -62,4 +62,12 @@ return [
     'delete pages' => 'Delete pages',
     // Page permissions end
 
+    // Article permissions start
+    'Articles' => 'Articles',
+    'view articles' => 'View articles',
+    'create articles' => 'Create articles',
+    'update articles' => 'Update articles',
+    'delete articles' => 'Delete articles',
+    // Article permissions end
+
 ];

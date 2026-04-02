@@ -175,6 +175,7 @@ export default {
     categories: 'الأقسام',
     download_app: 'حمل التطبيق',
     contact: 'تواصل معنا',
+    articles: 'المقالات',
     logout: 'تسجل الخروج',
     privacy_policy: 'سياسة الخصوصية',
     terms_and_conditions: 'الشروط والأحكام',
@@ -593,5 +594,20 @@ export default {
       subtitle: 'زورنا في مقرنا الرئيسي بالرياض',
     },
     message_sent: 'تم الإرسال بنجاح',
+  },
+  articles: {
+    seo: {
+      title: 'المقالات - تشييك',
+      description: 'اقرأ أحدث المقالات والنصائح حول الصيانة المنزلية، العناية بالأجهزة، وأفضل الممارسات للحفاظ على منزلك.',
+    },
+    hero: {
+      title: 'المقالات',
+      subtitle: 'نصائح ومعلومات مفيدة حول الصيانة المنزلية والعناية بمنزلك',
+    },
+    featured_badge: 'مقال مميز',
+    read_more: 'اقرأ المزيد',
+    share: 'شارك المقال',
+    empty: 'لا توجد مقالات حالياً',
+    related: 'مقالات ذات صلة',
   },
 } as const;

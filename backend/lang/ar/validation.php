@@ -298,6 +298,12 @@ return [
         'national_address_image'            => 'صورة العنوان الوطني',
         'entity_type'                       => 'نوع الحساب',
         'rating'                            => 'التقييم',
+        'featured_image'                    => 'الصورة البارزة',
+        'is_featured'                       => 'مقال مميز',
+        'published_at'                      => 'تاريخ النشر',
+        'excerpt'                           => 'الملخص',
+        'meta_title'                        => 'عنوان السيو المخصص',
+        'meta_description'                  => 'وصف السيو',
     ],
 
 ];

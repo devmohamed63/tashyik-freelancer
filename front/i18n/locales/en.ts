@@ -175,6 +175,7 @@ export default {
     categories: 'Categories',
     download_app: 'Download App',
     contact: 'Contact Us',
+    articles: 'Articles',
     logout: 'Logout',
     privacy_policy: 'Privacy Policy',
     terms_and_conditions: 'Terms and Conditions',
@@ -593,5 +594,20 @@ export default {
       subtitle: 'Visit us at our headquarters in Riyadh',
     },
     message_sent: 'Sent Successfully',
+  },
+  articles: {
+    seo: {
+      title: 'Articles - Tashyik',
+      description: 'Read the latest articles and tips about home maintenance, appliance care, and best practices to keep your home in great shape.',
+    },
+    hero: {
+      title: 'Articles',
+      subtitle: 'Useful tips and information about home maintenance and caring for your home',
+    },
+    featured_badge: 'Featured',
+    read_more: 'Read More',
+    share: 'Share Article',
+    empty: 'No articles available',
+    related: 'Related Articles',
   },
 } as const;

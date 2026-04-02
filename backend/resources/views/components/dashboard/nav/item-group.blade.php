@@ -1,3 +1,5 @@
+@props(['name', 'badge' => null, 'children' => []])
+
 <li>
     <a
         href="#"
@@ -30,6 +32,9 @@
 
         <span class="menu-item-text" :class="sidebarToggle ? 'lg:hidden' : ''">
             {{ __('ui.' . $name) }}
+            @if($badge !== null)
+                <span class="mr-2 rtl:ml-2 rtl:mr-0 inline-flex items-center justify-center rounded-full bg-brand-100 px-2 py-0.5 text-brand-700 text-[10px] font-bold">{{ $badge }}</span>
+            @endif
         </span>
 
         <!-- ic:outline-keyboard-arrow-down -->

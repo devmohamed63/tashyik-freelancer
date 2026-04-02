@@ -61,6 +61,7 @@
         <div class="flex flex-col gap-3 *:font-light *:text-brand-50 *:hover:text-brand-200">
           <NuxtLinkLocale :to="{ name: 'service-provider-register' }" class="static-color"> {{ $t('navigation.service_provider') }}</NuxtLinkLocale>
           <NuxtLinkLocale :to="{ name: 'about' }" class="static-color"> {{ $t('navigation.about') }}</NuxtLinkLocale>
+          <NuxtLinkLocale to="/articles" class="static-color"> {{ $t('navigation.articles') }}</NuxtLinkLocale>
           <NuxtLinkLocale :to="{ name: 'privacy-policy' }" class="static-color"> {{ $t('navigation.privacy_policy') }}</NuxtLinkLocale>
           <NuxtLinkLocale :to="{ name: 'terms-and-conditions' }" class="static-color"> {{ $t('navigation.terms_and_conditions') }}</NuxtLinkLocale>
         </div>

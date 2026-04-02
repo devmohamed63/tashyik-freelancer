@@ -16,6 +16,7 @@ use App\Http\Controllers\Dashboard\ServiceController;
 use App\Http\Controllers\Dashboard\SettingsController;
 use App\Http\Controllers\Dashboard\SubscriptionController;
 use App\Http\Controllers\Dashboard\UserController;
+use App\Http\Controllers\Dashboard\ArticleController;
 use App\Http\Controllers\Dashboard\PlanController;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +57,10 @@ Route::domain(env('DASHBOARD_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(func
 
             // Page routes
             Route::resource('/pages', PageController::class)
+                ->except(['show', 'destroy']);
+
+            // Article routes
+            Route::resource('/articles', ArticleController::class)
                 ->except(['show', 'destroy']);
 
             // Banner routes

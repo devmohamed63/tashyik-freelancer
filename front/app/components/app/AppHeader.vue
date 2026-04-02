@@ -44,6 +44,11 @@
             </NuxtLinkLocale>
           </li>
           <li>
+            <NuxtLinkLocale to="/articles">
+              {{ $t('navigation.articles') }}
+            </NuxtLinkLocale>
+          </li>
+          <li>
             <NuxtLinkLocale :to="{ name: 'contact' }">
               {{ $t('navigation.contact') }}
             </NuxtLinkLocale>
@@ -146,6 +151,13 @@
               <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7m18 0a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1m18 0l-7.72 6.433a2 2 0 0 1-2.56 0L3 7" />
             </svg>
             <span>{{ $t('navigation.contact') }}</span>
+          </NuxtLinkLocale>
+          <NuxtLinkLocale to="/articles" tabindex="-1" data-drawer-hide="mobile-navigation-drawer" aria-controls="mobile-navigation-drawer" class="p-3 w-full rounded-lg hover:bg-gray-50 flex flex-row gap-3 items-center justify-start" activeClass="bg-gray-50">
+            <!-- mdi:newspaper-variant-outline -->
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M20 5L20 19L4 19L4 5H20M20 3H4C2.89 3 2 3.89 2 5V19C2 20.11 2.89 21 4 21H20C21.11 21 22 20.11 22 19V5C22 3.89 21.11 3 20 3M18 15H6V17H18V15M10 7H6V13H10V7M18 7H12V9H18V7M18 11H12V13H18V11Z" />
+            </svg>
+            <span>{{ $t('navigation.articles') }}</span>
           </NuxtLinkLocale>
         </div>
         <div v-if="auth.isLoggedIn" class="flex flex-col divide-y divide-gray-100 border-t border-gray-100">
