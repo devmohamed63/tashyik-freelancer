@@ -265,6 +265,7 @@
                         <x-dashboard.nav.item
                             name="contact_requests"
                             :url="route('dashboard.contacts.index')"
+                            :badge="\App\Models\Contact::where('is_read', false)->count() ?: null"
                             viewBox="0 0 56 56">
                             <!-- f7:envelope-fill -->
                             <!-- Icon from Framework7 Icons by Vladimir Kharlampidi - https://github.com/framework7io/framework7-icons/blob/master/LICENSE -->

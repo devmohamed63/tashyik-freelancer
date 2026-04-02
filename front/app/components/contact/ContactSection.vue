@@ -40,7 +40,7 @@
       }, 1300);
     } catch (error) {
       if (error.statusCode === 422) {
-        errors.value = error.data.errors.errors;
+        errors.value = error.data.errors;
       } else {
         console.error('Failed to send request:', error);
       }
@@ -72,7 +72,7 @@
               <!-- Email -->
               <div>
                 <InputsLabel for="email" class="font-medium" :name="$t('inputs.email')" />
-                <InputsDefault v-model="credentials.email" id="email" type="email" required />
+                <InputsDefault v-model="credentials.email" id="email" type="email" />
                 <InputsError :message="errors?.email?.[0]" />
               </div>
 

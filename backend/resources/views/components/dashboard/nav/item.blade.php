@@ -11,10 +11,15 @@
             {{ $slot }}
         </svg>
 
-        <span
-            class="menu-item-text"
-            :class="sidebarToggle ? 'lg:hidden' : ''">
-            {{ __('ui.' . $name) }}
-        </span>
+        <div class="flex items-center justify-between w-full" :class="sidebarToggle ? 'lg:hidden' : ''">
+            <span class="menu-item-text">
+                {{ __('ui.' . $name) }}
+            </span>
+            @if (isset($badge))
+                <span class="inline-flex items-center justify-center px-2 py-0.5 ms-3 text-xs font-medium text-red-500 bg-red-100 rounded-full dark:bg-red-900 dark:text-red-300">
+                    {{ $badge }}
+                </span>
+            @endif
+        </div>
     </a>
 </li>

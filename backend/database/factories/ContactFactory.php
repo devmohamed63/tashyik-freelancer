@@ -19,7 +19,8 @@ class ContactFactory extends Factory
         return [
             'subject' => fake()->sentence(),
             'name' => fake()->name(),
-            'phone' => fake()->phoneNumber(),
+            'phone' => '05' . fake()->numerify('########'),
+            'email' => fake()->safeEmail(),
             'message' => fake()->paragraph(),
         ];
     }

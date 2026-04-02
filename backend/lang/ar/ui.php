@@ -4,6 +4,8 @@ return [
     'dashboard'                 => 'لوحة التحكم',
     'overview'                  => 'نظرة عامة',
     'settings'                  => 'الإعدادات',
+    'read'                      => 'مقروءة',
+    'unread'                    => 'غير مقروءة',
     'user'                      => 'مستخدم',
     'users'                     => 'المستخدمين',
     'customers'                 => 'العملاء',
