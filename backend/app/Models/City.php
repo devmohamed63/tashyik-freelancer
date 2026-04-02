@@ -36,4 +36,12 @@ class City extends Model
 
         return $query->max('item_order') ?? 0;
     }
+
+    /**
+     * Get the service providers assigned to this city.
+     */
+    public function serviceProviders(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(User::class)->where('type', User::SERVICE_PROVIDER_ACCOUNT_TYPE);
+    }
 }

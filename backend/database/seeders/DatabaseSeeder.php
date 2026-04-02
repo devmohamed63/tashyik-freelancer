@@ -22,10 +22,10 @@ class DatabaseSeeder extends Seeder
             PlanSeeder::class,
         ]);
 
-        // Create admin account
-        $admin = User::create([
+        $admin = User::firstOrCreate([
+            'phone' => '429399600'
+        ], [
             'name' => 'Admin Account',
-            'phone' => '429399600',
             'password' => Hash::make('jS88#va2C8nnMS'),
         ]);
 

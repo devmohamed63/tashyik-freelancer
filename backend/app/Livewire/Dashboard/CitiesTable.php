@@ -39,7 +39,7 @@ class CitiesTable extends DataTable
             'id',
             'name',
             'item_order',
-        ]);
+        ])->withCount('serviceProviders');
     }
 
     public function create()
@@ -54,6 +54,13 @@ class CitiesTable extends DataTable
         $this->dispatch('showModal', ['id' => 'editResultModal']);
     }
 
+    public function show($id)
+    {
+        $this->dispatch('show-result', $id);
+
+        $this->dispatch('showModal', ['id' => 'showResultModal']);
+    }
+
     protected function columns(): Collection|null
     {
         return new Collection([
@@ -63,6 +70,15 @@ class CitiesTable extends DataTable
 
             Column::name('name')
                 ->sortable(),
+
+            Column::name('service_providers_count', __('ui.service_providers'))
+                ->customValue(fn($city) => number_format($city->service_providers_count))
+                ->sortable(),
+
+            Column::name('show', __('ui.show'))
+                ->action()
+                ->view('components.dashboard.tables.buttons.show')
+                ->wireAction('show'),
 
             Column::name('edit', __('ui.edit'))
                 ->action()
@@ -110,6 +126,9 @@ class CitiesTable extends DataTable
 
             Modal::id('editResultModal')
                 ->view('dashboard.cities.edit'),
+
+            Modal::id('showResultModal')
+                ->view('dashboard.cities.show'),
 
         ]);
     }

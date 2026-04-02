@@ -39,6 +39,7 @@ class DemoSeeder extends Seeder
             ReviewSeeder::class,
             QuestionSeeder::class,
             ContactSeeder::class,
+            ArticleSeeder::class,
         ]);
     }
 }

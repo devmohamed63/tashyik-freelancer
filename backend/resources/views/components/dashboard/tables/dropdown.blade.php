@@ -7,7 +7,7 @@
     </button>
     <!-- Dropdown menu -->
     <div wire:ignore.self id="{{ $dropdown['id'] }}" class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-900 dark:divide-gray-800">
-        <ul class="py-1 text-sm text-gray-600 dark:text-gray-400" aria-labelledby="{{ $dropdown['id'] }}Button">
+        <ul class="py-1 text-sm text-gray-600 dark:text-gray-400 max-h-64 overflow-y-auto" aria-labelledby="{{ $dropdown['id'] }}Button">
             @foreach ($dropdown['children'] as $child)
                 <li>
                     <button @if ($child['wireAction']) wire:click="{{ $child['wireAction'] }}" @endif type="button" class="text-start block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white w-full">{{ $child['name'] }}</button>

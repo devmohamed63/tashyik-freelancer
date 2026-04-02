@@ -83,7 +83,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         foreach ($permissionsArray as $tag => $permissions) {
             foreach ($permissions as $permission) {
-                Permission::create([
+                Permission::firstOrCreate([
                     'tag_name' => $tag,
                     'name' => $permission
                 ]);
@@ -95,7 +95,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // create roles and assign created permissions
 
-        $superAdminRole = Role::create([
+        $superAdminRole = Role::firstOrCreate([
             'id' => 1,
             'name' => 'Super admin'
         ]);

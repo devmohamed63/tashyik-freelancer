@@ -10,6 +10,7 @@ use App\Utils\Livewire\Table\Modal;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Url;
 use Livewire\WithPagination;
 
 class OrdersTable extends DataTable
@@ -25,6 +26,12 @@ class OrdersTable extends DataTable
     public array|null $searchableColumns = [
         'id',
     ];
+
+    #[Url]
+    public string|null $categoryFilter = null;
+
+    #[Url]
+    public string|null $serviceFilter = null;
 
     public function mount()
     {
@@ -69,6 +76,16 @@ class OrdersTable extends DataTable
                     $query->completed();
                     break;
             }
+        }
+
+        if ($this->categoryFilter) {
+            $query->whereHas('service', function ($q) {
+                $q->where('category_id', $this->categoryFilter);
+            });
+        }
+
+        if ($this->serviceFilter) {
+            $query->where('service_id', $this->serviceFilter);
         }
 
         return $query;
@@ -159,7 +176,47 @@ class OrdersTable extends DataTable
 
     protected function dropdowns(): Collection|null
     {
-        return new Collection([]);
+        $categories = \App\Models\Category::isParent()->get(['id', 'name']);
+        
+        $categoryChildren = [
+             \App\Utils\Livewire\Table\DropdownChild::name(__('ui.all'))
+                 ->wireAction('$set("categoryFilter", null)')
+        ];
+
+        $currentCategoryName = __('ui.category');
+        foreach ($categories as $category) {
+             if ($this->categoryFilter == $category->id) {
+                 $currentCategoryName = $category->name;
+             }
+             $categoryChildren[] = \App\Utils\Livewire\Table\DropdownChild::name($category->name)
+                 ->wireAction('$set("categoryFilter", ' . $category->id . ')');
+        }
+
+        $services = \App\Models\Service::get(['id', 'name']);
+        
+        $serviceChildren = [
+             \App\Utils\Livewire\Table\DropdownChild::name(__('ui.all'))
+                 ->wireAction('$set("serviceFilter", null)')
+        ];
+
+        $currentServiceName = __('ui.service');
+        foreach ($services as $service) {
+             if ($this->serviceFilter == $service->id) {
+                 $currentServiceName = $service->name;
+             }
+             $serviceChildren[] = \App\Utils\Livewire\Table\DropdownChild::name($service->name)
+                 ->wireAction('$set("serviceFilter", ' . $service->id . ')');
+        }
+
+        return new Collection([
+             \App\Utils\Livewire\Table\Dropdown::name($currentCategoryName)
+                 ->id('categoryFilter')
+                 ->children($categoryChildren),
+                 
+             \App\Utils\Livewire\Table\Dropdown::name($currentServiceName)
+                 ->id('serviceFilter')
+                 ->children($serviceChildren),
+        ]);
     }
 
     protected function modals(): Collection|null
