@@ -111,6 +111,14 @@ class Service extends Model implements HasMedia
         return $this->hasMany(Highlight::class);
     }
 
+    /**
+     * Get service orders.
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('image')

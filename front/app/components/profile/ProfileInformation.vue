@@ -10,10 +10,12 @@
   const credentials = reactive({
     name: '',
     phone: '',
+    email: '',
   });
 
   credentials.name = auth.user.name;
   credentials.phone = auth.user.phone;
+  credentials.email = auth.user.email || '';
   image.value.previewUrl = auth.user.picture;
 
   function handleFile() {
@@ -50,7 +52,7 @@
     const formData = new FormData();
 
     Object.keys(credentials).forEach((key) => {
-      formData.append(key, credentials[key]);
+      formData.append(key, credentials[key] ?? '');
     });
 
     if (selectedImage.value) {
@@ -116,6 +118,13 @@
           <InputsLabel for="phone" :name="$t('inputs.phone')" />
           <InputsDefault v-model="credentials.phone" id="phone" required />
           <InputsError :message="errors?.phone?.[0]" />
+        </div>
+
+        <!-- Email -->
+        <div>
+          <InputsLabel for="email" :name="$t('inputs.email_optional')" />
+          <InputsDefault v-model="credentials.email" id="email" type="email" autocomplete="email" />
+          <InputsError :message="errors?.email?.[0]" />
         </div>
 
         <div class="inline-flex items-center gap-2">

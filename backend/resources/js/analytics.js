@@ -10,7 +10,9 @@ categoryAnalyticsRef.onSnapshot((categorySnapshot) => {
   categorySnapshot.forEach((doc) => {
     const countContainer = document.getElementById(`category-${doc.id}`);
 
-    countContainer.innerText = doc.data().count;
+    if (countContainer) {
+      countContainer.innerText = doc.data().count;
+    }
   });
 });
 
@@ -18,6 +20,8 @@ cityAnalyticsRef.onSnapshot((citySnapshot) => {
   citySnapshot.forEach((doc) => {
     const countContainer = document.getElementById(`city-${doc.id}`);
 
-    countContainer.innerText = doc.data().count;
+    if (countContainer) {
+      countContainer.innerText = doc.data().count;
+    }
   });
 });

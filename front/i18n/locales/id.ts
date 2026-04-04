@@ -27,6 +27,12 @@ export default {
     profile: {
       title: 'Profil Pribadi',
     },
+    forgot_password: {
+      title: 'Lupa Kata Sandi',
+    },
+    reset_password: {
+      title: 'Reset Kata Sandi',
+    },
     service_provider: {
       title: 'Bergabunglah sebagai Teknisi',
       description: 'Daftar sebagai penyedia jasa rumah tangga dan tawarkan layanan AC, listrik, pipa air, peralatan rumah tangga, pertukangan, pengecatan, satelit, pembersihan, pengendalian hama, dan bantuan rumah tangga dengan mudah dan aman.',
@@ -219,9 +225,27 @@ export default {
       have_account: 'Sudah punya akun?',
       sign_in: 'Masuk',
     },
+    forgot_password: {
+      title: 'Lupa Kata Sandi?',
+      subtitle: 'Masukkan email Anda dan kami akan mengirimkan kode verifikasi.',
+      send_otp: 'Kirim Kode Verifikasi',
+      otp_subtitle: 'Masukkan kode verifikasi yang dikirim ke email Anda.',
+      otp_label: 'Kode Verifikasi',
+      verify_otp: 'Verifikasi Kode',
+      resend_otp: 'Kirim Ulang Kode',
+      success_message: 'Kode verifikasi telah dikirim ke email Anda.',
+      back_to_login: 'Kembali ke Halaman Masuk',
+    },
+    reset_password: {
+      title: 'Reset Kata Sandi',
+      subtitle: 'Masukkan kata sandi baru Anda.',
+      reset_button: 'Reset Kata Sandi',
+      success_message: 'Kata sandi berhasil direset. Anda sekarang dapat masuk dengan kata sandi baru.',
+    },
   },
   inputs: {
     email: 'Email',
+    email_optional: 'Email (Opsional)',
     name: 'Siapa nama Anda?',
     phone: 'Nomor Telepon',
     password: 'Kata Sandi',

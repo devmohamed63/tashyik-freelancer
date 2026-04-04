@@ -9,6 +9,7 @@
     // Basic information
     city: '',
     name: '',
+    email: '',
     phone: '',
     password: '',
     password_confirmation: '',
@@ -26,8 +27,13 @@
 
   async function handleRegister() {
     loader.value = true;
+    errors.value = {};
 
-    const validationErrors = await register(credentials);
+    // Send null instead of empty string for optional email
+    const payload = { ...credentials };
+    if (!payload.email) payload.email = null;
+
+    const validationErrors = await register(payload);
 
     if (validationErrors) {
       errors.value = validationErrors;
@@ -67,6 +73,13 @@
         <InputsLabel for="phone" :name="$t('inputs.phone')" />
         <InputsDefault v-model="credentials.phone" id="phone" placeholder="05xxxxxxxx" required />
         <InputsError :message="errors?.phone?.[0]" />
+      </div>
+
+      <!-- Email (Optional) -->
+      <div>
+        <InputsLabel for="email" :name="$t('inputs.email_optional')" />
+        <InputsDefault v-model="credentials.email" id="email" type="email" autocomplete="email" />
+        <InputsError :message="errors?.email?.[0]" />
       </div>
 
       <!-- Password -->

@@ -117,10 +117,7 @@
 
         </div>
 
-        <div class="flex flex-col md:grid grid-cols-3 gap-5 text-white">
-            <!-- Service provider categories -->
-            @include('dashboard.overview.partials.categories-chart')
-
+        <div class="flex flex-col gap-5 text-white">
             <!-- Service provider cities -->
             @include('dashboard.overview.partials.cities-chart')
         </div>

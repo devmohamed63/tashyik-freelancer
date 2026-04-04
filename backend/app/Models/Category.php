@@ -100,6 +100,22 @@ class Category extends Model implements HasMedia
         return $this->hasMany(Service::class);
     }
 
+    /**
+     * Get services of subcategories (If this is a parent category)
+     */
+    public function childrenServices(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(Service::class, Category::class, 'category_id', 'category_id', 'id', 'id');
+    }
+
+    /**
+     * Orders of this category directly
+     */
+    public function orders(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(Order::class, Service::class);
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('image')

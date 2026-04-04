@@ -1,4 +1,4 @@
-<div class="rounded-2xl border border-gray-200 bg-white p-5 md:p-6 col-span-2">
+<div class="rounded-2xl border border-gray-200 bg-white p-5 md:p-6">
     <p class="text-gray-600 text-center w-full mb-3">{{ __('ui.cities_chart_title') }}</p>
     <canvas id="cities-chart"></canvas>
 </div>

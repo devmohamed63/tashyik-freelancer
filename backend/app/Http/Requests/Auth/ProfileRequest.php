@@ -32,6 +32,7 @@ class ProfileRequest extends FormRequest
         return [
             'name' =>  ['required', 'string', 'max:255'],
             'phone' => ['required', 'digits:10', "unique:users,phone,{$this->user->id}"],
+            'email' => ['nullable', 'email', 'max:255', "unique:users,email,{$this->user->id}"],
             'image' => ['nullable', 'image', 'mimes:' . config('app.allowed_image_mimes'), 'max:' . config('app.upload_max_size')],
             'national_address_image' => ['nullable', 'image', 'mimes:' . config('app.allowed_image_mimes'), 'max:' . config('app.upload_max_size')],
             'tax_registration_number' => ['nullable', 'string', 'max:255'],

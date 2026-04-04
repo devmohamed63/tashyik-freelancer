@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Url;
 use Livewire\WithPagination;
 
 class CitiesTable extends DataTable
@@ -24,6 +25,9 @@ class CitiesTable extends DataTable
     public array|null $searchableColumns = [
         'name',
     ];
+
+    #[Url(as: 'sort')]
+    public $sortByFilters = 'latest';
 
     public function mount()
     {
@@ -39,7 +43,13 @@ class CitiesTable extends DataTable
             'id',
             'name',
             'item_order',
-        ])->withCount('serviceProviders');
+        ])->withCount('serviceProviders')
+        ->when($this->sortByFilters === 'most_providers', function ($query) {
+            $query->orderBy('service_providers_count', 'desc');
+        })
+        ->when($this->sortByFilters === 'least_providers', function ($query) {
+            $query->orderBy('service_providers_count', 'asc');
+        });
     }
 
     public function create()
@@ -112,8 +122,23 @@ class CitiesTable extends DataTable
 
     protected function dropdowns(): Collection|null
     {
+        $sortChildren = [
+            \App\Utils\Livewire\Table\DropdownChild::name('الافتراضي')
+                 ->wireAction('$set("sortByFilters", "latest")'),
+            \App\Utils\Livewire\Table\DropdownChild::name('الأكثر فنيين')
+                 ->wireAction('$set("sortByFilters", "most_providers")'),
+            \App\Utils\Livewire\Table\DropdownChild::name('الأقل فنيين')
+                 ->wireAction('$set("sortByFilters", "least_providers")'),
+        ];
+        
+        $currentSortName = 'الافتراضي';
+        if ($this->sortByFilters === 'most_providers') $currentSortName = 'الأكثر فنيين';
+        if ($this->sortByFilters === 'least_providers') $currentSortName = 'الأقل فنيين';
+
         return new Collection([
-            //
+             \App\Utils\Livewire\Table\Dropdown::name('ترتيب: ' . $currentSortName)
+                 ->id('sortByFilters')
+                 ->children($sortChildren),
         ]);
     }
 

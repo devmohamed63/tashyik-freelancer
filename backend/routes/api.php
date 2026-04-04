@@ -50,6 +50,16 @@ Route::domain(env('API_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(function (
 
             Route::post('/reset-password', [NewPasswordController::class, 'store'])
                 ->name('password.store');
+
+            // OTP-based password reset
+            Route::post('/password/send-otp', [\App\Http\Controllers\Api\Auth\PasswordResetOtpController::class, 'sendOtp'])
+                ->name('password.otp.send');
+
+            Route::post('/password/verify-otp', [\App\Http\Controllers\Api\Auth\PasswordResetOtpController::class, 'verifyOtp'])
+                ->name('password.otp.verify');
+
+            Route::post('/password/reset', [\App\Http\Controllers\Api\Auth\PasswordResetOtpController::class, 'resetPassword'])
+                ->name('password.otp.reset');
         });
         // Auth routes end
 

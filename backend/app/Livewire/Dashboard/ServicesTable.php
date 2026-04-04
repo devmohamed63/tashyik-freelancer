@@ -9,8 +9,11 @@ use App\Utils\Livewire\Table\Column;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\Url;
 use Livewire\WithPagination;
 use Masterminds\HTML5;
+use App\Utils\Livewire\Table\Dropdown;
+use App\Utils\Livewire\Table\Modal;
 
 class ServicesTable extends DataTable
 {
@@ -23,6 +26,12 @@ class ServicesTable extends DataTable
     public array|null $searchableColumns = [
         'name',
     ];
+
+    #[Url(as: 'category')]
+    public $categoryFilter = 'all';
+
+    #[Url(as: 'sort')]
+    public $sortByFilters = 'latest';
 
     public function mount()
     {
@@ -42,9 +51,24 @@ class ServicesTable extends DataTable
             'price',
             'item_order',
         ])->with([
-            'category:id,name',
+            'category:id,category_id,name',
+            'category.parent',
             'promotion'
-        ]);
+        ])
+        ->when($this->categoryFilter !== 'all', function (Builder $query) {
+            $query->whereHas('category', function (Builder $q) {
+                $q->where('id', $this->categoryFilter)
+                  ->orWhere('category_id', $this->categoryFilter);
+            });
+        })
+        ->withCount('orders')
+        ->withSum(['orders as revenue' => fn($q) => $q->completed()], 'subtotal')
+        ->when($this->sortByFilters === 'most_orders', function ($query) {
+            $query->orderBy('orders_count', 'desc');
+        })
+        ->when($this->sortByFilters === 'least_orders', function ($query) {
+            $query->orderBy('orders_count', 'asc');
+        });
     }
 
     protected function columns(): Collection|null
@@ -97,10 +121,18 @@ class ServicesTable extends DataTable
             Column::name('category_id', __('ui.category'))
                 ->relation('category', 'name'),
 
+            Column::name('orders_count', __('ui.orders'))
+                ->customValue(fn($service) => number_format($service->orders_count))
+                ->sortable(),
+
+            Column::name('revenue', __('ui.revenue'))
+                ->customValue(fn($service) => number_format($service->revenue ?? 0) . ' ' . __('ui.currency'))
+                ->sortable(),
+
             Column::name('show', __('ui.show'))
                 ->action()
-                ->url(fn($service) => route('dashboard.services.show', ['service' => $service->id]))
-                ->view('components.dashboard.tables.buttons.show'),
+                ->view('components.dashboard.tables.buttons.show')
+                ->wireAction('show'),
 
             Column::name('edit', __('ui.edit'))
                 ->action()
@@ -138,12 +170,58 @@ class ServicesTable extends DataTable
 
     protected function dropdowns(): Collection|null
     {
-        return new Collection([]);
+        $categories = \App\Models\Category::isParent()->get(['id', 'name']);
+        
+        $categoryChildren = [
+             \App\Utils\Livewire\Table\DropdownChild::name(__('ui.all'))
+                 ->wireAction('$set("categoryFilter", "all")')
+        ];
+
+        $currentCategoryName = __('ui.category');
+        foreach ($categories as $category) {
+             if ($this->categoryFilter == $category->id) {
+                 $currentCategoryName = $category->name;
+             }
+             $categoryChildren[] = \App\Utils\Livewire\Table\DropdownChild::name($category->name)
+                 ->wireAction('$set("categoryFilter", "' . $category->id . '")');
+        }
+
+        $sortChildren = [
+            \App\Utils\Livewire\Table\DropdownChild::name('الافتراضي')
+                 ->wireAction('$set("sortByFilters", "latest")'),
+            \App\Utils\Livewire\Table\DropdownChild::name('الأعلى طلباً')
+                 ->wireAction('$set("sortByFilters", "most_orders")'),
+            \App\Utils\Livewire\Table\DropdownChild::name('الأقل طلباً')
+                 ->wireAction('$set("sortByFilters", "least_orders")'),
+        ];
+        
+        $currentSortName = 'الافتراضي';
+        if ($this->sortByFilters === 'most_orders') $currentSortName = 'الأعلى طلباً';
+        if ($this->sortByFilters === 'least_orders') $currentSortName = 'الأقل طلباً';
+
+        return new Collection([
+             \App\Utils\Livewire\Table\Dropdown::name($currentCategoryName)
+                 ->id('categoryFilter')
+                 ->children($categoryChildren),
+
+             \App\Utils\Livewire\Table\Dropdown::name('ترتيب: ' . $currentSortName)
+                 ->id('sortByFilters')
+                 ->children($sortChildren),
+        ]);
+    }
+
+    public function show($id)
+    {
+        $this->dispatch('show-result', $id);
+        $this->dispatch('showModal', ['id' => 'showResultModal']);
     }
 
     protected function modals(): Collection|null
     {
-        return new Collection([]);
+        return new Collection([
+            Modal::id('showResultModal')
+                 ->view('dashboard.services.show')
+        ]);
     }
 
     public function render()

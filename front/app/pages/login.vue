@@ -56,7 +56,7 @@
       <!-- Remember Me -->
       <div class="flex flex-wrap items-center justify-between gap-2">
         <InputsCheckbox v-model="credentials.remember" id="remembers" :name="$t('inputs.remember_me')" />
-        <!-- <NuxtLinkLocale to="/pasword" class="text-gray-500 text-sm">{{ $t('guest.login.forgot_password') }}</NuxtLinkLocale> -->
+        <NuxtLinkLocale :to="{ name: 'forgot-password' }" class="text-gray-500 text-sm hover:text-brand-600 transition-colors">{{ $t('guest.login.forgot_password') }}</NuxtLinkLocale>
       </div>
 
       <ButtonsPrimary type="submit" class="w-full" :name="$t('guest.login.sign_in')" :loader />

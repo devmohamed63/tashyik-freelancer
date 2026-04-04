@@ -27,6 +27,12 @@ export default {
     profile: {
       title: 'Profil personnel',
     },
+    forgot_password: {
+      title: 'Mot de passe oublié',
+    },
+    reset_password: {
+      title: 'Réinitialiser le mot de passe',
+    },
     service_provider: {
       title: 'Rejoignez-nous en tant que technicien',
       description: 'Inscrivez-vous en tant que prestataire de services à domicile et proposez vos services de climatisation, électricité, plomberie, électroménager, menuiserie, peinture, satellite, nettoyage, lutte contre les nuisibles et aide à domicile en toute sécurité.',
@@ -219,9 +225,27 @@ export default {
       have_account: 'Déjà inscrit ?',
       sign_in: 'Se connecter',
     },
+    forgot_password: {
+      title: 'Mot de passe oublié ?',
+      subtitle: 'Entrez votre adresse e-mail et nous vous enverrons un code de vérification.',
+      send_otp: 'Envoyer le code',
+      otp_subtitle: 'Entrez le code de vérification envoyé à votre e-mail.',
+      otp_label: 'Code de vérification',
+      verify_otp: 'Vérifier le code',
+      resend_otp: 'Renvoyer le code',
+      success_message: 'Un code de vérification a été envoyé à votre e-mail.',
+      back_to_login: 'Retour à la connexion',
+    },
+    reset_password: {
+      title: 'Réinitialiser le mot de passe',
+      subtitle: 'Entrez votre nouveau mot de passe.',
+      reset_button: 'Réinitialiser',
+      success_message: 'Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.',
+    },
   },
   inputs: {
     email: 'E-mail',
+    email_optional: 'E-mail (Optionnel)',
     name: 'Quel est votre nom ?',
     phone: 'Numéro de téléphone',
     password: 'Mot de passe',

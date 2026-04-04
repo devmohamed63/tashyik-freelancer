@@ -30,13 +30,20 @@ class NewPasswordController extends Controller
         // Here we will attempt to reset the user's password. If it is successful we
         // will update the password on an actual user model and persist it to the
         // database. Otherwise we will parse the error and return the response.
+        $phone = null;
+
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user) use ($request) {
+            function ($user) use ($request, &$phone) {
                 $user->forceFill([
                     'password' => Hash::make($request->string('password')),
                     'remember_token' => Str::random(60),
                 ])->save();
+
+                // Revoke all tokens for security (force re-login)
+                $user->tokens()->delete();
+
+                $phone = $user->phone;
 
                 event(new PasswordReset($user));
             }
@@ -48,6 +55,9 @@ class NewPasswordController extends Controller
             ]);
         }
 
-        return response()->noContent();
+        return response()->json([
+            'status' => __($status),
+            'phone' => $phone,
+        ]);
     }
 }

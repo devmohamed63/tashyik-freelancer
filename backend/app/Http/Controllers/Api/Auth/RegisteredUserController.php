@@ -25,6 +25,7 @@ class RegisteredUserController extends Controller
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'digits:10', 'unique:users,phone'],
+            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'city' => ['required', 'integer', 'exists:cities,id'],
             'account_type' => ['required', Rule::in(User::AVAILABLE_ACCOUNT_TYPES)],
@@ -85,6 +86,7 @@ class RegisteredUserController extends Controller
         // Basic information
         $user->name = $request->name;
         $user->phone = $request->phone;
+        $user->email = $request->email;
         $user->password = Hash::make($request->string('password'));
         $user->city_id = $request->city;
         $user->type = $request->account_type;

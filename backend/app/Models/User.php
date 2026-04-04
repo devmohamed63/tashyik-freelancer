@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\ResetPasswordNotification;
 use App\Utils\Traits\Models\HasStatus;
 use App\Utils\Traits\Models\HasRating;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -82,6 +83,7 @@ class User extends Authenticatable implements HasMedia
         // Basic information
         'name',
         'phone',
+        'email',
         'password',
         'type',
 
@@ -455,5 +457,14 @@ class User extends Authenticatable implements HasMedia
     public function printBalance(): string
     {
         return number_format($this->balance, config('app.decimal_places')) . ' ' . __('ui.currency');
+    }
+
+    /**
+     * Send the password reset notification.
+     * Overrides the default to use our custom notification that links to the frontend.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 }

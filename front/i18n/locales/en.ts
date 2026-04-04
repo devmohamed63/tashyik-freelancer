@@ -27,6 +27,12 @@ export default {
     profile: {
       title: 'Profile',
     },
+    forgot_password: {
+      title: 'Forgot Password',
+    },
+    reset_password: {
+      title: 'Reset Password',
+    },
     service_provider: {
       title: 'Join Us as a Technician',
       description: 'Register as a home service provider and offer AC, electricity, plumbing, home appliances, carpentry, painting, satellite, cleaning, pest control, and home assistance services easily and securely.',
@@ -220,9 +226,27 @@ export default {
       have_account: 'Already have an account?',
       sign_in: 'Sign In',
     },
+    forgot_password: {
+      title: 'Forgot Password?',
+      subtitle: 'Enter your email address and we will send you a verification code.',
+      send_otp: 'Send Verification Code',
+      otp_subtitle: 'Enter the verification code sent to your email.',
+      otp_label: 'Verification Code',
+      verify_otp: 'Verify Code',
+      resend_otp: 'Resend Code',
+      success_message: 'A verification code has been sent to your email.',
+      back_to_login: 'Back to Login',
+    },
+    reset_password: {
+      title: 'Reset Password',
+      subtitle: 'Enter your new password.',
+      reset_button: 'Reset Password',
+      success_message: 'Your password has been reset successfully. You can now log in with your new password.',
+    },
   },
   inputs: {
     email: 'Email',
+    email_optional: 'Email (Optional)',
     name: 'What is your name?',
     phone: 'Phone Number',
     password: 'Password',

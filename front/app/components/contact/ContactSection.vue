@@ -63,7 +63,12 @@
           <form @submit.prevent="handleRequest" class="flex flex-col gap-5">
             <!-- Name -->
             <div>
-              <InputsLabel for="name" class="font-medium" :name="$t('contact.inputs.name.title')" />
+              <InputsLabel for="name" class="font-medium">
+                <div class="inline-flex gap-1 items-center">
+                  <span>{{ $t('contact.inputs.name.title') }}</span>
+                  <span class="text-red-500 font-bold">*</span>
+                </div>
+              </InputsLabel>
               <InputsDefault v-model="credentials.name" id="name" :placeholder="$t('contact.inputs.name.placeholder')" required />
               <InputsError :message="errors?.name?.[0]" />
             </div>
@@ -71,14 +76,24 @@
             <div class="flex flex-col gap-5 md:grid grid-cols-2">
               <!-- Email -->
               <div>
-                <InputsLabel for="email" class="font-medium" :name="$t('inputs.email')" />
+                <InputsLabel for="email" class="font-medium">
+                  <div class="inline-flex gap-2 items-center">
+                    <span>{{ $t('inputs.email') }}</span>
+                    <span class="bg-brand-50 text-brand-500 text-xs px-2 py-0.5 rounded-sm">{{ $t('common.optional') }}</span>
+                  </div>
+                </InputsLabel>
                 <InputsDefault v-model="credentials.email" id="email" type="email" />
                 <InputsError :message="errors?.email?.[0]" />
               </div>
 
               <!-- Phone -->
               <div>
-                <InputsLabel for="phone" class="font-medium" :name="$t('inputs.phone')" />
+                <InputsLabel for="phone" class="font-medium">
+                  <div class="inline-flex gap-1 items-center">
+                    <span>{{ $t('inputs.phone') }}</span>
+                    <span class="text-red-500 font-bold">*</span>
+                  </div>
+                </InputsLabel>
                 <InputsDefault v-model="credentials.phone" id="phone" required />
                 <InputsError :message="errors?.phone?.[0]" />
               </div>
@@ -86,14 +101,24 @@
 
             <!-- Subject -->
             <div>
-              <InputsLabel for="subject" class="font-medium" :name="$t('contact.inputs.subject.title')" />
+              <InputsLabel for="subject" class="font-medium">
+                <div class="inline-flex gap-1 items-center">
+                  <span>{{ $t('contact.inputs.subject.title') }}</span>
+                  <span class="text-red-500 font-bold">*</span>
+                </div>
+              </InputsLabel>
               <InputsDefault v-model="credentials.subject" id="subject" :placeholder="$t('contact.inputs.subject.placeholder')" required />
               <InputsError :message="errors?.subject?.[0]" />
             </div>
 
             <!-- Message -->
             <div>
-              <InputsLabel for="message" class="font-medium" :name="$t('contact.inputs.message.title')" />
+              <InputsLabel for="message" class="font-medium">
+                <div class="inline-flex gap-1 items-center">
+                  <span>{{ $t('contact.inputs.message.title') }}</span>
+                  <span class="text-red-500 font-bold">*</span>
+                </div>
+              </InputsLabel>
               <textarea v-model="credentials.message" id="message" :placeholder="$t('contact.inputs.message.placeholder')" required rows="4" class="rounded-xl p-3 border-gray-200 w-full focus:ring-2 ring-brand-100 text-sm"></textarea>
               <InputsError :message="errors?.message?.[0]" />
             </div>

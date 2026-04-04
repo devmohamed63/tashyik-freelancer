@@ -250,7 +250,7 @@ return [
         'welcome_message_description'       => 'وصف الرسالة التعريفية',
         'slug'                              => 'Slug',
         'cities'                            => 'المدن',
-        'parent'                            => 'الوالد',
+        'parent'                            => 'القسم الأساسي',
         'residence_name'                    => 'الإسم في الإقامة',
         'residence_number'                  => 'رقم الإقامة',
         'residence_image'                   => 'صورة الإقامة',

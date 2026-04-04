@@ -17,6 +17,7 @@
     // Basic information
     city: '',
     name: '',
+    email: '',
     phone: '',
     password: '',
     password_confirmation: '',
@@ -170,6 +171,13 @@
           <InputsLabel for="name" :name="$t('inputs.name')" />
           <InputsDefault v-model="credentials.name" id="name" />
           <InputsError :message="errors?.name?.[0]" />
+        </div>
+
+        <!-- Email (Optional) -->
+        <div>
+          <InputsLabel for="email" :name="$t('inputs.email_optional')" />
+          <InputsDefault v-model="credentials.email" id="email" type="email" autocomplete="email" />
+          <InputsError :message="errors?.email?.[0]" />
         </div>
 
         <!-- Phone -->

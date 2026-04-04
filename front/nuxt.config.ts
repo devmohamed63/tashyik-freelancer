@@ -14,6 +14,10 @@ export default defineNuxtConfig({
 
   modules: ['@nuxtjs/i18n', 'nuxt-swiper', '@pinia/nuxt', '@nuxt/scripts', '@nuxt/fonts'],
 
+  features: {
+    inlineStyles: false,
+  },
+
   scripts: {
     registry: {
       googleMaps: true,

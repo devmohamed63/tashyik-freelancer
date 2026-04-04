@@ -50,7 +50,7 @@
 
             @foreach ($children as $child)
                 @if ($child[2])
-                    <x-dashboard.nav.item-child :name="$child[0]" :url="$child[1]" />
+                    <x-dashboard.nav.item-child :name="$child[0]" :url="$child[1]" :badge="$child[3] ?? null" />
                 @endif
             @endforeach
 
