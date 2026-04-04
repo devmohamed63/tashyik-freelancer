@@ -48,7 +48,8 @@ class SubscriptionsTable extends DataTable
             'phone',
             'entity_type',
         ])->notUser()->with([
-            'subscription:id,user_id,ends_at'
+            'subscription:id,user_id,plan_id,paid_amount,ends_at',
+            'subscription.plan:id,name',
         ]);
 
         if ($this->statusFilter) {
@@ -134,6 +135,26 @@ class SubscriptionsTable extends DataTable
                             $renewButton
                         </div>
                     HTML;
+                }),
+
+            Column::name('plan', __('ui.plan'))
+                ->customValue(fn($user) => $user->subscription?->plan?->name ?? '-'),
+
+            Column::name('paid_amount', __('ui.paid_amount'))
+                ->customValue(fn($user) => $user->subscription?->paid_amount
+                    ? number_format($user->subscription->paid_amount, config('app.decimal_places')) . ' ' . __('ui.currency')
+                    : '-'),
+
+            Column::name('ends_at', __('ui.ends_at'))
+                ->customValue(fn($user) => $user->subscription?->ends_at?->format('Y-m-d') ?? '-'),
+
+            Column::name('days_remaining', 'الأيام المتبقية')
+                ->callback(function ($user) {
+                    if (!$user->subscription?->ends_at) return '-';
+                    $days = (int) now()->diffInDays($user->subscription->ends_at, false);
+                    if ($days < 0) return view('components.dashboard.badges.danger', ['name' => 'منتهي']);
+                    if ($days <= 7) return view('components.dashboard.badges.warning', ['name' => $days . ' يوم']);
+                    return view('components.dashboard.badges.success', ['name' => $days . ' يوم']);
                 }),
 
             Column::name('show', __('ui.show'))

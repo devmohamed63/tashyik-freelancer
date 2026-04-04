@@ -110,7 +110,7 @@ class ExcelSheet
                     $value = $column['callback']($record);
                 } else if (isset($column['dateFormat'])) {
                     // Date format case
-                    $value = $record->{$column['name']}->isoFormat(config('app.time_format'));
+                    $value = $record->{$column['name']} ? $record->{$column['name']}->isoFormat(config('app.time_format')) : '-';
                 } else if (isset($column['relation'])) {
                     // Relation case
                     $value = $record->{$column['relation'][0]}?->{$column['relation'][1]} ?? __('ui.not_exists');

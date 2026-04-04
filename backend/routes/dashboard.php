@@ -6,11 +6,13 @@ use App\Http\Controllers\Dashboard\CategoryController;
 use App\Http\Controllers\Dashboard\CityController;
 use App\Http\Controllers\Dashboard\ContactController;
 use App\Http\Controllers\Dashboard\CouponController;
+use App\Http\Controllers\Dashboard\FinancialReportsController;
 use App\Http\Controllers\Dashboard\NotificationController;
 use App\Http\Controllers\Dashboard\OrderController;
 use App\Http\Controllers\Dashboard\OverviewController;
 use App\Http\Controllers\Dashboard\PageController;
 use App\Http\Controllers\Dashboard\PromotionController;
+use App\Http\Controllers\Dashboard\ReviewsController;
 use App\Http\Controllers\Dashboard\RoleController;
 use App\Http\Controllers\Dashboard\ServiceController;
 use App\Http\Controllers\Dashboard\SettingsController;
@@ -32,6 +34,14 @@ Route::domain(env('DASHBOARD_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(func
             // Analytics route
             Route::get('/analytics', AnalyticsController::class)
                 ->name('analytics');
+
+            // Financial Reports route
+            Route::get('/financial-reports', [FinancialReportsController::class, 'index'])
+                ->name('financial-reports');
+
+            // Reviews route
+            Route::get('/reviews', [ReviewsController::class, 'index'])
+                ->name('reviews');
 
             // Settings routes start
             Route::prefix('settings')->group(function () {

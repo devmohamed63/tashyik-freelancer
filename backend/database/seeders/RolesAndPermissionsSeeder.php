@@ -26,6 +26,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'manage coupons',
                 'manage promotions',
                 'manage plans',
+                'view financial reports',
+                'manage reviews',
             ],
 
             'Cities' => [

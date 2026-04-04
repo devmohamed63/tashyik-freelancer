@@ -32,6 +32,30 @@
                         <!-- Analytics -->
                     @endcan
 
+                    @can('view financial reports')
+                        <!-- Financial Reports -->
+                        <x-dashboard.nav.item
+                            name="financial_reports"
+                            :url="route('dashboard.financial-reports')">
+                            <!-- mdi:chart-areaspline -->
+                            <!-- Icon from Material Design Icons by Pictogrammers - https://github.com/Templarian/MaterialDesign/blob/master/LICENSE -->
+                            <path fill="currentColor" d="M17.45 15.18L22 7.31V21H2V3h2v14.54L9.5 8L16 12l5.61-9.75l1.74 1l-6.69 11.6l-6.53-3.84z" />
+                        </x-dashboard.nav.item>
+                        <!-- Financial Reports -->
+                    @endcan
+
+                    @can('manage reviews')
+                        <!-- Reviews -->
+                        <x-dashboard.nav.item
+                            name="reviews"
+                            :url="route('dashboard.reviews')">
+                            <!-- mdi:star -->
+                            <!-- Icon from Material Design Icons by Pictogrammers - https://github.com/Templarian/MaterialDesign/blob/master/LICENSE -->
+                            <path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2L9.19 8.63L2 9.24l5.46 4.73L5.82 21z" />
+                        </x-dashboard.nav.item>
+                        <!-- Reviews -->
+                    @endcan
+
                     @can('manage settings')
                         <!-- Settings -->
                         <x-dashboard.nav.item-group

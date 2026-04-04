@@ -28,4 +28,12 @@ class Review extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Get the parent reviewable model.
+     */
+    public function reviewable(): \Illuminate\Database\Eloquent\Relations\MorphTo
+    {
+        return $this->morphTo();
+    }
 }

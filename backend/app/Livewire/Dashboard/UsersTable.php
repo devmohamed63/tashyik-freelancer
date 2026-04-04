@@ -46,7 +46,11 @@ class UsersTable extends DataTable
             'id',
             'name',
             'phone',
-        ])->isUser();
+            'city_id',
+            'created_at',
+        ])->isUser()
+          ->with('city:id,name')
+          ->withCount('orders');
     }
 
     public function show($id)
@@ -69,6 +73,17 @@ class UsersTable extends DataTable
 
             Column::name('phone')
                 ->sortable(),
+
+            Column::name('city', __('ui.city'))
+                ->relation('city', 'name'),
+
+            Column::name('orders_count', __('ui.orders'))
+                ->customValue(fn($user) => number_format($user->orders_count))
+                ->sortable(),
+
+            Column::name('created_at', __('ui.created_at'))
+                ->sortable()
+                ->dateFormat(),
 
             Column::name('show', __('ui.show'))
                 ->action()

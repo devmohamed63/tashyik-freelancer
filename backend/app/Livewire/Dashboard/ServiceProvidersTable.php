@@ -23,6 +23,9 @@ class ServiceProvidersTable extends DataTable
 
     public bool $modelHasMedia = true;
 
+    #[Url]
+    public string|null $activityFilter = null;
+
     public bool $tableHasTrash = true;
 
     public bool $tableHasStatus = true;
@@ -60,7 +63,12 @@ class ServiceProvidersTable extends DataTable
             'phone',
             'entity_type',
             'status',
-        ])->isServiceProvider();
+            'city_id',
+            'balance',
+        ])->isServiceProvider()
+          ->with('city:id,name')
+          ->withCount('serviceProviderOrders')
+          ->withSum(['serviceProviderOrders as revenue' => fn($q) => $q->where('status', \App\Models\Order::COMPLETED_STATUS)], 'subtotal');
 
         if ($this->statusFilter) {
             switch ($this->statusFilter) {
@@ -92,6 +100,13 @@ class ServiceProvidersTable extends DataTable
                     $query->isCompany();
                     break;
             }
+        }
+
+        if ($this->activityFilter === 'most_active') {
+            $query->whereHas('serviceProviderOrders')
+                  ->orderByDesc('service_provider_orders_count');
+        } elseif ($this->activityFilter === 'no_orders') {
+            $query->doesntHave('serviceProviderOrders');
         }
 
         return $query;
@@ -162,6 +177,21 @@ class ServiceProvidersTable extends DataTable
                     return $badge ?? '';
                 }),
 
+            Column::name('city', __('ui.city'))
+                ->relation('city', 'name'),
+
+            Column::name('service_provider_orders_count', __('ui.orders'))
+                ->customValue(fn($user) => number_format($user->service_provider_orders_count))
+                ->sortable(),
+
+            Column::name('revenue', __('ui.revenue'))
+                ->customValue(fn($user) => number_format($user->revenue ?? 0, config('app.decimal_places')) . ' ' . __('ui.currency'))
+                ->sortable(),
+
+            Column::name('balance', __('ui.balance'))
+                ->customValue(fn($user) => number_format($user->balance ?? 0, config('app.decimal_places')) . ' ' . __('ui.currency'))
+                ->sortable(),
+
             Column::name('show', __('ui.show'))
                 ->action()
                 ->view('components.dashboard.tables.buttons.show')
@@ -221,7 +251,24 @@ class ServiceProvidersTable extends DataTable
 
     protected function dropdowns(): Collection|null
     {
-        return new Collection([]);
+        $activityLabels = [
+            null => 'النشاط',
+            'most_active' => 'الأكثر طلباً',
+            'no_orders' => 'بدون طلبات',
+        ];
+
+        return new Collection([
+            \App\Utils\Livewire\Table\Dropdown::name($activityLabels[$this->activityFilter] ?? 'النشاط')
+                ->id('activityFilter')
+                ->children([
+                    \App\Utils\Livewire\Table\DropdownChild::name('الكل')
+                        ->wireAction('$set("activityFilter", null)'),
+                    \App\Utils\Livewire\Table\DropdownChild::name('الأكثر طلباً')
+                        ->wireAction('$set("activityFilter", "most_active")'),
+                    \App\Utils\Livewire\Table\DropdownChild::name('بدون طلبات')
+                        ->wireAction('$set("activityFilter", "no_orders")'),
+                ]),
+        ]);
     }
 
     protected function modals(): Collection|null
@@ -270,15 +317,7 @@ class ServiceProvidersTable extends DataTable
 
     protected function excelSheetBuilder(): Builder
     {
-        return $this->getFinalQueryBuilder()
-            ->select([
-                'id',
-                'name',
-                'phone',
-                'type',
-                'entity_type',
-                'created_at'
-            ]);
+        return $this->getFinalQueryBuilder();
     }
 
     public function exportAsExcel()

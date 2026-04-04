@@ -3,6 +3,8 @@
 namespace App\Livewire\Dashboard;
 
 use App\Models\Order;
+use App\Utils\ExcelSheet\Column as ExcelSheetColumn;
+use App\Utils\ExcelSheet\ExcelSheet;
 use App\Utils\Livewire\DataTable;
 use App\Utils\Livewire\Table\Button;
 use App\Utils\Livewire\Table\Column;
@@ -21,6 +23,8 @@ class OrdersTable extends DataTable
 
     public bool $tableHasStatus = true;
 
+    public bool $exportableTable = true;
+
     public array $availableStatusTypes = Order::AVAILABLE_STATUS_TYPES;
 
     public array|null $searchableColumns = [
@@ -32,6 +36,9 @@ class OrdersTable extends DataTable
 
     #[Url]
     public string|null $serviceFilter = null;
+
+    #[Url]
+    public string|null $dateFilter = null;
 
     public function mount()
     {
@@ -45,13 +52,18 @@ class OrdersTable extends DataTable
     {
         $query = Order::query()->select([
             'id',
+            'customer_id',
+            'service_provider_id',
             'service_id',
             'subtotal',
+            'total',
             'status',
             'created_at',
             'updated_at',
         ])->with([
-            'service:id,name'
+            'service:id,name',
+            'customer:id,name',
+            'serviceProvider:id,name',
         ]);
 
         if ($this->statusFilter) {
@@ -88,6 +100,16 @@ class OrdersTable extends DataTable
             $query->where('service_id', $this->serviceFilter);
         }
 
+        if ($this->dateFilter) {
+            match ($this->dateFilter) {
+                'today' => $query->whereDate('created_at', today()),
+                'week'  => $query->whereBetween('created_at', [now()->startOfWeek(), now()]),
+                'month' => $query->whereYear('created_at', now()->year)
+                                 ->whereMonth('created_at', now()->month),
+                default => null,
+            };
+        }
+
         return $query;
     }
 
@@ -108,11 +130,21 @@ class OrdersTable extends DataTable
             Column::name('id', __('ui.order_id'))
                 ->sortable(),
 
+            Column::name('customer', __('ui.customer'))
+                ->relation('customer', 'name'),
+
+            Column::name('service_provider', __('ui.service_provider'))
+                ->relation('serviceProvider', 'name'),
+
             Column::name('service', __('ui.service'))
                 ->relation('service', 'name'),
 
             Column::name('price')
                 ->customValue(fn($order) => $order->subtotal . ' ' . __('ui.currency'))
+                ->sortable(),
+
+            Column::name('total', __('ui.total'))
+                ->customValue(fn($order) => number_format($order->total, config('app.decimal_places')) . ' ' . __('ui.currency'))
                 ->sortable(),
 
             Column::name('status', __('ui.status'))
@@ -176,8 +208,9 @@ class OrdersTable extends DataTable
 
     protected function dropdowns(): Collection|null
     {
+        // Category filter
         $categories = \App\Models\Category::isParent()->get(['id', 'name']);
-        
+
         $categoryChildren = [
              \App\Utils\Livewire\Table\DropdownChild::name(__('ui.all'))
                  ->wireAction('$set("categoryFilter", null)')
@@ -192,8 +225,9 @@ class OrdersTable extends DataTable
                  ->wireAction('$set("categoryFilter", ' . $category->id . ')');
         }
 
+        // Service filter
         $services = \App\Models\Service::get(['id', 'name']);
-        
+
         $serviceChildren = [
              \App\Utils\Livewire\Table\DropdownChild::name(__('ui.all'))
                  ->wireAction('$set("serviceFilter", null)')
@@ -208,14 +242,37 @@ class OrdersTable extends DataTable
                  ->wireAction('$set("serviceFilter", ' . $service->id . ')');
         }
 
+        // Date period filter
+        $dateLabels = [
+            null    => 'الفترة الزمنية',
+            'today' => 'اليوم',
+            'week'  => 'الأسبوع',
+            'month' => 'الشهر',
+        ];
+
+        $dateChildren = [
+            \App\Utils\Livewire\Table\DropdownChild::name('الكل')
+                ->wireAction('$set("dateFilter", null)'),
+            \App\Utils\Livewire\Table\DropdownChild::name('اليوم')
+                ->wireAction('$set("dateFilter", "today")'),
+            \App\Utils\Livewire\Table\DropdownChild::name('الأسبوع')
+                ->wireAction('$set("dateFilter", "week")'),
+            \App\Utils\Livewire\Table\DropdownChild::name('الشهر')
+                ->wireAction('$set("dateFilter", "month")'),
+        ];
+
         return new Collection([
              \App\Utils\Livewire\Table\Dropdown::name($currentCategoryName)
                  ->id('categoryFilter')
                  ->children($categoryChildren),
-                 
+
              \App\Utils\Livewire\Table\Dropdown::name($currentServiceName)
                  ->id('serviceFilter')
                  ->children($serviceChildren),
+
+             \App\Utils\Livewire\Table\Dropdown::name($dateLabels[$this->dateFilter] ?? 'الفترة الزمنية')
+                 ->id('dateFilter')
+                 ->children($dateChildren),
         ]);
     }
 
@@ -227,6 +284,47 @@ class OrdersTable extends DataTable
                 ->view('dashboard.orders.show'),
 
         ]);
+    }
+
+    protected function excelSheetColumns(): Collection|null
+    {
+        return new Collection([
+            ExcelSheetColumn::name('id', __('ui.order_id')),
+
+            ExcelSheetColumn::name('customer', __('ui.customer'))
+                ->callback(fn($order) => $order->customer?->name ?? '-'),
+
+            ExcelSheetColumn::name('service_provider', __('ui.service_provider'))
+                ->callback(fn($order) => $order->serviceProvider?->name ?? '-'),
+
+            ExcelSheetColumn::name('service', __('ui.service'))
+                ->callback(fn($order) => $order->service?->name ?? '-'),
+
+            ExcelSheetColumn::name('subtotal'),
+            ExcelSheetColumn::name('total'),
+
+            ExcelSheetColumn::name('status', __('ui.status')),
+
+            ExcelSheetColumn::name('created_at', __('ui.created_at'))
+                ->dateFormat(),
+        ]);
+    }
+
+    protected function excelSheetBuilder(): Builder
+    {
+        return $this->getFinalQueryBuilder()
+            ->select(['id', 'customer_id', 'service_provider_id', 'service_id', 'subtotal', 'total', 'status', 'created_at'])
+            ->with(['customer:id,name', 'serviceProvider:id,name', 'service:id,name']);
+    }
+
+    public function exportAsExcel()
+    {
+        $excelSheet = new ExcelSheet(
+            $this->excelSheetColumns(),
+            $this->excelSheetBuilder(),
+        );
+
+        $excelSheet->export('orders');
     }
 
     #[On('refreshTable')]
