@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Contact;
+use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\PayoutRequest;
+use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
@@ -68,6 +70,55 @@ class OverviewController extends Controller
             $ordersMonth = number_format(
                 Order::whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->count()
             );
+
+            // ── NEW: Alert Cards ────────────────────────────────
+            $pendingProvidersCount = User::isServiceProvider()->where('status', User::PENDING_STATUS)->count();
+            $expiringSubscriptionsCount = Subscription::query()
+                ->whereBetween('ends_at', [now(), now()->addDays(7)])
+                ->count();
+            $unreadContactsCount = Contact::where('is_read', false)->count();
+            $staleNewOrdersCount = Order::isNew()
+                ->where('created_at', '<', now()->subHour())
+                ->count();
+
+            // ── NEW: Additional KPIs ────────────────────────────
+            $avgOrderValue = number_format(
+                Order::completed()->avg('subtotal') ?? 0,
+                $decimal
+            );
+            $couponsUsedCount = number_format(Coupon::sum('usage_times'));
+            $totalDiscountGiven = number_format(
+                Order::completed()->sum('coupons_total'),
+                $decimal
+            );
+
+            // ── NEW: Latest 5 Orders ────────────────────────────
+            $latestOrders = Order::latest()
+                ->with([
+                    'customer' => fn($q) => $q->withTrashed()->select('id', 'name'),
+                    'service:id,name',
+                    'serviceProvider' => fn($q) => $q->withTrashed()->select('id', 'name'),
+                ])
+                ->take(5)
+                ->get(['id', 'customer_id', 'service_provider_id', 'service_id', 'subtotal', 'status', 'created_at']);
+
+            // ── NEW: Top 5 Services ─────────────────────────────
+            $topServices = Service::withCount('orders')
+                ->orderByDesc('orders_count')
+                ->take(5)
+                ->get(['id', 'name']);
+
+            // ── NEW: Top 5 Providers ────────────────────────────
+            $topProviders = User::isServiceProvider()
+                ->withCount('serviceProviderOrders')
+                ->withSum(
+                    ['serviceProviderOrders as revenue' => fn($q) => $q->where('status', Order::COMPLETED_STATUS)],
+                    'subtotal'
+                )
+                ->with(['categories:id,name', 'city:id,name'])
+                ->orderByDesc('service_provider_orders_count')
+                ->take(5)
+                ->get(['id', 'name', 'phone', 'entity_type', 'status', 'city_id', 'balance']);
 
             // ── Charts: Service Providers ───────────────────────
             $serviceProviderCategories = Category::isParent()
@@ -135,6 +186,22 @@ class OverviewController extends Controller
                 'ordersWeek',
                 'ordersMonth',
 
+                // Alert Cards
+                'pendingProvidersCount',
+                'expiringSubscriptionsCount',
+                'unreadContactsCount',
+                'staleNewOrdersCount',
+
+                // Additional KPIs
+                'avgOrderValue',
+                'couponsUsedCount',
+                'totalDiscountGiven',
+
+                // Tables
+                'latestOrders',
+                'topServices',
+                'topProviders',
+
                 // Charts
                 'serviceProviderCategories',
                 'serviceProviderCities',
@@ -146,3 +213,4 @@ class OverviewController extends Controller
         return view('dashboard.overview.index', $overviewData);
     }
 }
+

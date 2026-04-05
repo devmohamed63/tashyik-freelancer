@@ -3,14 +3,11 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\PayoutRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class FinancialReportsController extends Controller
@@ -47,19 +44,24 @@ class FinancialReportsController extends Controller
             $decimal
         );
 
+        // ── Invoice counts per type ─────────────────────────
+        $orderInvoiceCount        = $invoiceQuery(Invoice::COMPLETED_ORDER_TYPE)->count();
+        $additionalInvoiceCount   = $invoiceQuery(Invoice::ADDITIONAL_SERVICES_TYPE)->count();
+        $subscriptionInvoiceCount = $invoiceQuery(Invoice::RENEW_SUBSCRIPTION_TYPE)->count();
+        $bankTransferCount        = $invoiceQuery(Invoice::BANK_TRANSFER_TYPE, Invoice::DEBIT_ACTION)->count();
+
         // ── Totals ──────────────────────────────────────────
-        $totalRevenue = number_format(
-            Invoice::query()
-                ->where('action', Invoice::CREDIT_ACTION)
-                ->whereIn('type', [
-                    Invoice::COMPLETED_ORDER_TYPE,
-                    Invoice::ADDITIONAL_SERVICES_TYPE,
-                    Invoice::RENEW_SUBSCRIPTION_TYPE,
-                ])
-                ->tap($dateConstraint)
-                ->sum('amount'),
-            $decimal
-        );
+        $totalRevenueRaw = Invoice::query()
+            ->where('action', Invoice::CREDIT_ACTION)
+            ->whereIn('type', [
+                Invoice::COMPLETED_ORDER_TYPE,
+                Invoice::ADDITIONAL_SERVICES_TYPE,
+                Invoice::RENEW_SUBSCRIPTION_TYPE,
+            ])
+            ->tap($dateConstraint)
+            ->sum('amount');
+
+        $totalRevenue = number_format($totalRevenueRaw, $decimal);
 
         $totalTax = number_format(
             Invoice::query()
@@ -73,6 +75,14 @@ class FinancialReportsController extends Controller
             $decimal
         );
 
+        $bankTransfersRaw = Invoice::query()
+            ->where('type', Invoice::BANK_TRANSFER_TYPE)
+            ->where('action', Invoice::DEBIT_ACTION)
+            ->tap($dateConstraint)
+            ->sum('amount');
+
+        $netProfit = number_format($totalRevenueRaw - $bankTransfersRaw, $decimal);
+
         $pendingPayouts = number_format(
             User::where('type', '!=', User::USER_ACCOUNT_TYPE)->sum('balance'),
             $decimal
@@ -80,7 +90,21 @@ class FinancialReportsController extends Controller
 
         $payoutRequestsCount = PayoutRequest::count();
 
+        // ── Orders in period ────────────────────────────────
+        $orderDateConstraint = match ($period) {
+            'today' => fn($q) => $q->whereDate('updated_at', today()),
+            'week'  => fn($q) => $q->whereBetween('updated_at', [now()->startOfWeek(), now()]),
+            'month' => fn($q) => $q->whereYear('updated_at', now()->year)->whereMonth('updated_at', now()->month),
+            default => fn($q) => $q,
+        };
 
+        $completedOrdersCount = Order::completed()->tap($orderDateConstraint)->count();
+
+        // ── Discounts given ─────────────────────────────────
+        $totalDiscountGiven = number_format(
+            Order::completed()->tap($orderDateConstraint)->sum('coupons_total'),
+            $decimal
+        );
 
         // ── Period labels ───────────────────────────────────
         $periodLabels = [
@@ -102,8 +126,16 @@ class FinancialReportsController extends Controller
             'bankTransfers',
             'totalRevenue',
             'totalTax',
+            'netProfit',
             'pendingPayouts',
             'payoutRequestsCount',
+            'completedOrdersCount',
+            'totalDiscountGiven',
+            'orderInvoiceCount',
+            'additionalInvoiceCount',
+            'subscriptionInvoiceCount',
+            'bankTransferCount',
         ));
     }
 }
+
