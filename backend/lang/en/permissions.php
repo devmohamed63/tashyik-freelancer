@@ -10,6 +10,11 @@ return [
     'manage settings' => 'Manage settings',
     'manage subscriptions' => 'Manage subscriptions',
     'manage coupons' => 'Manage coupons',
+    'manage orders' => 'Manage orders',
+    'manage promotions' => 'Manage promotions',
+    'view financial reports' => 'View financial reports',
+    'manage plans' => 'Manage plans',
+    'manage reviews' => 'Manage reviews',
     // General permissions end
 
     // City permissions start

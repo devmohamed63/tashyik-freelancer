@@ -227,6 +227,7 @@ return [
         'notes'                             => 'Notes',
         'password'                          => 'Password',
         'password_confirmation'             => 'Password Confirmation',
+        'current_password'                  => 'Current Password',
         'bio'                               => 'Bio',
         'logo'                              => 'Logo',
         'og'                                => 'OG image',

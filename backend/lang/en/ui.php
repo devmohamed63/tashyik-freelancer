@@ -214,4 +214,9 @@ return [
     'meta_description'          => 'Meta description',
     'seo_settings'              => 'SEO Settings',
     'slug'                      => 'Slug',
+    'change_password'            => 'Change Password',
+    'password_changed_successfully' => 'Password changed successfully',
+    'current_password'           => 'Current Password',
+    'new_password'               => 'New Password',
+    'confirm_new_password'       => 'Confirm New Password',
 ];

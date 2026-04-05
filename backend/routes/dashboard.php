@@ -19,6 +19,7 @@ use App\Http\Controllers\Dashboard\SettingsController;
 use App\Http\Controllers\Dashboard\SubscriptionController;
 use App\Http\Controllers\Dashboard\UserController;
 use App\Http\Controllers\Dashboard\ArticleController;
+use App\Http\Controllers\Dashboard\ChangePasswordController;
 use App\Http\Controllers\Dashboard\PlanController;
 use Illuminate\Support\Facades\Route;
 
@@ -135,6 +136,13 @@ Route::domain(env('DASHBOARD_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(func
             // Notification routes
             Route::get('/notifications', NotificationController::class)
                 ->name('notifications.index');
+
+            // Change password routes
+            Route::get('/change-password', [ChangePasswordController::class, 'index'])
+                ->name('change_password.index');
+
+            Route::put('/change-password', [ChangePasswordController::class, 'update'])
+                ->name('change_password.update');
         });
     });
 });

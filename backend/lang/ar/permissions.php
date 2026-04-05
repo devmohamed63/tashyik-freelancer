@@ -10,6 +10,11 @@ return [
     'manage settings' => 'إدارة الإعدادات',
     'manage subscriptions' => 'إدارة الاشتراكات',
     'manage coupons' => 'إدارة القسائم',
+    'manage orders' => 'إدارة الطلبات',
+    'manage promotions' => 'إدارة الخصومات',
+    'view financial reports' => 'عرض التقارير المالية',
+    'manage plans' => 'إدارة الباقات',
+    'manage reviews' => 'إدارة التقييمات',
     // General permissions end
 
     // City permissions start

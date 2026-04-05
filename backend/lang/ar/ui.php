@@ -227,4 +227,9 @@ return [
     'city'                      => 'المدينة',
     'financial_reports'         => 'التقارير المالية',
     'reviews'                   => 'التقييمات',
+    'change_password'            => 'تغيير كلمة المرور',
+    'password_changed_successfully' => 'تم تغيير كلمة المرور بنجاح',
+    'current_password'           => 'كلمة المرور الحالية',
+    'new_password'               => 'كلمة المرور الجديدة',
+    'confirm_new_password'       => 'تأكيد كلمة المرور الجديدة',
 ];
