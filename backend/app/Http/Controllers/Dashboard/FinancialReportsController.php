@@ -65,6 +65,7 @@ class FinancialReportsController extends Controller
 
         $totalTax = number_format(
             Invoice::query()
+                ->where('action', Invoice::CREDIT_ACTION)
                 ->whereIn('type', [
                     Invoice::COMPLETED_ORDER_TAX_TYPE,
                     Invoice::ADDITIONAL_SERVICES_TAX_TYPE,
