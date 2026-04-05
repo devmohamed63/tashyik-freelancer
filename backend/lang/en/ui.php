@@ -246,4 +246,8 @@ return [
     'within_7_days'              => 'Within 7 days',
     'details'                    => 'Details',
     'provider_details'           => 'Provider Details',
+    'pending_action'             => 'Needs Review',
+    'review_details'             => 'Review Details',
+    'comment'                    => 'Comment',
+    'contact_via_whatsapp'       => 'Contact via WhatsApp',
 ];

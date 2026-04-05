@@ -50,19 +50,25 @@
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">{{ __('ui.rating_distribution') }}</h3>
         <div class="space-y-3">
             @foreach ($ratingDistribution as $stars => $data)
+            @php
+                $barColor = match(true) {
+                    $stars >= 4 => '#22c55e',
+                    $stars == 3 => '#eab308',
+                    default     => '#ef4444',
+                };
+            @endphp
             <div class="flex items-center gap-3">
-                <div class="flex items-center gap-1 w-20 shrink-0">
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $stars }}</span>
+                <div class="flex items-center gap-1 w-12 shrink-0 justify-end">
+                    <span class="text-sm font-bold text-gray-700 dark:text-gray-300">{{ $stars }}</span>
                     <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2L9.19 8.63L2 9.24l5.46 4.73L5.82 21z" />
                     </svg>
                 </div>
-                <div class="flex-1 h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                    <div class="h-full rounded-full transition-all duration-500 {{ $stars >= 4 ? 'bg-green-500' : ($stars == 3 ? 'bg-yellow-400' : 'bg-red-400') }}"
-                         style="width: {{ $data['pct'] }}%"></div>
+                <div class="flex-1 h-5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full" style="width: {{ $data['pct'] }}%; background-color: {{ $barColor }}; min-width: {{ $data['pct'] > 0 ? '8px' : '0' }}"></div>
                 </div>
-                <div class="w-24 shrink-0 text-end">
-                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ $data['pct'] }}%</span>
+                <div class="w-28 shrink-0 text-end">
+                    <span class="text-sm font-bold text-gray-700 dark:text-gray-300">{{ $data['pct'] }}%</span>
                     <span class="text-xs text-gray-400 ms-1">({{ number_format($data['count']) }})</span>
                 </div>
             </div>

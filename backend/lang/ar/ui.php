@@ -259,4 +259,8 @@ return [
     'within_7_days'              => 'خلال 7 أيام',
     'details'                    => 'التفاصيل',
     'provider_details'           => 'بيانات الفني',
+    'pending_action'             => 'بانتظار الموافقة',
+    'review_details'             => 'تفاصيل التقييم',
+    'comment'                    => 'التعليق',
+    'contact_via_whatsapp'       => 'تواصل عبر واتساب',
 ];

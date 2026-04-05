@@ -5,6 +5,7 @@ namespace App\Livewire\Dashboard;
 use App\Models\Review;
 use App\Utils\Livewire\DataTable;
 use App\Utils\Livewire\Table\Column;
+use App\Utils\Livewire\Table\Modal;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\On;
@@ -27,6 +28,13 @@ class ReviewsTable extends DataTable
     public function mount()
     {
         $this->authorize('manage reviews');
+    }
+
+    public function show($id)
+    {
+        $this->dispatch('show-review', $id);
+
+        $this->dispatch('showModal', ['id' => 'showReviewModal']);
     }
 
     /**
@@ -91,6 +99,11 @@ class ReviewsTable extends DataTable
                 ->sortable()
                 ->dateFormat(),
 
+            Column::name('show', __('ui.show'))
+                ->action()
+                ->wireAction('show')
+                ->view('components.dashboard.tables.buttons.show'),
+
             Column::name('delete', __('ui.delete'))
                 ->action()
                 ->wireAction('delete')
@@ -110,7 +123,10 @@ class ReviewsTable extends DataTable
 
     protected function modals(): Collection|null
     {
-        return new Collection();
+        return new Collection([
+            Modal::id('showReviewModal')
+                ->view('dashboard.reviews.show'),
+        ]);
     }
 
     protected function dropdowns(): Collection|null
