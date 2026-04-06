@@ -18,15 +18,19 @@
 
     selectedCategory.value = data.value.subcategories[0]?.id;
   } catch (error) {
-    if (error.statusCode == 404) {
+    if (error.statusCode === 404 || error.response?.status === 404) {
       throw createError({
         statusCode: 404,
-        statusMessage: $t('common.page_not_found'),
+        statusMessage: t('common.page_not_found'),
         fatal: true,
       });
     }
 
-    console.error('Failed to load category:', error);
+    throw createError({
+        statusCode: 500,
+        statusMessage: error.message || 'Failed to fetch category',
+        fatal: true,
+    });
   }
 
   useSeoMeta({
@@ -97,8 +101,8 @@
 </script>
 
 <template>
-  <section class="container px-4 py-8 md:py-12 space-y-5 md:space-y-10">
-    <AppBreadcrumb :pages="[{ name: $t('alt.category', { category: data.name }) }]" />
+  <section v-if="data" class="container px-4 py-8 md:py-12 space-y-5 md:space-y-10">
+    <AppBreadcrumb :pages="[{ name: $t('alt.category', { category: data?.name }) }]" />
 
     <!-- Search -->
     <div class="rounded-xl bg-white shadow p-3 md:p-6 flex flex-col gap-3 md:gap-5">
@@ -116,7 +120,7 @@
       </form>
       <div class="inline-flex gap-3 overflow-x-auto">
         <button v-if="q" @click="selectedCategory = null" v-text="$t('common.all')" class="px-6 py-3 rounded-lg text-sm text-nowrap" :class="[selectedCategory == null ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200']"></button>
-        <button v-for="subcategory in data.subcategories" :key="subcategory.id" v-text="subcategory.name" @click="selectedCategory = subcategory.id" class="px-6 py-3 rounded-lg text-sm text-nowrap" :class="[subcategory.id == selectedCategory ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200']"></button>
+        <button v-for="subcategory in data?.subcategories" :key="subcategory.id" v-text="subcategory.name" @click="selectedCategory = subcategory.id" class="px-6 py-3 rounded-lg text-sm text-nowrap" :class="[subcategory.id == selectedCategory ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200']"></button>
       </div>
     </div>
 

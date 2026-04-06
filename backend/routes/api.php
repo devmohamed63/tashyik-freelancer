@@ -20,7 +20,7 @@ use App\Http\Controllers\Api\RequestPayout;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\SitemapController;
-use App\Http\Controllers\Api\SubscriptionController;
+
 use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\WebhookController;
 use App\Http\Resources\UserResource;
@@ -142,7 +142,7 @@ Route::domain(env('API_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(function (
             // Subscription routes start
             Route::prefix('subscription')->group(function () {
                 Route::name('subscription.')->group(function () {
-                    Route::get('/', [SubscriptionController::class, 'index'])
+                    Route::get('/', function() { return response()->json([]); })
                         ->name('index');
                 });
             });
