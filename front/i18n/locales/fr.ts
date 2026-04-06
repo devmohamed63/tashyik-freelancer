@@ -181,6 +181,7 @@ export default {
     categories: 'Catégories',
     download_app: "Télécharger l'appli",
     contact: 'Contact',
+    articles: 'Articles',
     logout: 'Déconnexion',
     privacy_policy: 'Politique de confidentialité',
     terms_and_conditions: 'Conditions générales',
@@ -617,5 +618,20 @@ export default {
       subtitle: 'Visitez notre siège à Riyad',
     },
     message_sent: 'Envoyé avec succès',
+  },
+  articles: {
+    seo: {
+      title: 'Articles - Tashyik',
+      description: 'Lisez les derniers articles et obtenez des conseils sur l\'entretien de la maison, le soin des appareils électroménagers et les meilleures pratiques pour entretenir votre habitation.',
+    },
+    hero: {
+      title: 'Articles',
+      subtitle: 'Conseils et informations utiles concernant l\'entretien et la maintenance de votre maison',
+    },
+    featured_badge: 'Article vedette',
+    read_more: 'En savoir plus',
+    share: 'Partager l\'article',
+    empty: 'Aucun article disponible pour le moment',
+    related: 'Articles connexes',
   },
 } as const;

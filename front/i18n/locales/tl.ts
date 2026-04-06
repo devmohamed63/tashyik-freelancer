@@ -181,6 +181,7 @@ export default {
     categories: 'หมวดหมู่',
     download_app: 'ดาวน์โหลดแอป',
     contact: 'ติดต่อเรา',
+    articles: 'Mga Artikulo',
     logout: 'ออกจากระบบ',
     privacy_policy: 'นโยบายความเป็นส่วนตัว',
     terms_and_conditions: 'ข้อกำหนดและเงื่อนไข',
@@ -617,5 +618,20 @@ export default {
       subtitle: 'เยี่ยมชมสำนักงานใหญ่ของเราในกรุงริยาด',
     },
     message_sent: 'ส่งข้อความสำเร็จ',
+  },
+  articles: {
+    seo: {
+      title: 'Mga Artikulo - Tashyik',
+      description: 'Basahin ang mga pinakabagong artikulo at kumuha ng mga tip sa pagpapanatili ng bahay, pangangalaga ng mga appliance, at mga pinakamahusay na kasanayan upang mapanatili ang iyong tahanan.',
+    },
+    hero: {
+      title: 'Mga Artikulo',
+      subtitle: 'Mga kapaki-pakinabang na tip at impormasyon tungkol sa pagpapanatili at pag-aalaga ng iyong tahanan',
+    },
+    featured_badge: 'Itinatampok na Artikulo',
+    read_more: 'Magbasa Pa',
+    share: 'Ibahagi ang Artikulo',
+    empty: 'Walang mga artikulong magagamit sa ngayon',
+    related: 'Mga Kaugnay na Artikulo',
   },
 } as const;

@@ -181,6 +181,7 @@ export default {
     categories: 'Kategori',
     download_app: 'Unduh Aplikasi',
     contact: 'Hubungi Kami',
+    articles: 'Artikel',
     logout: 'Keluar',
     privacy_policy: 'Kebijakan Privasi',
     terms_and_conditions: 'Syarat dan Ketentuan',
@@ -617,5 +618,20 @@ export default {
       subtitle: 'Kunjungi kantor pusat kami di Riyadh',
     },
     message_sent: 'Berhasil Terkirim',
+  },
+  articles: {
+    seo: {
+      title: 'Artikel - Tashyik',
+      description: 'Baca artikel terbaru dan dapatkan tips tentang perawatan rumah, perawatan peralatan rumah tangga, dan praktik terbaik untuk menjaga rumah Anda.',
+    },
+    hero: {
+      title: 'Artikel',
+      subtitle: 'Tips dan informasi bermanfaat mengenai perawatan rumah dan cara menjaga rumah Anda.',
+    },
+    featured_badge: 'Artikel Unggulan',
+    read_more: 'Baca selengkapnya',
+    share: 'Bagikan Artikel',
+    empty: 'Tidak ada artikel yang tersedia saat ini.',
+    related: 'Artikel Terkait',
   },
 } as const;

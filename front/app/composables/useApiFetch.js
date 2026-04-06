@@ -1,3 +1,5 @@
+import { hash } from 'ohash';
+
 export function useApiFetch(path, options = {}, useFetchFunction = false) {
   const { $i18n } = useNuxtApp();
   const config = useRuntimeConfig();
@@ -13,7 +15,7 @@ export function useApiFetch(path, options = {}, useFetchFunction = false) {
     headers.Authorization = `Bearer ${token.value}`;
   }
 
-  const key = options.key || `${path}-${$i18n.locale.value}`;
+  const key = options.key || hash(['api', unref(typeof path === 'function' ? path() : path), unref(options.query || {}), $i18n.locale.value]);
 
   return useFetchFunction
     ? useFetch(path, {
