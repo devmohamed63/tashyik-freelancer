@@ -16,11 +16,17 @@ class ResetPasswordNotification extends Notification
     public string $token;
 
     /**
+     * Indicates if the request comes from the Dashboard.
+     */
+    public bool $isDashboard;
+
+    /**
      * Create a new notification instance.
      */
-    public function __construct(string $token)
+    public function __construct(string $token, bool $isDashboard = false)
     {
         $this->token = $token;
+        $this->isDashboard = $isDashboard;
     }
 
     /**
@@ -36,10 +42,15 @@ class ResetPasswordNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $frontendUrl = config('app.frontend_url');
         $locale = $notifiable->ui_locale ?? config('app.locale', 'ar');
 
-        $url = "{$frontendUrl}/{$locale}/reset-password?token={$this->token}&email=" . urlencode($notifiable->email);
+        if ($this->isDashboard) {
+            // Generates absolute URL with dashboard domain, e.g. http://dashboard.localhost/reset-password/{token}?email=...
+            $url = route('password.reset', ['token' => $this->token, 'email' => $notifiable->email]);
+        } else {
+            $frontendUrl = config('app.frontend_url');
+            $url = "{$frontendUrl}/{$locale}/reset-password?token={$this->token}&email=" . urlencode($notifiable->email);
+        }
 
         return (new MailMessage)
             ->subject(__('passwords.reset_password_subject', [], $locale))

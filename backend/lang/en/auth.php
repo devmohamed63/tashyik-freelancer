@@ -34,13 +34,17 @@ return [
     ],
     'forgot_passwrod' => [
         'title' => 'Forgot password',
-        'description' => 'Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.',
-        'button' => 'Email Password Reset Link',
+        'description' => 'Forgot your password? No problem. Just let us know your email address and we will email you a password reset OTP.',
+        'button' => 'Email Password Reset OTP',
     ],
     'reset_password' => [
-        'title' => 'Reset Password',
+        'title' => 'Reset password',
         'description' => 'Enter your new password!',
-        'button' => 'Reset Password',
+        'button' => 'Reset password',
+    ],
+    'verify-otp' => [
+        'title' => 'Verify OTP',
+        'description' => 'We\'ve sent a 6-digit OTP code to your email. Please enter it here.',
     ],
     'verify_email' => [
         'title' => 'Verify Email Address',

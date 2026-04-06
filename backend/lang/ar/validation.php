@@ -230,6 +230,7 @@ return [
         'password'                          => 'كلمة المرور',
         'password_confirmation'             => 'تأكيد كلمة المرور',
         'current_password'                  => 'كلمة المرور الحالية',
+        'otp'                               => 'رمز التحقق (OTP)',
         'bio'                               => 'نبذة',
         'logo'                              => 'الشعار',
         'og'                                => 'صورة ال OG',
