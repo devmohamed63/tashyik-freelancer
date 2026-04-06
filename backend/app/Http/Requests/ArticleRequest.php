@@ -38,10 +38,10 @@ class ArticleRequest extends FormRequest
         $rules = [
             'title.*' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', 'unique:articles,slug,' . $this->route('article')?->id],
-            'excerpt.*' => ['required', 'string', 'max:500'],
-            'body.*' => ['required', 'string', 'max:50000'],
+            'excerpt.*' => ['required', 'string', 'max:500000'],
+            'body.*' => ['required', 'string', 'max:5000000'],
             'meta_title.*' => ['nullable', 'string', 'max:255'],
-            'meta_description.*' => ['nullable', 'string', 'max:500'],
+            'meta_description.*' => ['nullable', 'string', 'max:500000'],
             'status' => ['nullable'],
             'is_featured' => ['nullable', 'boolean'],
             'published_at' => ['nullable', 'date'],
