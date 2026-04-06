@@ -14,7 +14,7 @@ class CategoryController extends ApiController
         $categories = Category::isParent()
             ->with('media')
             ->orderBy('item_order')
-            ->get(['id', 'name', 'description']);
+            ->get(['id', 'slug', 'name', 'description']);
 
         return CategoryResource::collection($categories);
     }
@@ -23,7 +23,7 @@ class CategoryController extends ApiController
     {
         $category->load([
             'media',
-            'children:id,category_id,name',
+            'children:id,slug,category_id,name',
             'children.media'
         ]);
 

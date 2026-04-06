@@ -40,6 +40,7 @@ class CategoryResource extends JsonResource
 
                     return [
                         'id' => $child->id,
+                        'slug' => $child->slug,
                         'name' => $child->name,
                         'image' => $this->getMediaUrl($image, id: $child->id),
                         'rating' => $child->getRating(),
@@ -50,6 +51,7 @@ class CategoryResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'slug' => $this->slug,
             'name' => $this->name,
             'description' => $this->description,
             'parent' => $this->when(

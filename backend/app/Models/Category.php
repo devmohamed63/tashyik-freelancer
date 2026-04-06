@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Spatie\Translatable\HasTranslations;
@@ -40,6 +41,7 @@ class Category extends Model implements HasMedia
      */
     protected $fillable = [
         'name',
+        'slug',
         'description',
         'item_order',
     ];
@@ -154,5 +156,40 @@ class Category extends Model implements HasMedia
         });
 
         return $rating;
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($category) {
+            if (empty($category->slug)) {
+                $category->slug = static::generateUniqueSlug($category->getTranslation('name', 'ar') ?: 'cat');
+            }
+        });
+    }
+
+    public static function generateUniqueSlug(string $name): string
+    {
+        $slug = Str::slug($name);
+
+        if (empty($slug)) {
+            $slug = Str::slug(Str::random(8));
+        }
+
+        $originalSlug = $slug;
+        $counter = 1;
+
+        while (static::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
+        return $slug;
     }
 }
