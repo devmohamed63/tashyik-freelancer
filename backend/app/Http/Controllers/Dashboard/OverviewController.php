@@ -11,7 +11,6 @@ use App\Models\PayoutRequest;
 use App\Models\Service;
 use App\Models\Subscription;
 use App\Models\User;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
@@ -21,7 +20,7 @@ class OverviewController extends Controller
     {
         Gate::authorize('view dashboard');
 
-        $overviewData = Cache::remember('dashboard-overview', now()->endOfHour(), function () {
+        $overviewData = (function () {
 
             // ── Counts ──────────────────────────────────────────
             $usersCount                = number_format(User::isUser()->count());
@@ -208,7 +207,7 @@ class OverviewController extends Controller
                 'revenueByCategory',
                 'ordersByCategory',
             );
-        });
+        })();
 
         return view('dashboard.overview.index', $overviewData);
     }

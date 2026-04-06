@@ -1,8 +1,5 @@
 <x-layouts.dashboard page="overview">
-
     <div class="flex flex-col gap-5">
-        <p class="text-gray-500 dark:text-gray-400">{{ __('ui.data_updates_houlry') }}</p>
-
         {{-- ── Row 0: Alert Cards (only show if there are alerts) ── --}}
         @if ($pendingProvidersCount > 0 || $expiringSubscriptionsCount > 0 || $unreadContactsCount > 0 || $staleNewOrdersCount > 0)
         <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
