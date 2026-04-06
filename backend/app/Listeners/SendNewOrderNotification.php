@@ -9,6 +9,8 @@ use App\Utils\Services\Firebase\Firestore;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\AdminNewOrderMessage;
 
 class SendNewOrderNotification
 {
@@ -79,7 +81,16 @@ class SendNewOrderNotification
             }
         }
 
-        if (!app()->isProduction()) return;
+        // Send email notification to Admin
+        try {
+            Mail::to('mohamed202203785@gmail.com')->send(new AdminNewOrderMessage($order));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to send admin order email: ' . $e->getMessage());
+        }
+
+        if (!app()->isProduction()) {
+            return;
+        }
 
         // Update firestore analytics
         $firestore = new Firestore();

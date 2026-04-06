@@ -213,6 +213,14 @@ class Order extends Model implements HasMedia
     }
 
     /**
+     * Get order category.
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    /**
      * Get order address.
      */
     public function address(): BelongsTo
