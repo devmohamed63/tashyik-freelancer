@@ -12,7 +12,7 @@ trait HasAutoTranslations
     protected static function booted(): void
     {
         // Skip during seeder execution
-        if (app()->runningInConsole() || app()->environment('local')) {
+        if (app()->runningInConsole()) {
             return;
         }
 

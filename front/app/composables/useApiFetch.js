@@ -13,10 +13,13 @@ export function useApiFetch(path, options = {}, useFetchFunction = false) {
     headers.Authorization = `Bearer ${token.value}`;
   }
 
+  const key = options.key || `${path}-${$i18n.locale.value}`;
+
   return useFetchFunction
     ? useFetch(path, {
         baseURL: config.public.apiBaseUrl,
         watch: false,
+        key,
         ...options,
         headers,
       })
