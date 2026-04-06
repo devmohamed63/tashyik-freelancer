@@ -229,6 +229,8 @@ return [
     'reviews'                   => 'التقييمات',
     'change_password'            => 'تغيير كلمة المرور',
     'password_changed_successfully' => 'تم تغيير كلمة المرور بنجاح',
+    'change_email'               => 'تغيير البريد الإلكتروني',
+    'email_changed_successfully' => 'تم تغيير البريد الإلكتروني بنجاح',
     'current_password'           => 'كلمة المرور الحالية',
     'new_password'               => 'كلمة المرور الجديدة',
     'confirm_new_password'       => 'تأكيد كلمة المرور الجديدة',

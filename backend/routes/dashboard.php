@@ -20,6 +20,7 @@ use App\Http\Controllers\Dashboard\SubscriptionController;
 use App\Http\Controllers\Dashboard\UserController;
 use App\Http\Controllers\Dashboard\ArticleController;
 use App\Http\Controllers\Dashboard\ChangePasswordController;
+use App\Http\Controllers\Dashboard\ChangeEmailController;
 use App\Http\Controllers\Dashboard\PlanController;
 use Illuminate\Support\Facades\Route;
 
@@ -143,6 +144,13 @@ Route::domain(env('DASHBOARD_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(func
 
             Route::put('/change-password', [ChangePasswordController::class, 'update'])
                 ->name('change_password.update');
+
+            // Change email routes
+            Route::get('/change-email', [ChangeEmailController::class, 'index'])
+                ->name('change_email.index');
+
+            Route::put('/change-email', [ChangeEmailController::class, 'update'])
+                ->name('change_email.update');
         });
     });
 });

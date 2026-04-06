@@ -216,6 +216,8 @@ return [
     'slug'                      => 'Slug',
     'change_password'            => 'Change Password',
     'password_changed_successfully' => 'Password changed successfully',
+    'change_email'               => 'Change Email',
+    'email_changed_successfully' => 'Email changed successfully',
     'current_password'           => 'Current Password',
     'new_password'               => 'New Password',
     'confirm_new_password'       => 'Confirm New Password',
