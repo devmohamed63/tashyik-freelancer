@@ -26,6 +26,9 @@ class ServiceProvidersTable extends DataTable
     #[Url]
     public string|null $activityFilter = null;
 
+    #[Url]
+    public string|null $cityFilter = null;
+
     public bool $tableHasTrash = true;
 
     public bool $tableHasStatus = true;
@@ -84,6 +87,10 @@ class ServiceProvidersTable extends DataTable
                     $query->inactive();
                     break;
             }
+        }
+
+        if ($this->cityFilter) {
+            $query->where('city_id', $this->cityFilter);
         }
 
         if ($this->typeFilter) {
@@ -257,7 +264,23 @@ class ServiceProvidersTable extends DataTable
             'no_orders' => 'بدون طلبات',
         ];
 
+        $cities = \App\Models\City::orderBy('name')->get(['id', 'name']);
+        
+        $cityChildren = [
+            \App\Utils\Livewire\Table\DropdownChild::name('الكل')->wireAction('$set("cityFilter", null)')
+        ];
+        
+        foreach ($cities as $city) {
+            $cityChildren[] = \App\Utils\Livewire\Table\DropdownChild::name($city->name)->wireAction('$set("cityFilter", ' . $city->id . ')');
+        }
+
+        $selectedCity = $this->cityFilter ? ($cities->firstWhere('id', (int) $this->cityFilter)->name ?? 'المدينة') : 'المدينة';
+
         return new Collection([
+            \App\Utils\Livewire\Table\Dropdown::name($selectedCity)
+                ->id('cityFilter')
+                ->children($cityChildren),
+
             \App\Utils\Livewire\Table\Dropdown::name($activityLabels[$this->activityFilter] ?? 'النشاط')
                 ->id('activityFilter')
                 ->children([
