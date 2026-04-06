@@ -43,6 +43,7 @@ class ServiceController extends ApiController
 
         $services = $query->paginate($this->paginationLimit, [
             'id',
+            'slug',
             'promotion_id',
             'category_id',
             'name',
@@ -70,6 +71,7 @@ class ServiceController extends ApiController
 
         $services = $query->get([
             'id',
+            'slug',
             'promotion_id',
             'category_id',
             'name',

@@ -46,12 +46,12 @@
 
         <!-- Actions -->
         <div class="inline-flex items-center gap-2 overflow-hidden">
-          <NuxtLinkLocale :to="{ name: 'services-service-order', params: { service: service.id } }" class="w-full">
+          <NuxtLinkLocale :to="{ name: 'services-service-order', params: { service: service.slug } }" class="w-full">
             <ButtonsFilled class="w-full text-nowrap">
               {{ $t('service.actions.order_now') }}
             </ButtonsFilled>
           </NuxtLinkLocale>
-          <NuxtLinkLocale :to="{ name: 'services-service', params: { service: service.id } }" class="w-full">
+          <NuxtLinkLocale :to="{ name: 'services-service', params: { service: service.slug } }" class="w-full">
             <ButtonsOutline class="w-full text-nowrap">
               {{ $t('service.actions.view_details') }}
             </ButtonsOutline>

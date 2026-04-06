@@ -24,7 +24,7 @@ class OrderController extends ApiController
     {
         $request->validate([
             'address' => ['nullable', 'integer', 'exists:addresses,id'],
-            'service' => ['required', 'integer'],
+            'service' => ['required', 'string'],
             'description' => ['nullable', 'string', 'max:500'],
             'quantity' => ['required', 'integer', 'min:1'],
             'coupons' => ['nullable', 'array'],
@@ -34,7 +34,7 @@ class OrderController extends ApiController
 
         $user = Auth::user();
 
-        $service = Service::findOrFail($request->service);
+        $service = Service::where('slug', $request->service)->firstOrFail();
 
         $visit_cost = $service->getVisitCost();
         $subtotal = ($service->price * $request->quantity) + $visit_cost;
@@ -124,6 +124,7 @@ class OrderController extends ApiController
         return response()->json([
             'service' => [
                 'id' => $service->id,
+                'slug' => $service->slug,
                 'name' => $service->name,
             ],
             ...compact('visit_cost', 'subtotal'),
@@ -190,6 +191,7 @@ class OrderController extends ApiController
             'id' => $order->id,
             'service' => [
                 'id' => $order->service?->id,
+                'slug' => $order->service?->slug,
                 'name' => $order->service?->name,
             ],
             'service_provider' => [

@@ -64,7 +64,7 @@
         </ButtonsFilled>
 
         <!-- Order again -->
-        <NuxtLinkLocale :to="{ name: 'services-service-order', params: { service: order.service?.id } }">
+        <NuxtLinkLocale :to="{ name: 'services-service-order', params: { service: order.service?.slug } }">
           <ButtonsOutline class="w-full">
             {{ $t('order.actions.order_again') }}
           </ButtonsOutline>

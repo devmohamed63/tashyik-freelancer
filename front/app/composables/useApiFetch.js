@@ -19,15 +19,15 @@ export function useApiFetch(path, options = {}, useFetchFunction = false) {
 
   return useFetchFunction
     ? useFetch(path, {
-        baseURL: config.public.apiBaseUrl,
-        watch: false,
-        key,
-        ...options,
-        headers,
-      })
+      baseURL: config.public.apiBaseUrl,
+      watch: false,
+      key,
+      ...options,
+      headers,
+    })
     : $fetch(path, {
-        ...options,
-        baseURL: config.public.apiBaseUrl,
-        headers,
-      });
+      ...options,
+      baseURL: config.public.apiBaseUrl,
+      headers,
+    });
 }

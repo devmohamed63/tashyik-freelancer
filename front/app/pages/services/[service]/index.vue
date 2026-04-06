@@ -9,15 +9,19 @@
 
     service.value = response.data;
   } catch (error) {
-    if (error.statusCode == 404) {
+    if (error.statusCode == 404 || error.response?.status == 404) {
       throw createError({
         statusCode: 404,
-        statusMessage: $t('common.page_not_found'),
+        statusMessage: t('common.page_not_found'),
         fatal: true,
       });
     }
 
-    console.error('Failed to get service:', error);
+    throw createError({
+        statusCode: 500,
+        statusMessage: error.message || 'Failed to fetch service',
+        fatal: true,
+    });
   }
 
   useSeoMeta({
@@ -116,7 +120,7 @@
 
           <hr class="border-dashed border-gray-200" />
 
-          <NuxtLinkLocale :to="{ name: 'services-service-order', params: { service: service.id } }" class="w-full">
+          <NuxtLinkLocale :to="{ name: 'services-service-order', params: { service: service.slug } }" class="w-full">
             <ButtonsFilled class="w-full">
               {{ $t('service.order_service') }}
             </ButtonsFilled>

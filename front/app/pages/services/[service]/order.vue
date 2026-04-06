@@ -37,7 +37,7 @@
   try {
     await loadSummary();
   } catch (error) {
-    if (error.statusCode == 404) {
+    if (error.statusCode == 404 || error.response?.status == 404) {
       throw createError({
         statusCode: 404,
         statusMessage: $t('common.page_not_found'),
@@ -45,7 +45,11 @@
       });
     }
 
-    console.error('Failed to get summary:', error);
+    throw createError({
+        statusCode: 500,
+        statusMessage: error.message || 'Failed to fetch summary',
+        fatal: true,
+    });
   }
 
   useSeoMeta({
@@ -126,7 +130,7 @@
 
 <template>
   <div class="container px-2 py-8 md:py-12 space-y-8">
-    <AppBreadcrumb :pages="[{ path: localePath({ name: 'services-service', params: { service: summary.service.id } }), name: summary.service.name }, { name: $t('orders.make.title') }]" />
+    <AppBreadcrumb :pages="[{ path: localePath({ name: 'services-service', params: { service: summary.service.slug } }), name: summary.service.name }, { name: $t('orders.make.title') }]" />
 
     <div class="flex flex-col lg:grid grid-cols-12 gap-6 text-gray-500">
       <div class="col-span-7 flex flex-col gap-6">
