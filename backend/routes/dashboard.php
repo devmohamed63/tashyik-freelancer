@@ -83,6 +83,9 @@ Route::domain(env('DASHBOARD_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(func
             Route::get('/cities', [CityController::class, 'index'])
                 ->name('cities.index');
 
+            Route::get('/cities/{city}', [CityController::class, 'show'])
+                ->name('cities.show');
+
             // User routes
             Route::resource('/users', UserController::class)
                 ->except(['show', 'destroy']);

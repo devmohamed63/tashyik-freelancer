@@ -44,4 +44,20 @@ class City extends Model
     {
         return $this->hasMany(User::class)->where('type', User::SERVICE_PROVIDER_ACCOUNT_TYPE);
     }
+
+    /**
+     * Get all users (customers + providers) assigned to this city.
+     */
+    public function users(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
+    /**
+     * Get the categories available in this city (via pivot).
+     */
+    public function categories(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Category::class);
+    }
 }
