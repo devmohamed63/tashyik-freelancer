@@ -23,6 +23,7 @@ class ServiceCollectionResource extends JsonResource
             return [
                 'id' => $service->id,
                 'name' => $service->name,
+                'slug' => $service->slug,
                 'price' => $service->getPrice(),
                 'image' => $this->getMediaUrl($image, id: $service->id),
                 'rating' => $service->getRating(),

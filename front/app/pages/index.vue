@@ -11,8 +11,14 @@
   <!-- Hero Section -->
   <HomeHeroSection />
 
+  <!-- Featured Collection (first one, teaser) -->
+  <HomeCollectionsSection :start="0" :end="1" :max-services="5" />
+
   <!-- Categories Section -->
   <HomeCategoriesSection />
+
+  <!-- Remaining Collections -->
+  <HomeCollectionsSection :start="1" :max-services="10" />
 
   <!-- Features -->
   <HomeFeaturesSection />
