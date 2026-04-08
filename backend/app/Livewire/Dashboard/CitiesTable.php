@@ -257,7 +257,7 @@ class CitiesTable extends DataTable
         $sortChildren = [];
         foreach ($sortLabels as $key => $label) {
             $sortChildren[] = DropdownChild::name($label)
-                ->wireAction('$set("sortByFilters", "' . $key . '")');
+                ->wireAction("\$set('sortByFilters', '$key')");
         }
 
         // ── Activity Filter ──────────────────────────────────
@@ -270,9 +270,9 @@ class CitiesTable extends DataTable
 
         $activityChildren = [];
         foreach ($activityLabels as $key => $label) {
-            $val = $key ? '"' . $key . '"' : 'null';
+            $val = $key ? "'$key'" : 'null';
             $activityChildren[] = DropdownChild::name($label)
-                ->wireAction('$set("activityFilter", ' . $val . ')');
+                ->wireAction("\$set('activityFilter', $val)");
         }
 
         // ── Coverage Filter ──────────────────────────────────
@@ -286,9 +286,9 @@ class CitiesTable extends DataTable
 
         $coverageChildren = [];
         foreach ($coverageLabels as $key => $label) {
-            $val = $key ? '"' . $key . '"' : 'null';
+            $val = $key ? "'$key'" : 'null';
             $coverageChildren[] = DropdownChild::name($label)
-                ->wireAction('$set("coverageFilter", ' . $val . ')');
+                ->wireAction("\$set('coverageFilter', $val)");
         }
 
         // ── Revenue Tier Filter ──────────────────────────────
@@ -302,9 +302,9 @@ class CitiesTable extends DataTable
 
         $revenueChildren = [];
         foreach ($revenueLabels as $key => $label) {
-            $val = $key ? '"' . $key . '"' : 'null';
+            $val = $key ? "'$key'" : 'null';
             $revenueChildren[] = DropdownChild::name($label)
-                ->wireAction('$set("revenueTierFilter", ' . $val . ')');
+                ->wireAction("\$set('revenueTierFilter', $val)");
         }
 
         // ── Current labels ───────────────────────────────────
