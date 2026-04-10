@@ -198,6 +198,10 @@ export default {
       title: 'My Addresses',
       subtitle: 'Manage your saved addresses',
     },
+    institution_members: {
+      title: 'Manage Employees',
+      subtitle: 'View and manage institution employees',
+    },
   },
   guest: {
     login: {
@@ -387,6 +391,7 @@ export default {
       subtitle: 'Change your profile settings, picture, and password.',
     },
     information: 'Profile Information',
+    linked_institution: 'Works at',
     update_password: 'Update Password',
     delete_account: 'Delete Account',
   },
@@ -633,5 +638,45 @@ export default {
     share: 'Share Article',
     empty: 'No articles available',
     related: 'Related Articles',
+  },
+  institution: {
+    title: 'Manage Employees',
+    subtitle: 'View performance and statistics of institution employees',
+    seo_title: 'Manage Employees',
+    summary: {
+      active_members: 'Active Employees',
+      this_month_orders: 'Orders This Month',
+      this_month_earnings: 'Earnings This Month',
+      balance: 'Current Balance',
+    },
+    member: {
+      total_orders: 'Total Orders',
+      completed_orders: 'Completed Orders',
+      this_month: 'This Month',
+      earnings: 'Earnings',
+      joined: 'Joined',
+    },
+    empty: {
+      title: 'No employees',
+      subtitle: 'No employees have been added to the institution yet. Contact admin to add employees.',
+    },
+    status: {
+      active: 'Active',
+      pending: 'Pending',
+      inactive: 'Inactive',
+    },
+    filter: {
+      all: 'All',
+      search: 'Search by name or phone...',
+      results: '{count} results',
+      no_results: 'No results found',
+      clear: 'Clear filters',
+    },
+    sort: {
+      name: 'Sort by name',
+      earnings: 'Highest earnings',
+      orders: 'Most orders',
+      this_month: 'Most active this month',
+    },
   },
 } as const;

@@ -634,4 +634,15 @@ export default {
     empty: 'Tidak ada artikel yang tersedia saat ini.',
     related: 'Artikel Terkait',
   },
+  institution: {
+    title: 'Manage Employees',
+    subtitle: 'View performance and statistics of institution employees',
+    seo_title: 'Manage Employees',
+    summary: { active_members: 'Active Employees', this_month_orders: 'Orders This Month', this_month_earnings: 'Earnings This Month', balance: 'Current Balance' },
+    member: { total_orders: 'Total Orders', completed_orders: 'Completed Orders', this_month: 'This Month', earnings: 'Earnings', joined: 'Joined' },
+    empty: { title: 'No employees', subtitle: 'No employees have been added to the institution yet.' },
+    status: { active: 'Active', pending: 'Pending', inactive: 'Inactive' },
+    filter: { all: 'All', search: 'Search by name or phone...', results: '{count} results', no_results: 'No results found', clear: 'Clear filters' },
+    sort: { name: 'Sort by name', earnings: 'Highest earnings', orders: 'Most orders', this_month: 'Most active this month' },
+  },
 } as const;

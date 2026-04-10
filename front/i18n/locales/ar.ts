@@ -198,6 +198,10 @@ export default {
       title: 'عناويني',
       subtitle: 'ادارة عناوينك المحفوظة',
     },
+    institution_members: {
+      title: 'إدارة الموظفين',
+      subtitle: 'عرض وإدارة موظفين المؤسسة',
+    },
   },
   guest: {
     login: {
@@ -387,6 +391,7 @@ export default {
       subtitle: 'قم بتغيير إعدادات ملفك الشخصي وصورة ملفك الشخصي وكلمة المرور.',
     },
     information: 'معلومات الملف الشخصي',
+    linked_institution: 'تابع لـ',
     update_password: 'تحديث كلمة المرور',
     delete_account: 'حذف الحساب',
   },
@@ -633,5 +638,45 @@ export default {
     share: 'شارك المقال',
     empty: 'لا توجد مقالات حالياً',
     related: 'مقالات ذات صلة',
+  },
+  institution: {
+    title: 'إدارة الموظفين',
+    subtitle: 'عرض أداء وإحصائيات موظفين المؤسسة',
+    seo_title: 'إدارة الموظفين',
+    summary: {
+      active_members: 'الموظفين النشطين',
+      this_month_orders: 'طلبات هذا الشهر',
+      this_month_earnings: 'إيرادات هذا الشهر',
+      balance: 'الرصيد الحالي',
+    },
+    member: {
+      total_orders: 'إجمالي الطلبات',
+      completed_orders: 'طلبات مكتملة',
+      this_month: 'هذا الشهر',
+      earnings: 'الإيرادات',
+      joined: 'تاريخ الانضمام',
+    },
+    empty: {
+      title: 'لا يوجد موظفين',
+      subtitle: 'لم يتم إضافة أي موظف للمؤسسة بعد. تواصل مع الإدارة لإضافة موظفين.',
+    },
+    status: {
+      active: 'نشط',
+      pending: 'قيد المراجعة',
+      inactive: 'غير نشط',
+    },
+    filter: {
+      all: 'الكل',
+      search: 'ابحث بالاسم أو رقم الهاتف...',
+      results: '{count} نتيجة',
+      no_results: 'لا توجد نتائج',
+      clear: 'مسح الفلاتر',
+    },
+    sort: {
+      name: 'ترتيب حسب الاسم',
+      earnings: 'الأعلى إيرادات',
+      orders: 'الأكثر طلبات',
+      this_month: 'الأنشط هذا الشهر',
+    },
   },
 } as const;

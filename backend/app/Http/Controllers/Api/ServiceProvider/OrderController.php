@@ -42,7 +42,17 @@ class OrderController extends ApiController
                 break;
 
             case 'completed':
-                $query->completed()->where('service_provider_id', $serviceProvider->id);
+                if ($serviceProvider->isInstitutionOrCompany()) {
+                    $query->completed()->where(function ($q) use ($serviceProvider) {
+                        $q->where('service_provider_id', $serviceProvider->id)
+                          ->orWhereIn('service_provider_id', function ($sub) use ($serviceProvider) {
+                              $sub->select('id')->from('users')
+                                  ->where('institution_id', $serviceProvider->id);
+                          });
+                    });
+                } else {
+                    $query->completed()->where('service_provider_id', $serviceProvider->id);
+                }
                 break;
         }
 

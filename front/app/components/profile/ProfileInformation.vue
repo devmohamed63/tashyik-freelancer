@@ -92,6 +92,14 @@
   <div class="w-full bg-white shadow rounded-lg p-5 lg:p-10 flex flex-col gap-8">
     <h3 v-text="$t('profile.information')" class="text-xl md:text-2xl text-gray-700"></h3>
 
+    <!-- Linked institution badge for members -->
+    <div v-if="auth.user?.institution" class="flex items-center gap-2 px-4 py-3 bg-violet-50 border border-violet-100 rounded-lg">
+      <svg class="w-5 h-5 text-violet-500 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="2" width="16" height="20" rx="2" ry="2" /><path d="M9 22v-4h6v4" /><path d="M8 6h.01" /><path d="M16 6h.01" /><path d="M12 6h.01" /><path d="M12 10h.01" /><path d="M12 14h.01" /><path d="M16 10h.01" /><path d="M16 14h.01" /><path d="M8 10h.01" /><path d="M8 14h.01" />
+      </svg>
+      <span class="text-sm text-violet-700 font-medium">{{ $t('profile.linked_institution') }} {{ auth.user.institution.name }}</span>
+    </div>
+
     <div class="flex flex-col md:flex-row gap-5 justify-between">
       <!-- Avatar -->
       <div class="md:order-2 flex flex-col lg:items-center gap-2 w-full">

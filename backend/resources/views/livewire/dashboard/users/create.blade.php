@@ -25,6 +25,12 @@
                 wire:model="name"
                 :required="true" />
 
+            <!-- Email -->
+            <x-dashboard.inputs.default
+                name="email"
+                wire:model="email"
+                type="email" />
+
             <!-- City -->
             <x-dashboard.inputs.livewire-select
                 name="city"

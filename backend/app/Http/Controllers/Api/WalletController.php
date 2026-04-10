@@ -12,6 +12,9 @@ class WalletController extends Controller
     {
         $user = Auth::user();
 
-        return new PriceResource([$user->balance]);
+        // Members see institution balance
+        $balanceOwner = $user->institution_id ? $user->institution : $user;
+
+        return new PriceResource([$balanceOwner->balance]);
     }
 }

@@ -4,6 +4,9 @@ namespace App\Livewire\Dashboard\Users;
 
 use App\Models\User;
 use App\Events\ServiceProviderApproved;
+use App\Utils\ExcelSheet\ExcelSheet;
+use App\Utils\ExcelSheet\Column as ExcelSheetColumn;
+use Illuminate\Support\Collection;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
@@ -60,7 +63,25 @@ class Show extends Component
         $this->categories = $this->user?->categories->pluck('name')->toArray();
 
         $this->user->loadAvg('reviews', 'rating');
-        $this->user->load('members');
+
+        $this->isInstitution = in_array(
+            $this->user->entity_type,
+            [User::INSTITUTION_ENTITY_TYPE, User::COMPANY_ENTITY_TYPE]
+        );
+
+        if ($this->isInstitution) {
+            $this->user->load(['members' => function ($q) {
+                $q->select(['id', 'name', 'phone', 'status', 'institution_id', 'created_at'])
+                    ->withCount([
+                        'serviceProviderOrders as completed_orders' => fn($q) => $q->completed(),
+                    ])
+                    ->withSum([
+                        'serviceProviderOrders as total_earnings' => fn($q) => $q->completed(),
+                    ], 'subtotal');
+            }]);
+        } else {
+            $this->user->load('members');
+        }
 
         $this->residenceImage = $this->user->getMedia('residence_image')
             ->first()
@@ -84,6 +105,21 @@ class Show extends Component
         $this->dispatch('hideModal', ['id' => 'showResultModal']);
 
         $this->dispatch('refreshTable');
+    }
+
+    public function exportMembers()
+    {
+        $columns = new Collection([
+            ExcelSheetColumn::name('name', __('validation.attributes.name')),
+            ExcelSheetColumn::name('phone', __('validation.attributes.phone')),
+        ]);
+
+        $builder = User::where('institution_id', $this->user->id)
+            ->select(['id', 'name', 'phone']);
+
+        $excelSheet = new ExcelSheet($columns, $builder);
+
+        return $excelSheet->export("members-{$this->user->id}");
     }
 
     public function render()

@@ -31,7 +31,7 @@ class ProfileController extends Controller
                 ->toMediaCollection('national_address_image');
         }
 
-        return new UserResource($user);
+        return new UserResource($user->load('institution'));
     }
 
     public function update_password(PasswordRequest $request)
@@ -54,6 +54,9 @@ class ProfileController extends Controller
          * @var User
          */
         $user = Auth::user();
+
+        // Members cannot delete their own account — admin manages them
+        abort_if($user->institution_id, 403);
 
         Auth::guard('web')->logout();
 

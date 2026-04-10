@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\City;
 use App\Models\Category;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Computed;
@@ -16,6 +17,8 @@ class Create extends Component
     use WithFileUploads;
 
     public string $institution;
+
+    public string $email;
 
     public string $name;
 
@@ -41,8 +44,16 @@ class Create extends Component
     protected function rules()
     {
         return [
-            'institution' => ['required', 'string', 'max:255'],
+            'institution' => [
+                'required',
+                'integer',
+                Rule::exists('users', 'id')->whereIn('entity_type', [
+                    User::INSTITUTION_ENTITY_TYPE,
+                    User::COMPANY_ENTITY_TYPE,
+                ]),
+            ],
             'name' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'city' => ['required', 'integer', 'exists:cities,id'],
             'phone' => ['required', 'string', 'max:255', 'unique:users,phone'],
             'password' => ['required', 'string', 'max:255'],
@@ -95,6 +106,7 @@ class Create extends Component
         // Basic information
         $user->name = $this->name;
         $user->phone = $this->phone;
+        $user->email = $this->email ?: null;
         $user->password = Hash::make($this->password);
         $user->institution_id = $this->institution;
         $user->city_id = $this->city;

@@ -48,8 +48,12 @@ class CreateOrderExtraInvoice
                 $taxInvoice->save();
             }
 
-            // Credit service provider balance
-            $serviceProvider->increment('balance', $orderExtra->price + $orderExtra->materials);
+            // Credit balance to institution if member, otherwise to individual
+            $creditTarget = $serviceProvider->institution_id
+                ? $serviceProvider->institution
+                : $serviceProvider;
+
+            $creditTarget->increment('balance', $orderExtra->price + $orderExtra->materials);
         }
     }
 }

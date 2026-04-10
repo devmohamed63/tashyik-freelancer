@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\SitemapController;
 
 use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\WebhookController;
+use App\Http\Controllers\Api\InstitutionMemberController;
 use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\Route;
 
@@ -101,7 +102,7 @@ Route::domain(env('API_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(function (
                 Route::name('user.')->group(function () {
                     // Fetch user
                     Route::get('/', function () {
-                        return new UserResource(Auth::user());
+                        return new UserResource(Auth::user()->load('institution'));
                     })->name('fetch_user');
 
                     // Order routes
@@ -126,6 +127,10 @@ Route::domain(env('API_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(function (
                         ->only(['index', 'store']);
                 });
             });
+
+            // Institution routes
+            Route::get('institution/members', [InstitutionMemberController::class, 'index'])
+                ->name('institution.members.index');
 
             // Wallet routes
             Route::get('wallet/balance', [WalletController::class, 'balance'])

@@ -31,6 +31,13 @@ class UserResource extends JsonResource
             'current_order' => $this->current_order,
             'picture' => $this->getAvatarUrl('lg'),
             'tax_registration_number' => $this->tax_registration_number,
+
+            // Institution context
+            'institution' => $this->when($this->institution_id, fn() => [
+                'id' => $this->institution?->id,
+                'name' => $this->institution?->name,
+            ]),
+            'is_institution_owner' => $this->isInstitutionOrCompany(),
         ];
     }
 }

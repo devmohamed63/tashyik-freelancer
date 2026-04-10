@@ -132,7 +132,7 @@ class RegisteredUserController extends Controller
 
         return response([
             'token' => $token->plainTextToken,
-            'user' => new UserResource($user)
+            'user' => new UserResource($user->load('institution'))
         ]);
     }
 }

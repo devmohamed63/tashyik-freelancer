@@ -61,6 +61,24 @@
         </div>
       </NuxtLinkLocale>
     </li>
+
+    <!-- Institution Members (only for institution/company owners) -->
+    <li v-if="auth.user?.is_institution_owner">
+      <NuxtLinkLocale :to="{ name: 'institution-members' }" data-drawer-hide="mobile-navigation-drawer" aria-controls="mobile-navigation-drawer" class="flex flex-row gap-2 items-center w-full p-4 hover:bg-gray-50">
+        <div class="inline-flex gap-3">
+          <svg class="w-10 h-10 p-2.5 bg-violet-50 rounded-lg text-violet-500" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <div class="flex flex-col">
+            <span v-text="$t('navigation.institution_members.title')" class="font-medium text-gray-800"></span>
+            <span v-text="$t('navigation.institution_members.subtitle')" class="text-gray-400"></span>
+          </div>
+        </div>
+      </NuxtLinkLocale>
+    </li>
   </ul>
   <div class="py-2">
     <!-- Logout -->

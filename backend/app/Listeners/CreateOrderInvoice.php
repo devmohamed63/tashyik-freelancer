@@ -47,7 +47,11 @@ class CreateOrderInvoice
             $taxInvoice->save();
         }
 
-        // Credit service provider balance
-        $serviceProvider->increment('balance', $order->subtotal);
+        // Credit balance to institution if member, otherwise to individual
+        $creditTarget = $serviceProvider->institution_id
+            ? $serviceProvider->institution
+            : $serviceProvider;
+
+        $creditTarget->increment('balance', $order->subtotal);
     }
 }

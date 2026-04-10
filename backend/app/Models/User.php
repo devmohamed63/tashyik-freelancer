@@ -128,13 +128,35 @@ class User extends Authenticatable implements HasMedia
     }
 
     /**
+     * Check if the user is an institution or company.
+     */
+    public function isInstitutionOrCompany(): bool
+    {
+        return in_array($this->entity_type, [
+            self::INSTITUTION_ENTITY_TYPE,
+            self::COMPANY_ENTITY_TYPE,
+        ]);
+    }
+
+    /**
      * Get the total earnings for today for the service provider.
+     * For institutions, aggregates earnings from all members.
      */
     protected function earningsToday(): Attribute
     {
         return Attribute::make(
             get: function () {
-                $totalEarnings = $this->serviceProviderOrders()
+                $query = $this->isInstitutionOrCompany()
+                    ? Order::where(function ($q) {
+                        $q->where('service_provider_id', $this->id)
+                          ->orWhereIn('service_provider_id', function ($sub) {
+                              $sub->select('id')->from('users')
+                                  ->where('institution_id', $this->id);
+                          });
+                    })
+                    : $this->serviceProviderOrders();
+
+                $totalEarnings = $query
                     ->completed()
                     ->whereDay('updated_at', '=', now())
                     ->sum('subtotal');
@@ -151,12 +173,23 @@ class User extends Authenticatable implements HasMedia
 
     /**
      * Get the total orders for today for the service provider.
+     * For institutions, aggregates orders from all members.
      */
     protected function ordersToday(): Attribute
     {
         return Attribute::make(
             get: function () {
-                $totalOrders = $this->serviceProviderOrders()
+                $query = $this->isInstitutionOrCompany()
+                    ? Order::where(function ($q) {
+                        $q->where('service_provider_id', $this->id)
+                          ->orWhereIn('service_provider_id', function ($sub) {
+                              $sub->select('id')->from('users')
+                                  ->where('institution_id', $this->id);
+                          });
+                    })
+                    : $this->serviceProviderOrders();
+
+                $totalOrders = $query
                     ->whereDay('updated_at', '=', now())
                     ->count();
 
