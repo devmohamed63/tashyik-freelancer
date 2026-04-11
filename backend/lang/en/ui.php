@@ -294,4 +294,20 @@ return [
     'low_revenue'                => 'Low Revenue',
     'medium_revenue'             => 'Medium Revenue',
     'high_revenue'               => 'High Revenue',
+
+    // Institution show page
+    'show_institution'           => 'Show Institution',
+    'back_to_service_providers'  => 'Back to Service Providers',
+    'active_members'             => 'Active Members',
+    'actions'                    => 'Actions',
+    'view'                       => 'View',
+    'add_member'                 => 'Add Member',
+    'view_institutions'          => 'Institutions',
+    'view_companies'             => 'Companies',
+    'total_members'              => 'Total Members',
+    'members_count'              => 'Members',
+    'add_to_institution'         => 'Add service provider to institution',
+    'add_to_company'             => 'Add service provider to company',
+    'select_company'             => 'Select Company',
+    'select_entity_type_first'   => 'Select a type first (Institution or Company)',
 ];

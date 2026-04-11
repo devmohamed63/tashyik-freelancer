@@ -94,9 +94,20 @@ Route::domain(env('DASHBOARD_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(func
             Route::get('/service-providers', [UserController::class, 'service_providers'])
                 ->name('users.service_providers');
 
+            // Add service provider (full page)
+            Route::get('/service-providers/create', [UserController::class, 'create_service_provider'])
+                ->name('users.create_service_provider');
+
             // Payout requests route
             Route::get('/users/payout-requests', [UserController::class, 'payout_requests'])
                 ->name('users.payout_requests');
+
+            // Institution routes
+            Route::get('/institution/{user}', [UserController::class, 'show_institution'])
+                ->name('institution.show');
+
+            Route::get('/institution/{user}/export-members', [UserController::class, 'export_members'])
+                ->name('institution.export_members');
 
             // Plans route
             Route::get('/plans', PlanController::class)

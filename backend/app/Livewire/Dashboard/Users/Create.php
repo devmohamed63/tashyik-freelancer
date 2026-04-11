@@ -16,9 +16,15 @@ class Create extends Component
 {
     use WithFileUploads;
 
-    public string $institution;
+    public string $institution = '';
 
-    public string $email;
+    public string $prefilledInstitution = '';
+
+    public string $entityTypeFilter = '';
+
+    public bool $fullPage = false;
+
+    public string $email = '';
 
     public string $name;
 
@@ -69,6 +75,10 @@ class Create extends Component
     public function mount()
     {
         $this->authorize('viewAny', User::class);
+
+        if ($this->prefilledInstitution) {
+            $this->institution = $this->prefilledInstitution;
+        }
     }
 
     #[Computed]
@@ -83,8 +93,15 @@ class Create extends Component
     #[Computed]
     public function institutions(): array
     {
-        return User::whereIn('entity_type', [User::INSTITUTION_ENTITY_TYPE, User::COMPANY_ENTITY_TYPE])
-            ->orderBy('name')
+        $query = User::query();
+
+        if ($this->entityTypeFilter) {
+            $query->where('entity_type', $this->entityTypeFilter);
+        } else {
+            $query->whereIn('entity_type', [User::INSTITUTION_ENTITY_TYPE, User::COMPANY_ENTITY_TYPE]);
+        }
+
+        return $query->orderBy('name')
             ->pluck('name', 'id')
             ->toArray();
     }
@@ -130,6 +147,12 @@ class Create extends Component
             ->toMediaCollection('residence_image');
 
         $this->dispatch('hideModal', ['id' => 'createResultModal']);
+
+        // Redirect back to institution page if we came from there
+        if ($this->prefilledInstitution || $this->fullPage) {
+            return redirect()->to(route('dashboard.institution.show', $this->institution))
+                ->with('status', __('ui.added_successfully'));
+        }
 
         $this->dispatch('refreshTable');
 

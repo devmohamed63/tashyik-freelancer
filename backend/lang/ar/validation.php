@@ -306,6 +306,8 @@ return [
         'excerpt'                           => 'الملخص',
         'meta_title'                        => 'عنوان السيو المخصص',
         'meta_description'                  => 'وصف السيو',
+        'city_id'                           => 'المدينة',
+        'balance'                           => 'الرصيد',
     ],
 
 ];

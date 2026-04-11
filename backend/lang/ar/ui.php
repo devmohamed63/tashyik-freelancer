@@ -306,4 +306,20 @@ return [
     'low_revenue'                => 'إيرادات منخفضة',
     'medium_revenue'             => 'إيرادات متوسطة',
     'high_revenue'               => 'إيرادات عالية',
+
+    // Institution show page
+    'show_institution'           => 'عرض المؤسسة',
+    'back_to_service_providers'  => 'العودة للفنيين',
+    'active_members'             => 'أعضاء نشطين',
+    'actions'                    => 'الإجراءات',
+    'view'                       => 'عرض',
+    'add_member'                 => 'إضافة موظف',
+    'view_institutions'          => 'المؤسسات',
+    'view_companies'             => 'الشركات',
+    'total_members'              => 'إجمالي الموظفين',
+    'members_count'              => 'عدد الموظفين',
+    'add_to_institution'         => 'إضافة مقدم خدمة لمؤسسة',
+    'add_to_company'             => 'إضافة مقدم خدمة لشركة',
+    'select_company'             => 'اختر شركة',
+    'select_entity_type_first'   => 'اختر النوع أولاً (مؤسسة أو شركة)',
 ];

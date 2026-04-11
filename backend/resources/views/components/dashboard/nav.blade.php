@@ -230,7 +230,15 @@
                         <!-- Users -->
                         <x-dashboard.nav.item-group
                             name="users"
-                            :children="[['add_users', route('dashboard.users.create'), Gate::allows('create', App\Models\User::class)], ['view_users', route('dashboard.users.index'), Gate::allows('viewAny', App\Models\User::class)], ['view_service_providers', route('dashboard.users.service_providers'), Gate::allows('viewAny', App\Models\User::class)], ['view_payout_requests', route('dashboard.users.payout_requests'), Gate::allows('viewAny', App\Models\User::class)]]">
+                            :children="[
+                                ['add_users', route('dashboard.users.create'), Gate::allows('create', App\Models\User::class)],
+                                ['view_users', route('dashboard.users.index'), Gate::allows('viewAny', App\Models\User::class)],
+                                ['view_service_providers', route('dashboard.users.service_providers'), Gate::allows('viewAny', App\Models\User::class)],
+                                ['view_institutions', route('dashboard.users.service_providers', ['typeFilter' => 'institution']), Gate::allows('viewAny', App\Models\User::class)],
+                                ['view_companies', route('dashboard.users.service_providers', ['typeFilter' => 'company']), Gate::allows('viewAny', App\Models\User::class)],
+                                ['add_service_provider', route('dashboard.users.create_service_provider'), Gate::allows('create', App\Models\User::class)],
+                                ['view_payout_requests', route('dashboard.users.payout_requests'), Gate::allows('viewAny', App\Models\User::class)],
+                            ]">
                             <!-- mage:users-fill -->
                             <!-- Icon from Mage Icons by MageIcons - https://github.com/Mage-Icons/mage-icons/blob/main/License.txt -->
                             <path fill="currentColor" d="M21.987 18.73a2 2 0 0 1-.34.85a1.9 1.9 0 0 1-1.56.8h-1.651a.74.74 0 0 1-.6-.31a.76.76 0 0 1-.11-.67c.37-1.18.29-2.51-3.061-4.64a.77.77 0 0 1-.32-.85a.76.76 0 0 1 .72-.54a7.61 7.61 0 0 1 6.792 4.39a2 2 0 0 1 .13.97M19.486 7.7a4.43 4.43 0 0 1-4.421 4.42a.76.76 0 0 1-.65-1.13a6.16 6.16 0 0 0 0-6.53a.75.75 0 0 1 .61-1.18a4.3 4.3 0 0 1 3.13 1.34a4.46 4.46 0 0 1 1.291 3.12z" />

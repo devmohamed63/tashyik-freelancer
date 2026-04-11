@@ -71,6 +71,7 @@ class ServiceProvidersTable extends DataTable
         ])->isServiceProvider()
           ->with('city:id,name')
           ->withCount('serviceProviderOrders')
+          ->withCount('members')
           ->withSum(['serviceProviderOrders as revenue' => fn($q) => $q->where('status', \App\Models\Order::COMPLETED_STATUS)], 'subtotal');
 
         if ($this->statusFilter) {
@@ -121,6 +122,13 @@ class ServiceProvidersTable extends DataTable
 
     public function show($id)
     {
+        $user = User::findOrFail($id);
+
+        // Redirect institutions/companies to their dedicated full page
+        if ($user->isInstitutionOrCompany()) {
+            return redirect()->to(route('dashboard.institution.show', $user));
+        }
+
         $this->dispatch('show-result', $id);
 
         $this->dispatch('showModal', ['id' => 'showResultModal']);
@@ -198,6 +206,11 @@ class ServiceProvidersTable extends DataTable
             Column::name('balance', __('ui.balance'))
                 ->customValue(fn($user) => number_format($user->balance ?? 0, config('app.decimal_places')) . ' ' . __('ui.currency'))
                 ->sortable(),
+
+            Column::name('members_count', __('ui.members_count'))
+                ->customValue(fn($user) => $user->members_count > 0 ? number_format($user->members_count) : '-')
+                ->sortable()
+                ->hidden(!in_array($this->typeFilter, ['institution', 'company'])),
 
             Column::name('show', __('ui.show'))
                 ->action()

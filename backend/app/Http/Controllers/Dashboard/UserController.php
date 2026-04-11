@@ -28,14 +28,32 @@ class UserController extends Controller
     {
         Gate::authorize('viewAny', User::class);
 
+        $typeFilter = request('typeFilter');
+
         $totalCount   = User::isServiceProvider()->count();
         $pendingCount = User::isServiceProvider()->where('status', User::PENDING_STATUS)->count();
         $activeCount  = User::isServiceProvider()->where('status', User::ACTIVE_STATUS)->count();
         $inactiveCount = User::isServiceProvider()->where('status', User::INACTIVE_STATUS)->count();
 
+        // Type-specific stats
+        $institutionCount = User::isServiceProvider()->where('entity_type', User::INSTITUTION_ENTITY_TYPE)->count();
+        $companyCount = User::isServiceProvider()->where('entity_type', User::COMPANY_ENTITY_TYPE)->count();
+        $totalMembers = User::whereNotNull('institution_id')->count();
+
         return view('dashboard.users.service_providers', compact(
-            'totalCount', 'pendingCount', 'activeCount', 'inactiveCount'
+            'totalCount', 'pendingCount', 'activeCount', 'inactiveCount',
+            'institutionCount', 'companyCount', 'totalMembers', 'typeFilter'
         ));
+    }
+
+    /**
+     * Full page create service provider form.
+     */
+    public function create_service_provider()
+    {
+        Gate::authorize('create', User::class);
+
+        return view('dashboard.users.create_service_provider');
     }
 
     /**
@@ -162,5 +180,73 @@ class UserController extends Controller
         Gate::authorize('viewAny', User::class);
 
         return view('dashboard.users.payout_requests');
+    }
+
+    public function show_institution(User $user)
+    {
+        Gate::authorize('viewAny', User::class);
+
+        abort_unless(in_array($user->entity_type, [
+            User::INSTITUTION_ENTITY_TYPE,
+            User::COMPANY_ENTITY_TYPE,
+        ]), 404);
+
+        $avatar = $user->getAvatarUrl('lg');
+
+        $members = User::where('institution_id', $user->id)
+            ->select(['id', 'name', 'phone', 'status', 'institution_id', 'created_at'])
+            ->withCount([
+                'serviceProviderOrders as completed_orders' => fn($q) => $q->completed(),
+            ])
+            ->withSum([
+                'serviceProviderOrders as total_earnings' => fn($q) => $q->completed(),
+            ], 'subtotal')
+            ->orderBy('name')
+            ->get();
+
+        $activeMembers = $members->where('status', User::ACTIVE_STATUS)->count();
+        $totalOrders = (int) $members->sum('completed_orders');
+        $totalEarnings = number_format($members->sum('total_earnings') ?? 0, config('app.decimal_places'));
+
+        return view('dashboard.users.show_institution', compact(
+            'user', 'avatar', 'members', 'activeMembers', 'totalOrders', 'totalEarnings'
+        ));
+    }
+
+    public function export_members(User $user)
+    {
+        Gate::authorize('viewAny', User::class);
+
+        $columns = new \Illuminate\Support\Collection([
+            \App\Utils\ExcelSheet\Column::name('name', __('validation.attributes.name')),
+            \App\Utils\ExcelSheet\Column::name('phone', __('validation.attributes.phone')),
+            \App\Utils\ExcelSheet\Column::name('email', __('validation.attributes.email'))
+                ->callback(fn($m) => $m->email ?? '-'),
+            \App\Utils\ExcelSheet\Column::name('status', __('ui.status'))
+                ->callback(fn($m) => __('ui.' . $m->status)),
+            \App\Utils\ExcelSheet\Column::name('city', __('ui.city'))
+                ->relation('city', 'name'),
+            \App\Utils\ExcelSheet\Column::name('completed_orders', __('ui.completed_orders'))
+                ->customValue(fn($m) => $m->completed_orders ?? 0),
+            \App\Utils\ExcelSheet\Column::name('total_earnings', __('ui.revenue') . ' (' . __('ui.currency') . ')')
+                ->customValue(fn($m) => number_format($m->total_earnings ?? 0, config('app.decimal_places'))),
+            \App\Utils\ExcelSheet\Column::name('created_at', __('ui.created_at'))
+                ->dateFormat(),
+        ]);
+
+        $builder = User::where('institution_id', $user->id)
+            ->select(['id', 'name', 'phone', 'email', 'status', 'city_id', 'created_at'])
+            ->with('city:id,name')
+            ->withCount([
+                'serviceProviderOrders as completed_orders' => fn($q) => $q->completed(),
+            ])
+            ->withSum([
+                'serviceProviderOrders as total_earnings' => fn($q) => $q->completed(),
+            ], 'subtotal')
+            ->orderBy('name');
+
+        $excelSheet = new \App\Utils\ExcelSheet\ExcelSheet($columns, $builder);
+
+        return $excelSheet->export("members-{$user->id}");
     }
 }

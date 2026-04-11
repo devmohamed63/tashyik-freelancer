@@ -62,6 +62,21 @@ class ServicesTable extends DataTable
             });
         })
         ->withCount('orders')
+        ->addSelect([
+            'providers_count' => \App\Models\User::selectRaw('COUNT(DISTINCT users.id)')
+                ->where('users.type', \App\Models\User::SERVICE_PROVIDER_ACCOUNT_TYPE)
+                ->whereNull('users.deleted_at')
+                ->join('category_user', 'category_user.user_id', '=', 'users.id')
+                ->where(function($q) {
+                    $q->whereColumn('category_user.category_id', 'services.category_id')
+                      ->orWhereExists(function ($query) {
+                          $query->select(\Illuminate\Support\Facades\DB::raw(1))
+                                ->from('categories')
+                                ->whereColumn('categories.id', 'services.category_id')
+                                ->whereColumn('categories.category_id', 'category_user.category_id');
+                      });
+                })
+        ])
         ->withSum(['orders as revenue' => fn($q) => $q->completed()], 'subtotal')
         ->when($this->sortByFilters === 'most_orders', function ($query) {
             $query->orderBy('orders_count', 'desc');
@@ -123,6 +138,10 @@ class ServicesTable extends DataTable
 
             Column::name('orders_count', __('ui.orders'))
                 ->customValue(fn($service) => number_format($service->orders_count))
+                ->sortable(),
+
+            Column::name('providers_count', __('ui.service_providers'))
+                ->customValue(fn($service) => number_format($service->providers_count ?? 0))
                 ->sortable(),
 
             Column::name('revenue', __('ui.revenue'))
