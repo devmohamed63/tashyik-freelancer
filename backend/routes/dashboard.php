@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\Dashboard\AnalyticsController;
+use App\Http\Controllers\Dashboard\ArticleController;
 use App\Http\Controllers\Dashboard\BannerController;
 use App\Http\Controllers\Dashboard\CategoryController;
+use App\Http\Controllers\Dashboard\ChangeEmailController;
+use App\Http\Controllers\Dashboard\ChangePasswordController;
 use App\Http\Controllers\Dashboard\CityController;
 use App\Http\Controllers\Dashboard\ContactController;
 use App\Http\Controllers\Dashboard\CouponController;
@@ -11,17 +14,15 @@ use App\Http\Controllers\Dashboard\NotificationController;
 use App\Http\Controllers\Dashboard\OrderController;
 use App\Http\Controllers\Dashboard\OverviewController;
 use App\Http\Controllers\Dashboard\PageController;
+use App\Http\Controllers\Dashboard\PlanController;
 use App\Http\Controllers\Dashboard\PromotionController;
 use App\Http\Controllers\Dashboard\ReviewsController;
 use App\Http\Controllers\Dashboard\RoleController;
 use App\Http\Controllers\Dashboard\ServiceController;
 use App\Http\Controllers\Dashboard\SettingsController;
 use App\Http\Controllers\Dashboard\SubscriptionController;
+use App\Http\Controllers\Dashboard\TechnicianMapController;
 use App\Http\Controllers\Dashboard\UserController;
-use App\Http\Controllers\Dashboard\ArticleController;
-use App\Http\Controllers\Dashboard\ChangePasswordController;
-use App\Http\Controllers\Dashboard\ChangeEmailController;
-use App\Http\Controllers\Dashboard\PlanController;
 use Illuminate\Support\Facades\Route;
 
 Route::domain(env('DASHBOARD_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(function () {
@@ -41,10 +42,16 @@ Route::domain(env('DASHBOARD_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(func
             Route::get('/financial-reports', [FinancialReportsController::class, 'index'])
                 ->name('financial-reports');
 
+            // Technician Map routes
+            Route::get('/technician-map', [TechnicianMapController::class, 'index'])
+                ->name('technician-map');
+
+            Route::get('/technician-map/api', [TechnicianMapController::class, 'api'])
+                ->name('technician-map.api');
+
             // Reviews route
             Route::get('/reviews', [ReviewsController::class, 'index'])
                 ->name('reviews');
-
             // Settings routes start
             Route::prefix('settings')->group(function () {
                 Route::name('settings.')->group(function () {

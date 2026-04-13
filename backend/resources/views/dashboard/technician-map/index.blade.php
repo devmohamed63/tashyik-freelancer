@@ -1,0 +1,742 @@
+<x-layouts.dashboard page="technician_map">
+
+    {{-- Google Maps JS CSS --}}
+    <style>
+        .gm-style-iw { border-radius: 16px !important; padding: 0 !important; overflow: hidden !important; }
+        .gm-style-iw-d { overflow: auto !important; padding: 0 !important; }
+        .gm-style-iw-c { padding: 0 !important; border-radius: 16px !important; box-shadow: 0 20px 40px rgba(0,0,0,0.15) !important; max-height: none !important;}
+        .gm-style .gm-style-iw-tc::after { background: #fff !important; }
+        div.gm-style-iw-chr { position: absolute; top: 10px; right: 10px; z-index: 10; border-radius: 50%; opacity: 0.7; }
+
+        /* ── Map ─────────────────────────────────────── */
+        #technician-map {
+            height: calc(100vh - 220px);
+            min-height: 500px;
+            border-radius: 0 0 1rem 1rem;
+            z-index: 1;
+        }
+        .map-fullscreen #technician-map {
+            position: fixed !important;
+            inset: 0;
+            height: 100vh !important;
+            z-index: 99999;
+            border-radius: 0;
+        }
+
+        /* ── Custom Markers ──────────────────────────── */
+        .marker-pin {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .marker-pin .pin-core {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+        }
+        .marker-pin .pin-core svg {
+            width: 16px;
+            height: 16px;
+            fill: #fff;
+        }
+        .marker-pin.status-online_available .pin-core { background: #22c55e; }
+        .marker-pin.status-online_busy .pin-core { background: #f97316; }
+        .marker-pin.status-offline .pin-core { background: #9ca3af; }
+
+        /* Pulse animation for online markers */
+        .marker-pin.status-online_available .pin-pulse,
+        .marker-pin.status-online_busy .pin-pulse {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            z-index: 1;
+            animation: marker-pulse 2s ease-out infinite;
+        }
+        .marker-pin.status-online_available .pin-pulse { background: rgba(34, 197, 94, 0.4); }
+        .marker-pin.status-online_busy .pin-pulse { background: rgba(249, 115, 22, 0.4); }
+
+        @keyframes marker-pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+
+        /* ── Cluster Styles ──────────────────────────── */
+        .cluster-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: #fff;
+            font-weight: 700;
+            font-size: 13px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 3px solid rgba(255,255,255,0.8);
+        }
+        .cluster-small { background: linear-gradient(135deg, #6366f1, #8b5cf6); width: 40px; height: 40px; }
+        .cluster-medium { background: linear-gradient(135deg, #8b5cf6, #a855f7); width: 50px; height: 50px; font-size: 14px; }
+        .cluster-large { background: linear-gradient(135deg, #ec4899, #f43f5e); width: 60px; height: 60px; font-size: 16px; }
+
+        /* ── Premium Popup ───────────────────────────── */
+        .popup-card { direction: rtl; font-family: inherit; }
+        .popup-header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .popup-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+        .popup-name { font-weight: 700; font-size: 15px; color: #1f2937; margin-bottom: 2px; }
+        .popup-type { font-size: 12px; color: #9ca3af; }
+        .popup-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 50px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .popup-badge.online_available { background: #22c55e; }
+        .popup-badge.online_busy { background: #f97316; }
+        .popup-badge.offline { background: #9ca3af; }
+
+        .popup-body { padding: 12px 16px; }
+        .popup-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 0;
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .popup-row svg { width: 16px; height: 16px; color: #9ca3af; flex-shrink: 0; }
+
+        .popup-actions {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            border-top: 1px solid #f3f4f6;
+            background: #f9fafb;
+        }
+        .popup-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .popup-btn-call {
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+        .popup-btn-call:hover { background: #dbeafe; }
+        .popup-btn-whatsapp {
+            background: #f0fdf4;
+            color: #22c55e;
+        }
+        .popup-btn-whatsapp:hover { background: #dcfce7; }
+
+        /* ── Side Panel ──────────────────────────────── */
+        .side-panel {
+            width: 320px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            background: #fff;
+            border-radius: 1rem;
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+            max-height: calc(100vh - 220px);
+            min-height: 500px;
+        }
+        .dark .side-panel {
+            background: rgba(255,255,255,0.03);
+            border-color: #374151;
+        }
+        .side-panel-header {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .dark .side-panel-header { border-color: #374151; }
+
+        .side-panel-list {
+            flex: 1;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+        .side-panel-list::-webkit-scrollbar { width: 4px; }
+        .side-panel-list::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+        .tech-list-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-bottom: 1px solid #f9fafb;
+        }
+        .tech-list-item:hover { background: #f3f4f6; }
+        .dark .tech-list-item:hover { background: rgba(255,255,255,0.05); }
+        .dark .tech-list-item { border-color: #1f2937; }
+
+        .tech-list-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .tech-list-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+        }
+
+        /* ── Stat Mini Cards ─────────────────────────── */
+        .stat-mini {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+        .stat-mini:hover { transform: translateY(-1px); }
+        .stat-mini-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .stat-mini-icon svg { width: 18px; height: 18px; }
+
+        /* ── Control Buttons ─────────────────────────── */
+        .map-control-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .map-control-btn:hover { background: #f3f4f6; transform: scale(1.05); }
+        .map-control-btn svg { width: 18px; height: 18px; color: #6b7280; }
+
+        /* ── Responsive ──────────────────────────────── */
+        @media (max-width: 1024px) {
+            .side-panel { display: none; }
+        }
+
+        /* ── Animations ──────────────────────────────── */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-in { animation: fadeInUp 0.3s ease-out; }
+
+        .live-dot {
+            width: 8px; height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: live-pulse 2s ease-in-out infinite;
+        }
+        @keyframes live-pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.6); }
+            50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+        }
+    </style>
+
+    <div class="flex flex-col gap-4" x-data="technicianMap()" x-init="init()" :class="{ 'map-fullscreen': isFullscreen }">
+
+        {{-- ══════════════════════════════════════════════ --}}
+        {{-- Header Bar                                     --}}
+        {{-- ══════════════════════════════════════════════ --}}
+        <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20">
+                    <svg class="w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7m0 9.5a2.5 2.5 0 0 1 0-5a2.5 2.5 0 0 1 0 5"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                        {{ __('ui.technician_map') }}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400"
+                              x-text="stats.online_available + stats.online_busy + ' {{ __('ui.online') }}'">
+                        </span>
+                    </h1>
+                    <p class="text-xs text-gray-400 dark:text-gray-500">{{ __('ui.technician_map_subtitle') }}</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                {{-- Search --}}
+                <div class="relative">
+                    <input type="text"
+                           x-model="searchQuery"
+                           @input.debounce.300ms="filterList()"
+                           placeholder="{{ __('ui.search_technician') }}"
+                           class="w-64 rounded-xl border border-gray-200 bg-white pe-4 ps-10 py-2.5 text-sm text-gray-700 placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                    <svg class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5A6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14"/></svg>
+                </div>
+
+                {{-- Live indicator --}}
+                <div class="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg">
+                    <div class="live-dot"></div>
+                    <span>LIVE</span>
+                </div>
+
+                {{-- Fullscreen toggle --}}
+                <button @click="toggleFullscreen()" class="map-control-btn" title="Fullscreen">
+                    <svg x-show="!isFullscreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M7 14H5v5h5v-2H7zm-2-4h2V7h3V5H5zm12 7h-3v2h5v-5h-2zM14 5v2h3v3h2V5z"/></svg>
+                    <svg x-show="isFullscreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M5 16h3v3h2v-5H5zm3-8H5v2h5V5H8zm6 11h2v-3h3v-2h-5zm2-11V5h-2v5h5V8z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        {{-- ══════════════════════════════════════════════ --}}
+        {{-- Main Content: Side Panel + Map                 --}}
+        {{-- ══════════════════════════════════════════════ --}}
+        <div class="flex gap-4">
+
+            {{-- ── Side Panel ─────────────────────────── --}}
+            <div class="side-panel">
+
+                {{-- Mini Stats --}}
+                <div class="grid grid-cols-2 gap-2 p-3">
+                    <div class="stat-mini bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-500/5 dark:to-emerald-500/5">
+                        <div class="stat-mini-icon bg-green-500/10">
+                            <svg class="text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-lg font-bold text-gray-800 dark:text-white" x-text="stats.online_available"></p>
+                            <p class="text-[10px] text-gray-500 leading-tight">{{ __('ui.online_available') }}</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-mini bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-500/5 dark:to-amber-500/5">
+                        <div class="stat-mini-icon bg-orange-500/10">
+                            <svg class="text-orange-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m-1 5h2v6h-2zm0 8h2v2h-2z"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-lg font-bold text-gray-800 dark:text-white" x-text="stats.online_busy"></p>
+                            <p class="text-[10px] text-gray-500 leading-tight">{{ __('ui.online_busy') }}</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-mini bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-500/5 dark:to-slate-500/5">
+                        <div class="stat-mini-icon bg-gray-400/10">
+                            <svg class="text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m0 18c-4.42 0-8-3.58-8-8 0-1.85.63-3.55 1.69-4.9L16.9 18.31A7.9 7.9 0 0 1 12 20m6.31-3.1L7.1 5.69A7.9 7.9 0 0 1 12 4c4.42 0 8 3.58 8 8c0 1.85-.63 3.55-1.69 4.9"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-lg font-bold text-gray-800 dark:text-white" x-text="stats.offline"></p>
+                            <p class="text-[10px] text-gray-500 leading-tight">{{ __('ui.offline') }}</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-mini bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-500/5 dark:to-purple-500/5">
+                        <div class="stat-mini-icon bg-indigo-500/10">
+                            <svg class="text-indigo-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3m-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3m0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5m8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-lg font-bold text-gray-800 dark:text-white" x-text="stats.total"></p>
+                            <p class="text-[10px] text-gray-500 leading-tight">{{ __('ui.total_technicians') }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Filters --}}
+                <div class="side-panel-header">
+                    <div class="flex flex-col gap-2">
+                        <select x-model="cityFilter" @change="fetchData()" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            <option value="">🏙️ {{ __('ui.all_cities') }}</option>
+                            @foreach ($cities as $city)
+                                <option value="{{ $city->id }}">{{ $city->name }}</option>
+                            @endforeach
+                        </select>
+                        <select x-model="statusFilter" @change="fetchData()" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            <option value="">📊 {{ __('ui.all_statuses') }}</option>
+                            <option value="online">🟢 {{ __('ui.online_available') }}</option>
+                            <option value="offline">⚫ {{ __('ui.offline') }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                {{-- Technician List --}}
+                <div class="side-panel-list">
+                    <template x-for="tech in filteredList" :key="tech.id">
+                        <div class="tech-list-item" @click="flyToTechnician(tech)">
+                            <div class="relative">
+                                <img :src="tech.avatar" :alt="tech.name" class="tech-list-avatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%2212%22 r=%2212%22 fill=%22%23e5e7eb%22/><path fill=%22%239ca3af%22 d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4%22/></svg>'">
+                                <div class="tech-list-status absolute -bottom-0.5 -end-0.5"
+                                     :class="{
+                                         'bg-green-500': tech.status === 'online_available',
+                                         'bg-orange-500': tech.status === 'online_busy',
+                                         'bg-gray-400': tech.status === 'offline'
+                                     }"></div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-gray-800 dark:text-white truncate" x-text="tech.name"></p>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-[11px] text-gray-400 truncate" x-text="tech.city"></span>
+                                    <span class="text-[10px] text-gray-300">•</span>
+                                    <span class="text-[11px] text-gray-400 truncate" x-text="tech.last_seen_at"></span>
+                                </div>
+                            </div>
+                            <span class="popup-badge text-[10px] flex-shrink-0" :class="tech.status" x-text="statusLabels[tech.status]"></span>
+                        </div>
+                    </template>
+
+                    {{-- Empty state --}}
+                    <div x-show="filteredList.length === 0" class="flex flex-col items-center justify-center py-12 px-4 text-center">
+                        <svg class="w-12 h-12 text-gray-200 mb-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7m0 9.5a2.5 2.5 0 0 1 0-5a2.5 2.5 0 0 1 0 5"/></svg>
+                        <p class="text-sm text-gray-400">{{ __('ui.no_results') }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ── Map Container ──────────────────────── --}}
+            <div class="flex-1 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm relative bg-white dark:bg-white/[0.03]">
+
+                {{-- Map Top Bar --}}
+                <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+                    {{-- Legend --}}
+                    <div class="flex items-center gap-4 text-xs text-gray-500">
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span> {{ __('ui.online_available') }}</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block"></span> {{ __('ui.online_busy') }}</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-gray-400 inline-block"></span> {{ __('ui.offline') }}</span>
+                    </div>
+
+                    {{-- Map Controls --}}
+                    <div class="flex items-center gap-2">
+                        <button @click="resetView()" class="map-control-btn" title="{{ __('ui.reset_view') }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4s4-1.79 4-4s-1.79-4-4-4m8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7s7 3.13 7 7s-3.13 7-7 7"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="technician-map"></div>
+            </div>
+
+        </div>
+    </div>
+
+    {{-- Google Maps JS --}}
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ $googleMapsApiKey }}&libraries=marker&callback=Function.prototype" async defer></script>
+    <script>
+        function technicianMap() {
+            return {
+                map: null,
+                markerGroup: null,
+                markers: {},
+                infoWindow: null,
+                technicians: [],
+                filteredList: [],
+                cityFilter: '',
+                statusFilter: '',
+                searchQuery: '',
+                pollInterval: null,
+                isFullscreen: false,
+                stats: {
+                    online_available: {{ $stats['online_available'] }},
+                    online_busy: {{ $stats['online_busy'] }},
+                    offline: {{ $stats['offline'] }},
+                    total: {{ $stats['total'] }},
+                },
+                statusLabels: {
+                    online_available: '{{ __("ui.online_available") }}',
+                    online_busy: '{{ __("ui.online_busy") }}',
+                    offline: '{{ __("ui.offline") }}',
+                },
+
+                _statusColors: {
+                    online_available: '#22c55e',
+                    online_busy: '#f97316',
+                    offline: '#9ca3af',
+                },
+
+                _markerSvg(color) {
+                    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
+                            <defs>
+                                <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+                                </filter>
+                            </defs>
+                            <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26s18-12.5 18-26C36 8.06 27.94 0 18 0z" fill="${color}" filter="url(#s)"/>
+                            <circle cx="18" cy="16" r="10" fill="white" opacity="0.3"/>
+                            <path d="M18 12a4 4 0 100 8 4 4 0 000-8zm0 10c-2.67 0-8 1.34-8 4v1h16v-1c0-2.66-5.33-4-8-4z" fill="white"/>
+                        </svg>
+                    `)}`;
+                },
+
+                init() {
+                    const waitForGoogle = () => {
+                        if (typeof google !== 'undefined' && google.maps) {
+                            this._initMap();
+                        } else {
+                            setTimeout(waitForGoogle, 100);
+                        }
+                    };
+                    waitForGoogle();
+                },
+
+                _initMap() {
+                    try {
+                        this.map = new google.maps.Map(document.getElementById('technician-map'), {
+                            center: { lat: 24.0, lng: 45.0 },
+                            zoom: 6,
+                            disableDefaultUI: true,
+                            zoomControl: true,
+                            gestureHandling: 'greedy',
+                            styles: [
+                                { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+                                { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+                            ],
+                        });
+
+                        this.infoWindow = new google.maps.InfoWindow({ minWidth: 280, maxWidth: 320 });
+
+                        this.markerGroup = new markerClusterer.MarkerClusterer({
+                            map: this.map,
+                            markers: [],
+                            renderer: {
+                                render: ({ count, position }) => {
+                                    let size = 40, bg = '#6366f1', fontSize = 13;
+                                    if (count >= 50) { size = 60; bg = '#ec4899'; fontSize = 16; }
+                                    else if (count >= 10) { size = 50; bg = '#8b5cf6'; fontSize = 14; }
+
+                                    return new google.maps.Marker({
+                                        position,
+                                        icon: {
+                                            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+                                                    <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${bg}" stroke="rgba(255,255,255,0.8)" stroke-width="3"/>
+                                                    <text x="50%" y="52%" text-anchor="middle" dy=".35em" fill="white" font-family="Arial,sans-serif" font-weight="700" font-size="${fontSize}">${count}</text>
+                                                </svg>
+                                            `)}`,
+                                            scaledSize: new google.maps.Size(size, size),
+                                            anchor: new google.maps.Point(size/2, size/2),
+                                        },
+                                        zIndex: 1000 + count,
+                                    });
+                                }
+                            }
+                        });
+
+                        this.fetchData();
+                        this.pollInterval = setInterval(() => this.fetchData(), 15000);
+
+                    } catch (err) {
+                        console.error('[TechnicianMap] Init failed:', err);
+                    }
+                },
+
+                async fetchData() {
+                    try {
+                        const params = new URLSearchParams();
+                        if (this.cityFilter) params.append('city_id', this.cityFilter);
+                        if (this.statusFilter) params.append('status', this.statusFilter);
+
+                        const response = await fetch(`{{ route('dashboard.technician-map.api') }}?${params.toString()}`);
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        const data = await response.json();
+
+                        this.stats = data.stats;
+                        this.technicians = data.technicians;
+                        this.filterList();
+                        this.syncMarkers(data.technicians);
+                    } catch (error) {
+                        console.error('[TechnicianMap] Fetch failed:', error);
+                    }
+                },
+
+                filterList() {
+                    const q = this.searchQuery.toLowerCase().trim();
+                    if (!q) {
+                        this.filteredList = [...this.technicians];
+                    } else {
+                        this.filteredList = this.technicians.filter(t =>
+                            t.name.toLowerCase().includes(q) ||
+                            t.phone.includes(q) ||
+                            t.city.toLowerCase().includes(q)
+                        );
+                    }
+                },
+
+                /**
+                 * Smart marker sync — only add new, remove departed, update moved.
+                 * No visual flash every 15 seconds.
+                 */
+                syncMarkers(technicians) {
+                    const incomingIds = new Set();
+                    const newMarkers = [];
+
+                    technicians.forEach(tech => {
+                        if (!tech.latitude || !tech.longitude) return;
+                        incomingIds.add(tech.id);
+
+                        const pos = new google.maps.LatLng(parseFloat(tech.latitude), parseFloat(tech.longitude));
+                        const color = this._statusColors[tech.status] || '#9ca3af';
+
+                        if (this.markers[tech.id]) {
+                            // Update existing
+                            const entry = this.markers[tech.id];
+                            entry.marker.setPosition(pos);
+                            if (entry.status !== tech.status) {
+                                entry.marker.setIcon(this._buildIcon(color));
+                                entry.status = tech.status;
+                                entry.tech = tech;
+                            }
+                        } else {
+                            // Create new marker
+                            const marker = new google.maps.Marker({
+                                position: pos,
+                                map: this.map,
+                                title: tech.name,
+                                icon: this._buildIcon(color),
+                                animation: google.maps.Animation.DROP,
+                                zIndex: tech.status === 'online_available' ? 100 : (tech.status === 'online_busy' ? 50 : 10),
+                            });
+
+                            marker.addListener('click', () => {
+                                const t = this.markers[tech.id]?.tech || tech;
+                                this.infoWindow.setContent(this._popupHTML(t));
+                                this.infoWindow.open({ anchor: marker, map: this.map });
+                            });
+
+                            this.markers[tech.id] = { marker, status: tech.status, tech };
+                            newMarkers.push(marker);
+                        }
+                    });
+
+                    // Remove stale markers
+                    const staleMarkers = [];
+                    Object.keys(this.markers).forEach(id => {
+                        if (!incomingIds.has(parseInt(id))) {
+                            staleMarkers.push(this.markers[id].marker);
+                            this.markers[id].marker.setMap(null);
+                            delete this.markers[id];
+                        }
+                    });
+
+                    if (staleMarkers.length) this.markerGroup.removeMarkers(staleMarkers);
+                    if (newMarkers.length) this.markerGroup.addMarkers(newMarkers);
+                },
+
+                _buildIcon(color) {
+                    return {
+                        url: this._markerSvg(color),
+                        scaledSize: new google.maps.Size(32, 40),
+                        anchor: new google.maps.Point(16, 40),
+                    };
+                },
+
+                _popupHTML(tech) {
+                    return `
+                        <div class="popup-card">
+                            <div class="popup-header">
+                                <img src="${tech.avatar}" class="popup-avatar" alt="${tech.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%2212%22 r=%2212%22 fill=%22%23e5e7eb%22/><path fill=%22%239ca3af%22 d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4%22/></svg>'">
+                                <div style="min-width:0">
+                                    <div class="popup-name">${tech.name}</div>
+                                    <span class="popup-badge ${tech.status}">${this.statusLabels[tech.status]}</span>
+                                </div>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-row">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24c1.12.37 2.33.57 3.57.57c.55 0 1 .45 1 1V20c0 .55-.45 1-1 1c-9.39 0-17-7.61-17-17c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1c0 1.25.2 2.45.57 3.57c.11.35.03.74-.25 1.02z"/></svg>
+                                    <span dir="ltr">${tech.phone}</span>
+                                </div>
+                                <div class="popup-row">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M15 11V5l-3-3l-3 3v2H3v14h18V11zm-8 8H5v-2h2zm0-4H5v-2h2zm0-4H5V9h2zm6 8h-2v-2h2zm0-4h-2v-2h2zm0-4h-2V9h2zm0-4h-2V5h2zm6 12h-2v-2h2zm0-4h-2v-2h2z"/></svg>
+                                    <span>${tech.city} · ${tech.entity_type}</span>
+                                </div>
+                                <div class="popup-row">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2M12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8s8 3.58 8 8s-3.58 8-8 8m.5-13H11v6l5.25 3.15l.75-1.23l-4.5-2.67z"/></svg>
+                                    <span>${tech.last_seen_at}</span>
+                                </div>
+                            </div>
+                            <div class="popup-actions">
+                                <a href="tel:${tech.phone}" class="popup-btn popup-btn-call">
+                                    <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24c1.12.37 2.33.57 3.57.57c.55 0 1 .45 1 1V20c0 .55-.45 1-1 1c-9.39 0-17-7.61-17-17c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1c0 1.25.2 2.45.57 3.57c.11.35.03.74-.25 1.02z"/></svg>
+                                    {{ __('ui.call') }}
+                                </a>
+                                <a href="https://wa.me/${tech.phone.replace(/[^0-9]/g, '')}" target="_blank" class="popup-btn popup-btn-whatsapp">
+                                    <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967c-.273-.099-.471-.148-.67.15c-.197.297-.767.966-.94 1.164c-.173.199-.347.223-.644.075c-.297-.15-1.255-.463-2.39-1.475c-.883-.788-1.48-1.761-1.653-2.059c-.173-.297-.018-.458.13-.606c.134-.133.298-.347.446-.52c.149-.174.198-.298.298-.497c.099-.198.05-.371-.025-.52c-.075-.149-.669-1.612-.916-2.207c-.242-.579-.487-.5-.669-.51c-.173-.008-.371-.01-.57-.01c-.198 0-.52.074-.792.372c-.272.297-1.04 1.016-1.04 2.479c0 1.462 1.065 2.875 1.213 3.074c.149.198 2.096 3.2 5.077 4.487c.709.306 1.262.489 1.694.625c.712.227 1.36.195 1.871.118c.571-.085 1.758-.719 2.006-1.413c.248-.694.248-1.289.173-1.413c-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214l-3.741.982l.998-3.648l-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884c2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                                    {{ __('ui.whatsapp') }}
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                },
+
+                flyToTechnician(tech) {
+                    if (!tech.latitude || !tech.longitude || !this.map) return;
+
+                    this.map.panTo({ lat: parseFloat(tech.latitude), lng: parseFloat(tech.longitude) });
+                    this.map.setZoom(14);
+
+                    setTimeout(() => {
+                        const entry = this.markers[tech.id];
+                        if (entry && entry.marker) {
+                            google.maps.event.trigger(entry.marker, 'click');
+                        }
+                    }, 500);
+                },
+
+                resetView() {
+                    if (this.map) {
+                        this.infoWindow.close();
+                        this.map.panTo({ lat: 24.0, lng: 45.0 });
+                        this.map.setZoom(6);
+                    }
+                },
+
+                toggleFullscreen() {
+                    this.isFullscreen = !this.isFullscreen;
+                    this.$nextTick(() => { if (this.map) google.maps.event.trigger(this.map, "resize"); });
+                },
+
+                destroy() {
+                    if (this.pollInterval) clearInterval(this.pollInterval);
+                }
+            };
+        }
+    </script>
+
+</x-layouts.dashboard>

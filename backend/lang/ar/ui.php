@@ -322,4 +322,22 @@ return [
     'add_to_company'             => 'إضافة مقدم خدمة لشركة',
     'select_company'             => 'اختر شركة',
     'select_entity_type_first'   => 'اختر النوع أولاً (مؤسسة أو شركة)',
+
+    // Technician Map
+    'technician_map'             => 'خريطة الفنيين',
+    'technician_map_subtitle'    => 'تتبع مواقع الفنيين في الوقت الحقيقي',
+    'online_available'           => 'متاح',
+    'online_busy'                => 'مشغول بطلب',
+    'offline'                    => 'غير متصل',
+    'total_technicians'          => 'إجمالي الفنيين',
+    'last_seen'                  => 'آخر ظهور',
+    'all_cities'                 => 'جميع المدن',
+    'all_statuses'               => 'جميع الحالات',
+    'auto_refresh'               => 'تحديث تلقائي كل 15 ثانية',
+    'never'                      => 'لم يتصل بعد',
+    'search_technician'          => 'بحث بالاسم أو الموبايل...',
+    'call'                       => 'اتصال',
+    'whatsapp'                   => 'واتساب',
+    'online'                     => 'متصل',
+    'reset_view'                 => 'مركز السعودية',
 ];

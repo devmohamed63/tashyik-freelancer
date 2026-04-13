@@ -101,6 +101,7 @@ class User extends Authenticatable implements HasMedia
         'fcm_token',
         'latitude',
         'longitude',
+        'last_seen_at',
         'balance',
         'used_welcome_coupon',
     ];
@@ -124,6 +125,7 @@ class User extends Authenticatable implements HasMedia
     {
         return [
             'password' => 'hashed',
+            'last_seen_at' => 'datetime',
         ];
     }
 
@@ -302,6 +304,24 @@ class User extends Authenticatable implements HasMedia
                 ->having('distance', '<=', $radius)
                 ->orderBy('distance', 'asc');
         }
+    }
+
+    /**
+     * Scope a query to only include online users (seen in the last 5 minutes).
+     */
+    #[Scope]
+    protected function isOnline(Builder $query): void
+    {
+        $query->where('last_seen_at', '>=', now()->subMinutes(5));
+    }
+
+    /**
+     * Scope a query to only include users with a known location.
+     */
+    #[Scope]
+    protected function hasLocation(Builder $query): void
+    {
+        $query->whereNotNull('latitude')->whereNotNull('longitude');
     }
 
     /**

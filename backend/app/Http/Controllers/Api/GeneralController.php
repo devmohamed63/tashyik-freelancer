@@ -40,6 +40,7 @@ class GeneralController extends Controller
         $user->latitude = $request->latitude;
         $user->longitude = $request->longitude;
         $user->city_id = $request->city;
+        $user->last_seen_at = now();
         $user->save();
 
         return response(null);
