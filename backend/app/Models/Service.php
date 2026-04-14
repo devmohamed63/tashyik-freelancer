@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\CarbonInterval;
 use App\Utils\Traits\Models\HasAutoTranslations;
 use App\Utils\Traits\Models\HasDraggableOrder;
+use App\Utils\Traits\Models\ResolvesByIdOrSlug;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -25,7 +26,8 @@ class Service extends Model implements HasMedia
         HasTranslations,
         HasAutoTranslations,
         InteractsWithMedia,
-        HasDraggableOrder;
+        HasDraggableOrder,
+        ResolvesByIdOrSlug;
 
     /**
      * The attributes that are mass assignable.

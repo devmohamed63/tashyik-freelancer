@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Utils\Traits\Models\HasAutoTranslations;
 use App\Utils\Traits\Models\HasStatus;
+use App\Utils\Traits\Models\ResolvesByIdOrSlug;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,7 +21,8 @@ class Article extends Model implements HasMedia
         HasTranslations,
         HasAutoTranslations,
         HasStatus,
-        InteractsWithMedia;
+        InteractsWithMedia,
+        ResolvesByIdOrSlug;
 
     const AVAILABLE_STATUS_TYPES = [
         self::ACTIVE_STATUS,
@@ -65,6 +67,11 @@ class Article extends Model implements HasMedia
             'is_featured' => 'boolean',
             'published_at' => 'datetime',
         ];
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'slug';
     }
 
     /**

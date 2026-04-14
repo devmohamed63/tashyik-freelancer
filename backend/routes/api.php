@@ -223,7 +223,7 @@ Route::domain(env('API_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(function (
         // Article routes
         Route::get('/articles', [\App\Http\Controllers\Api\ArticleController::class, 'index'])
             ->name('articles.index');
-        Route::get('/articles/{article:slug}', [\App\Http\Controllers\Api\ArticleController::class, 'show'])
+        Route::get('/articles/{article}', [\App\Http\Controllers\Api\ArticleController::class, 'show'])
             ->name('articles.show');
 
         Route::withoutMiddleware('ensure-app-is-updated')->group(function () {

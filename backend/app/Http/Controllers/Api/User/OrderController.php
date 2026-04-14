@@ -34,7 +34,9 @@ class OrderController extends ApiController
 
         $user = Auth::user();
 
-        $service = Service::where('slug', $request->service)->firstOrFail();
+        $service = is_numeric($request->service)
+            ? Service::findOrFail($request->service)
+            : Service::where('slug', $request->service)->firstOrFail();
 
         $visit_cost = $service->getVisitCost();
         $subtotal = ($service->price * $request->quantity) + $visit_cost;
