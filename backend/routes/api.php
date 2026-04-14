@@ -2,8 +2,6 @@
 
 use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\Api\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Api\Auth\NewPasswordController;
-use App\Http\Controllers\Api\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Api\Auth\RegisteredUserController;
 use \App\Http\Controllers\Api\Auth\ProfileController;
 use App\Http\Controllers\Api\BannerController;
@@ -46,21 +44,15 @@ Route::domain(env('API_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(function (
             Route::post('/login', [AuthenticatedSessionController::class, 'store'])
                 ->name('login');
 
-            Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
-                ->name('password.email');
-
-            Route::post('/reset-password', [NewPasswordController::class, 'store'])
-                ->name('password.store');
-
             // OTP-based password reset
-            Route::post('/password/send-otp', [\App\Http\Controllers\Api\Auth\PasswordResetOtpController::class, 'sendOtp'])
-                ->name('password.otp.send');
+            Route::post('/forgot-password', [\App\Http\Controllers\Api\Auth\PasswordResetOtpController::class, 'sendOtp'])
+                ->name('password.forgot');
 
-            Route::post('/password/verify-otp', [\App\Http\Controllers\Api\Auth\PasswordResetOtpController::class, 'verifyOtp'])
-                ->name('password.otp.verify');
+            Route::post('/verify-otp', [\App\Http\Controllers\Api\Auth\PasswordResetOtpController::class, 'verifyOtp'])
+                ->name('password.verify_otp');
 
-            Route::post('/password/reset', [\App\Http\Controllers\Api\Auth\PasswordResetOtpController::class, 'resetPassword'])
-                ->name('password.otp.reset');
+            Route::post('/reset-password', [\App\Http\Controllers\Api\Auth\PasswordResetOtpController::class, 'resetPassword'])
+                ->name('password.reset');
         });
         // Auth routes end
 

@@ -28,7 +28,7 @@
     errors.value = {};
 
     try {
-      const response = await useApiFetch('/password/send-otp', {
+      const response = await useApiFetch('/forgot-password', {
         method: 'POST',
         body: { email: form.email },
       });
@@ -52,7 +52,7 @@
     errors.value = {};
 
     try {
-      await useApiFetch('/password/verify-otp', {
+      await useApiFetch('/verify-otp', {
         method: 'POST',
         body: { email: form.email, otp: form.otp },
       });
@@ -73,7 +73,7 @@
     errors.value = {};
 
     try {
-      const response = await useApiFetch('/password/reset', {
+      const response = await useApiFetch('/reset-password', {
         method: 'POST',
         body: {
           email: form.email,
@@ -100,7 +100,7 @@
     errors.value = {};
 
     try {
-      await useApiFetch('/password/send-otp', {
+      await useApiFetch('/forgot-password', {
         method: 'POST',
         body: { email: form.email },
       });
