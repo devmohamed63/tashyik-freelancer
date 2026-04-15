@@ -15,7 +15,7 @@ class ContactController extends Controller
         $contact = Contact::create($request->validated());
 
         try {
-            Mail::to('mohamed202203785@gmail.com')->send(new ContactMessage($contact));
+            Mail::to('info@apptml.com')->send(new ContactMessage($contact));
         } catch (\Exception $e) {
             // Log or ignore failure to not break user experience
             \Illuminate\Support\Facades\Log::error('Failed to send contact email: ' . $e->getMessage());

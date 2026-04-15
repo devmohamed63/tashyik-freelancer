@@ -48,6 +48,12 @@ Route::domain(env('DASHBOARD_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(func
 
             Route::get('/technician-map/api', [TechnicianMapController::class, 'api'])
                 ->name('technician-map.api');
+                
+            Route::get('/technician-map/city-insights', [TechnicianMapController::class, 'cityInsights'])
+                ->name('technician-map.city-insights');
+                
+            Route::get('/technician-map/heatmap-data', [TechnicianMapController::class, 'heatmapData'])
+                ->name('technician-map.heatmap-data');
 
             // Reviews route
             Route::get('/reviews', [ReviewsController::class, 'index'])

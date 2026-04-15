@@ -66,6 +66,9 @@ export default defineNuxtConfig({
       salesIqKey: '',
       whatsappLink: '',
       saudiBusinessCenterCertificate: '',
+      i18n: {
+        baseUrl: 'https://www.tashyik.com',
+      },
       scripts: {
         googleMaps: {
           apiKey: '',
@@ -81,6 +84,7 @@ export default defineNuxtConfig({
   },
 
   i18n: {
+    baseUrl: 'https://www.tashyik.com',
     detectBrowserLanguage: {
       useCookie: true,
     },

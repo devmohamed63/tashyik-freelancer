@@ -32,7 +32,7 @@ trait ApiResponse
             return response()->json([
                 'status'  => false,
                 'code'  => 422,
-                'message' => 'Locale must be one of the following: [' . implode(', ', $supportedLocales) . ']'
+                'message' => 'Locale (' . $locale . ') must be one of the following: [' . implode(', ', $supportedLocales) . ']'
             ], 422);
         }
 

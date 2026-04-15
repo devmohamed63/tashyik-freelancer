@@ -83,7 +83,7 @@ class SendNewOrderNotification
 
         // Send email notification to Admin
         try {
-            Mail::to('mohamed202203785@gmail.com')->send(new AdminNewOrderMessage($order));
+            Mail::to('info@apptml.com')->send(new AdminNewOrderMessage($order));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to send admin order email: ' . $e->getMessage());
         }

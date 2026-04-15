@@ -24,6 +24,8 @@ class City extends Model
     protected $fillable = [
         'name',
         'item_order',
+        'latitude',
+        'longitude',
     ];
 
     public array $translatable = [

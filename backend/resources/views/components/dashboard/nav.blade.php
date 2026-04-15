@@ -31,13 +31,14 @@
                         </x-dashboard.nav.item>
                         <!-- Analytics -->
 
-                        {{-- Technician Map (temporarily hidden)
+                        <!-- Technician Map -->
                         <x-dashboard.nav.item
                             name="technician_map"
                             :url="route('dashboard.technician-map')">
+                            <!-- material-symbols:map -->
                             <path fill="currentColor" d="M14.5 7a3.5 3.5 0 1 0-3.5 3.5A3.5 3.5 0 0 0 14.5 7M11 2a5 5 0 0 1 5 5c0 3.87-5 9-5 9S6 10.87 6 7a5 5 0 0 1 5-5m7.5 7A2.5 2.5 0 1 0 16 11.5A2.5 2.5 0 0 0 18.5 9M16 6a4 4 0 0 1 4 4c0 2.8-4 7-4 7s-1.42-1.49-2.53-3.21A7 7 0 0 0 16 6M3.5 9A2.5 2.5 0 1 1 6 11.5A2.5 2.5 0 0 1 3.5 9M6 6a4 4 0 0 0-4 4c0 2.8 4 7 4 7s1.42-1.49 2.53-3.21A7 7 0 0 1 6 6"/>
                         </x-dashboard.nav.item>
-                        --}}
+                        <!-- Technician Map -->
                     @endcan
 
                     @can('view financial reports')
