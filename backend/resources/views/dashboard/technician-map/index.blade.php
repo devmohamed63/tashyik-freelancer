@@ -6,7 +6,7 @@
         .gm-style-iw-d { overflow: auto !important; padding: 0 !important; }
         .gm-style-iw-c { padding: 0 !important; border-radius: 16px !important; box-shadow: 0 20px 40px rgba(0,0,0,0.15) !important; max-height: none !important;}
         .gm-style .gm-style-iw-tc::after { background: #fff !important; }
-        div.gm-style-iw-chr { position: absolute; top: 10px; right: 10px; z-index: 10; border-radius: 50%; opacity: 0.7; }
+        div.gm-style-iw-chr { position: absolute; top: 10px; left: 10px; right: auto; z-index: 10; border-radius: 50%; opacity: 0.7; }
 
         /* ── Map ─────────────────────────────────────── */
         #technician-map {
