@@ -613,6 +613,7 @@
                 searchQuery: '',
                 pollInterval: null,
                 isFullscreen: false,
+                _lastFilterKey: '__initial__', // forces first fetchData to be a full rebuild
                 stats: {
                     online_available: {{ $stats['online_available'] }},
                     online_busy: {{ $stats['online_busy'] }},
@@ -673,32 +674,7 @@
 
                         this.infoWindow = new google.maps.InfoWindow({ minWidth: 280, maxWidth: 350 });
 
-                        this.markerGroup = new markerClusterer.MarkerClusterer({
-                            map: this.map,
-                            markers: [],
-                            renderer: {
-                                render: ({ count, position }) => {
-                                    let size = 40, bg = '#6366f1', fontSize = 13;
-                                    if (count >= 50) { size = 60; bg = '#ec4899'; fontSize = 16; }
-                                    else if (count >= 10) { size = 50; bg = '#8b5cf6'; fontSize = 14; }
-
-                                    return new google.maps.Marker({
-                                        position,
-                                        icon: {
-                                            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-                                                    <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${bg}" stroke="rgba(255,255,255,0.8)" stroke-width="3"/>
-                                                    <text x="50%" y="52%" text-anchor="middle" dy=".35em" fill="white" font-family="Arial,sans-serif" font-weight="700" font-size="${fontSize}">${count}</text>
-                                                </svg>
-                                            `)}`,
-                                            scaledSize: new google.maps.Size(size, size),
-                                            anchor: new google.maps.Point(size/2, size/2),
-                                        },
-                                        zIndex: 1000 + count,
-                                    });
-                                }
-                            }
-                        });
+                        // Note: markerGroup (clusterer) is created by syncMarkers on first fetchData
 
                         this.fetchData();
                         this.fetchInsights();
@@ -723,6 +699,11 @@
                         if (this.categoryFilter) params.append('category_id', this.categoryFilter);
                         if (this.statusFilter) params.append('status', this.statusFilter);
 
+                        // Detect if filters changed since last fetch
+                        const currentFilterKey = `${this.cityFilter}|${this.categoryFilter}|${this.statusFilter}`;
+                        const filtersChanged = currentFilterKey !== this._lastFilterKey;
+                        this._lastFilterKey = currentFilterKey;
+
                         const response = await fetch(`{{ route('dashboard.technician-map.api') }}?${params.toString()}`);
                         if (!response.ok) throw new Error(`HTTP ${response.status}`);
                         const data = await response.json();
@@ -732,7 +713,7 @@
                         this.pendingOrders = data.pending_orders || [];
                         this.filterLists();
                         if (this.activeTab === 'technicians') {
-                            this.syncMarkers(data.technicians);
+                            this.syncMarkers(data.technicians, filtersChanged);
                             this.syncOrderMarkers(this.pendingOrders);
                         }
                     } catch (error) {
@@ -815,76 +796,163 @@
                 },
                 
                 renderMapIcons() {
-                    // Clear all markers first
-                    this.markerGroup.clearMarkers();
-                    Object.values(this.markers).forEach(m => m.marker.setMap(null));
-                    this.markers = {};
-                    this.cityMarkers.forEach(cm => cm.setMap(null));
-                    this.cityMarkers = [];
-                    Object.values(this.orderMarkers).forEach(m => m.marker.setMap(null));
-                    this.orderMarkers = {};
+                    // Clear all markers
+                    this._clearAllMarkers();
                     
                     if (this.activeTab === 'technicians') {
-                        this.syncMarkers(this.technicians);
+                        this.syncMarkers(this.technicians, true);
                         this.syncOrderMarkers(this.pendingOrders);
                     } else if (this.activeTab === 'cities' || this.activeTab === 'alerts') {
                         this.syncCityMarkers(this.insights.cities_overview);
                     }
                 },
 
-                syncMarkers(technicians) {
+                _clearAllMarkers() {
+                    // Remove technician markers from map
+                    Object.values(this.markers).forEach(entry => {
+                        entry.marker.setMap(null);
+                        google.maps.event.clearInstanceListeners(entry.marker);
+                    });
+                    this.markers = {};
+                    // Destroy clusterer
+                    if (this.markerGroup) {
+                        this.markerGroup.setMap(null);
+                        this.markerGroup = null;
+                    }
+                    // Remove city markers
+                    this.cityMarkers.forEach(cm => cm.setMap(null));
+                    this.cityMarkers = [];
+                    // Remove order markers
+                    Object.values(this.orderMarkers).forEach(m => m.marker.setMap(null));
+                    this.orderMarkers = {};
+                },
+
+                _clusterRenderer() {
+                    return {
+                        render: ({ count, position }) => {
+                            let size = 40, bg = '#6366f1', fontSize = 13;
+                            if (count >= 50) { size = 60; bg = '#ec4899'; fontSize = 16; }
+                            else if (count >= 10) { size = 50; bg = '#8b5cf6'; fontSize = 14; }
+
+                            return new google.maps.Marker({
+                                position,
+                                icon: {
+                                    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+                                            <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${bg}" stroke="rgba(255,255,255,0.8)" stroke-width="3"/>
+                                            <text x="50%" y="52%" text-anchor="middle" dy=".35em" fill="white" font-family="Arial,sans-serif" font-weight="700" font-size="${fontSize}">${count}</text>
+                                        </svg>
+                                    `)}`,
+                                    scaledSize: new google.maps.Size(size, size),
+                                    anchor: new google.maps.Point(size/2, size/2),
+                                },
+                                zIndex: 1000 + count,
+                            });
+                        }
+                    };
+                },
+
+                syncMarkers(technicians, forceRebuild = false) {
                     if (this.activeTab !== 'technicians') return;
-                    
-                    const incomingIds = new Set();
-                    const newMarkers = [];
 
-                    technicians.forEach(tech => {
-                        if (!tech.latitude || !tech.longitude) return;
-                        incomingIds.add(tech.id);
+                    if (forceRebuild) {
+                        // ══ FULL REBUILD (filter change / tab switch) ══
+                        // 1. Remove all old markers from map
+                        Object.values(this.markers).forEach(entry => {
+                            entry.marker.setMap(null);
+                            google.maps.event.clearInstanceListeners(entry.marker);
+                        });
+                        this.markers = {};
 
-                        const pos = new google.maps.LatLng(parseFloat(tech.latitude), parseFloat(tech.longitude));
-                        const color = this._statusColors[tech.status] || '#9ca3af';
+                        // 2. Destroy old clusterer
+                        if (this.markerGroup) {
+                            this.markerGroup.setMap(null);
+                            this.markerGroup = null;
+                        }
 
-                        if (this.markers[tech.id]) {
-                            const entry = this.markers[tech.id];
-                            entry.marker.setPosition(pos);
-                            if (entry.status !== tech.status) {
-                                entry.marker.setIcon(this._buildIcon(color));
-                                entry.status = tech.status;
-                                entry.tech = tech;
-                            }
-                        } else {
+                        // 3. Create fresh markers (WITHOUT map — let clusterer manage)
+                        const newMarkers = [];
+                        technicians.forEach(tech => {
+                            if (!tech.latitude || !tech.longitude) return;
+                            const pos = new google.maps.LatLng(parseFloat(tech.latitude), parseFloat(tech.longitude));
+                            const color = this._statusColors[tech.status] || '#9ca3af';
+
                             const marker = new google.maps.Marker({
                                 position: pos,
-                                map: this.map,
                                 title: tech.name,
                                 icon: this._buildIcon(color),
-                                animation: google.maps.Animation.DROP,
                                 zIndex: tech.status === 'online_available' ? 100 : (tech.status === 'online_busy' ? 50 : 10),
                             });
-
                             marker.addListener('click', () => {
                                 const t = this.markers[tech.id]?.tech || tech;
                                 this.infoWindow.setContent(this._popupHTML(t));
                                 this.infoWindow.open({ anchor: marker, map: this.map });
                             });
-
                             this.markers[tech.id] = { marker, status: tech.status, tech };
                             newMarkers.push(marker);
-                        }
-                    });
+                        });
 
-                    const staleMarkers = [];
-                    Object.keys(this.markers).forEach(id => {
-                        if (!incomingIds.has(parseInt(id))) {
-                            staleMarkers.push(this.markers[id].marker);
-                            this.markers[id].marker.setMap(null);
-                            delete this.markers[id];
-                        }
-                    });
+                        // 4. Create new clusterer — it will manage showing/hiding markers
+                        this.markerGroup = new markerClusterer.MarkerClusterer({
+                            map: this.map,
+                            markers: newMarkers,
+                            renderer: this._clusterRenderer(),
+                        });
 
-                    if (staleMarkers.length) this.markerGroup.removeMarkers(staleMarkers);
-                    if (newMarkers.length) this.markerGroup.addMarkers(newMarkers);
+                    } else {
+                        // ══ INCREMENTAL UPDATE (poll refresh — keeps clusterer alive) ══
+                        const incomingIds = new Set();
+                        const newMarkers = [];
+
+                        technicians.forEach(tech => {
+                            if (!tech.latitude || !tech.longitude) return;
+                            incomingIds.add(tech.id);
+                            const pos = new google.maps.LatLng(parseFloat(tech.latitude), parseFloat(tech.longitude));
+                            const color = this._statusColors[tech.status] || '#9ca3af';
+
+                            if (this.markers[tech.id]) {
+                                // Update existing marker
+                                const entry = this.markers[tech.id];
+                                entry.marker.setPosition(pos);
+                                if (entry.status !== tech.status) {
+                                    entry.marker.setIcon(this._buildIcon(color));
+                                    entry.status = tech.status;
+                                }
+                                entry.tech = tech;
+                            } else {
+                                // New technician — add to map
+                                const marker = new google.maps.Marker({
+                                    position: pos,
+                                    title: tech.name,
+                                    icon: this._buildIcon(color),
+                                    zIndex: tech.status === 'online_available' ? 100 : (tech.status === 'online_busy' ? 50 : 10),
+                                });
+                                marker.addListener('click', () => {
+                                    const t = this.markers[tech.id]?.tech || tech;
+                                    this.infoWindow.setContent(this._popupHTML(t));
+                                    this.infoWindow.open({ anchor: marker, map: this.map });
+                                });
+                                this.markers[tech.id] = { marker, status: tech.status, tech };
+                                newMarkers.push(marker);
+                            }
+                        });
+
+                        // Remove stale markers
+                        const staleMarkers = [];
+                        Object.keys(this.markers).forEach(id => {
+                            if (!incomingIds.has(parseInt(id))) {
+                                this.markers[id].marker.setMap(null);
+                                google.maps.event.clearInstanceListeners(this.markers[id].marker);
+                                staleMarkers.push(this.markers[id].marker);
+                                delete this.markers[id];
+                            }
+                        });
+
+                        if (this.markerGroup) {
+                            if (staleMarkers.length) this.markerGroup.removeMarkers(staleMarkers);
+                            if (newMarkers.length) this.markerGroup.addMarkers(newMarkers);
+                        }
+                    }
                 },
                 
                 syncOrderMarkers(orders) {
