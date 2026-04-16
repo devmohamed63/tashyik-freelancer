@@ -626,6 +626,8 @@
                 pollInterval: null,
                 isFullscreen: false,
                 _lastFilterKey: '__initial__', // forces first fetchData to be a full rebuild
+                _fetchController: null,         // AbortController for in-flight requests
+                _fetchSequence: 0,              // monotonic counter to discard stale responses
                 stats: {
                     online_available: {{ $stats['online_available'] }},
                     online_busy: {{ $stats['online_busy'] }},
@@ -724,9 +726,33 @@
                         const filtersChanged = currentFilterKey !== this._lastFilterKey;
                         this._lastFilterKey = currentFilterKey;
 
-                        const response = await fetch(`{{ route('dashboard.technician-map.api') }}?${params.toString()}`);
+                        // Only abort in-flight requests when FILTERS change (user action)
+                        // Polls should NOT cancel each other — prevents initial load from being killed
+                        if (filtersChanged && this._fetchController) {
+                            this._fetchController.abort();
+                        }
+                        this._fetchController = new AbortController();
+
+                        // Sequence ID — only the latest response gets processed
+                        const fetchId = ++this._fetchSequence;
+
+                        console.log(`[MAP #${fetchId}]`, filtersChanged ? '🔄 FILTER CHANGED →' : '⟳ poll →', params.toString() || '(no filters)');
+
+                        const response = await fetch(
+                            `{{ route('dashboard.technician-map.api') }}?${params.toString()}`,
+                            { signal: this._fetchController.signal }
+                        );
+
+                        // If a newer request was fired while waiting, discard this response
+                        if (fetchId !== this._fetchSequence) {
+                            console.log(`[MAP #${fetchId}] ⏭ discarded (superseded by #${this._fetchSequence})`);
+                            return;
+                        }
+
                         if (!response.ok) throw new Error(`HTTP ${response.status}`);
                         const data = await response.json();
+
+                        console.log(`[MAP #${fetchId}] ← ${data.technicians.length} technicians`, filtersChanged ? '→ FULL REBUILD' : '→ incremental');
 
                         this.stats = data.stats;
                         this.technicians = data.technicians;
@@ -737,6 +763,7 @@
                             this.syncOrderMarkers(this.pendingOrders);
                         }
                     } catch (error) {
+                        if (error.name === 'AbortError') return; // expected when a newer request cancels this one
                         console.error('[TechnicianMap] Fetch failed:', error);
                     }
                 },
@@ -877,16 +904,19 @@
 
                     if (forceRebuild) {
                         // ══ FULL REBUILD (filter change / tab switch) ══
+                        // 1. Destroy clusterer FIRST — it internally manages marker visibility
+                        if (this.markerGroup) {
+                            this.markerGroup.clearMarkers();
+                            this.markerGroup.setMap(null);
+                            this.markerGroup = null;
+                        }
+
+                        // 2. Then clean up individual marker references
                         Object.values(this.markers).forEach(entry => {
                             entry.marker.setMap(null);
                             google.maps.event.clearInstanceListeners(entry.marker);
                         });
                         this.markers = {};
-
-                        if (this.markerGroup) {
-                            this.markerGroup.setMap(null);
-                            this.markerGroup = null;
-                        }
 
                         const newMarkers = [];
                         technicians.forEach(tech => {
@@ -917,6 +947,11 @@
 
                     } else {
                         // ══ INCREMENTAL UPDATE (poll refresh — keeps clusterer alive) ══
+                        // Safety: if clusterer doesn't exist yet (initial load was slow), do a full rebuild
+                        if (!this.markerGroup) {
+                            console.log('[MAP] No clusterer yet — escalating to full rebuild');
+                            return this.syncMarkers(technicians, true);
+                        }
                         const incomingIds = new Set();
                         const newMarkers = [];
 
