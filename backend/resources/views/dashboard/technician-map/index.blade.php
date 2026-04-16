@@ -596,7 +596,12 @@
 
     {{-- Google Maps JS --}}
     <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key={{ $googleMapsApiKey }}&libraries=marker,visualization&callback=Function.prototype" async defer></script>
+    <script>
+        window.initMap = function() {
+            // Google Maps is ready, Alpine's init() will detect it automatically via waitForGoogle
+        };
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ $googleMapsApiKey }}&libraries=marker,visualization&callback=initMap" async defer></script>
     <script>
         function technicianMap() {
             return {
@@ -898,23 +903,16 @@
                     if (this.activeTab !== 'technicians') return;
 
                     if (forceRebuild) {
-                        // ══ FULL REBUILD ══
+                        // 1. مسح الـ Clusterer تماماً من الخريطة
                         if (this.markerGroup) {
-                            // 1. Synchronously remove cluster overlay markers (the "396" circles)
-                            //    The library defers this with requestAnimationFrame — we can't wait
-                            (this.markerGroup.clusters || []).forEach(c => {
-                                if (c.marker) c.marker.setMap(null);
-                            });
-                            // 2. Remove individual markers managed by the clusterer
-                            (this.markerGroup.markers || []).forEach(m => m.setMap(null));
-                            // 3. Detach clusterer from map
-                            this.markerGroup.setMap(null);
-                            this.markerGroup = null;
+                            this.markerGroup.clearMarkers(); // يمسح الماركرز من التجميعة
+                            this.markerGroup.setMap(null);   // يفصل التجميعة عن الخريطة
+                            this.markerGroup = null;         // يمسح الكائن نفسه
                         }
 
-                        // 4. Clean up our own marker references + listeners
+                        // 2. مسح الـ Markers الفردية من الخريطة ومن الـ Array
                         Object.values(this.markers).forEach(entry => {
-                            entry.marker.setMap(null);
+                            entry.marker.setMap(null); // دي أهم خطوة عشان يختفوا من الخريطة فوراً
                             google.maps.event.clearInstanceListeners(entry.marker);
                         });
                         this.markers = {};
