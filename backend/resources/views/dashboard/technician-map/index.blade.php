@@ -903,14 +903,21 @@
                     if (this.activeTab !== 'technicians') return;
 
                     if (forceRebuild) {
-                        // We DO NOT destroy the clusterer. We will reuse it so it can clean up its own circles!
-
-                        // 2. مسح الـ Markers الفردية من الخريطة ومن الـ Array
+                        // امسح كل حاجة بالترتيب الصح حسب التوجيهات
+                        if (this.markerGroup) {
+                            this.markerGroup.clearMarkers(); // بيشيل الـ markers من الـ clusterer
+                        }
+                        
                         Object.values(this.markers).forEach(entry => {
-                            entry.marker.setMap(null); // دي أهم خطوة عشان يختفوا من الخريطة فوراً
+                            entry.marker.setMap(null);
                             google.maps.event.clearInstanceListeners(entry.marker);
                         });
                         this.markers = {};
+                        
+                        if (this.markerGroup) {
+                            this.markerGroup.setMap(null);
+                            this.markerGroup = null;
+                        }
 
                         const newMarkers = [];
                         technicians.forEach(tech => {
@@ -933,18 +940,11 @@
                             newMarkers.push(marker);
                         });
 
-                        if (this.markerGroup) {
-                            // 3. Clear existing markers safely (pass true to avoid sync rendering bug)
-                            //    and then add the new filtered markers allowing a clean render layout.
-                            this.markerGroup.clearMarkers(true);
-                            this.markerGroup.addMarkers(newMarkers);
-                        } else {
-                            this.markerGroup = new markerClusterer.MarkerClusterer({
-                                map: this.map,
-                                markers: newMarkers,
-                                renderer: this._clusterRenderer(),
-                            });
-                        }
+                        this.markerGroup = new markerClusterer.MarkerClusterer({
+                            map: this.map,
+                            markers: newMarkers,
+                            renderer: this._clusterRenderer(),
+                        });
 
                     } else {
                         // ══ INCREMENTAL UPDATE (poll refresh — keeps clusterer alive) ══
