@@ -505,6 +505,15 @@
 
     <script>
         function technicianMap() {
+            // ================================================================
+            // Raw marker storage — OUTSIDE Alpine's reactive scope.
+            // Alpine.js wraps all data in Proxy. MarkerClusterer uses indexOf()
+            // to find markers, which fails with proxied refs. This Map stores
+            // the exact same raw google.maps.Marker references that the
+            // clusterer has, guaranteeing indexOf() matches.
+            // ================================================================
+            const _rawMarkerRefs = new Map(); // techId → raw google.maps.Marker
+            
             return {
                 // Core Google Maps properties
                 map: null,
@@ -851,13 +860,9 @@
                     const hasActiveFilter = this.cityFilter !== '' || this.categoryFilter !== '' || this.statusFilter !== '';
                     if (hasActiveFilter) forceRebuild = true;
                     
-                    // Alpine.raw() unwraps Proxy so MarkerClusterer gets raw objects
-                    const rawMarkers = (typeof Alpine !== 'undefined' && Alpine.raw) 
-                        ? Alpine.raw(this.markers) : this.markers;
-                    
                     console.log('🔄 Syncing markers:', { 
                         count: technicians.length, forceRebuild,
-                        existingCount: Object.keys(rawMarkers).length
+                        existingCount: _rawMarkerRefs.size
                     });
                     
                     if (forceRebuild) {
@@ -865,15 +870,14 @@
                         // FULL REBUILD — keep clusterer alive, swap markers
                         // ═══════════════════════════════════════════════════════════
                         
-                        // 1. Collect old RAW marker objects for removal (unwrapped!)
-                        const oldMarkerObjects = Object.values(rawMarkers)
-                            .map(e => e.marker)
-                            .filter(Boolean);
+                        // 1. Collect RAW markers from our non-proxied Map
+                        const oldRawMarkers = Array.from(_rawMarkerRefs.values());
                         
-                        // 2. Clear our tracking dictionary & listeners
-                        oldMarkerObjects.forEach(m => {
+                        // 2. Clear listeners, our Map, and Alpine dict
+                        oldRawMarkers.forEach(m => {
                             google.maps.event.clearInstanceListeners(m);
                         });
+                        _rawMarkerRefs.clear();
                         this.markers = {};
                         
                         // 3. Build new markers
@@ -902,23 +906,22 @@
                                 this.infoWindow.open({ anchor: marker, map: this.map });
                             });
                             
+                            // Store in BOTH: Alpine (for UI) and raw Map (for clusterer)
                             this.markers[tech.id] = { marker, status: tech.status, tech };
+                            _rawMarkerRefs.set(tech.id, marker);
                             newMarkerObjects.push(marker);
                         });
                         
-                        // 4. Swap markers on the clusterer
+                        // 4. Swap markers on the clusterer using RAW refs
                         if (this.markerGroup) {
-                            // removeMarkers triggers re-render → cleans up cluster overlays
-                            if (oldMarkerObjects.length > 0) {
-                                console.log(`🗑️ Removing ${oldMarkerObjects.length} old markers...`);
-                                this.markerGroup.removeMarkers(oldMarkerObjects);
+                            if (oldRawMarkers.length > 0) {
+                                console.log(`🗑️ Removing ${oldRawMarkers.length} old markers...`);
+                                this.markerGroup.removeMarkers(oldRawMarkers);
                             }
-                            // addMarkers triggers re-render → creates new clusters
                             if (newMarkerObjects.length > 0) {
                                 this.markerGroup.addMarkers(newMarkerObjects);
                             }
                         } else {
-                            // First time — create the clusterer
                             this.markerGroup = new markerClusterer.MarkerClusterer({
                                 map: this.map,
                                 markers: newMarkerObjects,
@@ -949,14 +952,13 @@
                             parseFloat(tech.longitude)
                         );
                         
-                        if (rawMarkers[tech.id]) {
-                            const entry = rawMarkers[tech.id];
-                            entry.marker.setPosition(pos);
-                            if (entry.status !== tech.status) {
-                                entry.marker.setIcon(this._buildIcon(this._markerColor, statusColor));
-                                entry.status = tech.status;
+                        if (_rawMarkerRefs.has(tech.id)) {
+                            const rawMarker = _rawMarkerRefs.get(tech.id);
+                            rawMarker.setPosition(pos);
+                            if (this.markers[tech.id]?.status !== tech.status) {
+                                rawMarker.setIcon(this._buildIcon(this._markerColor, statusColor));
                             }
-                            entry.tech = tech;
+                            this.markers[tech.id] = { marker: rawMarker, status: tech.status, tech };
                         } else {
                             const marker = new google.maps.Marker({
                                 position: pos,
@@ -972,20 +974,21 @@
                                 this.infoWindow.open({ anchor: marker, map: this.map });
                             });
                             this.markers[tech.id] = { marker, status: tech.status, tech };
+                            _rawMarkerRefs.set(tech.id, marker);
                             toAdd.push(marker);
                         }
                     });
                     
-                    // Remove stale markers (use raw refs for clusterer)
+                    // Remove stale markers using RAW refs
                     const toRemove = [];
-                    Object.keys(rawMarkers).forEach(id => {
-                        if (!incomingIds.has(parseInt(id))) {
-                            const entry = rawMarkers[id];
-                            google.maps.event.clearInstanceListeners(entry.marker);
-                            toRemove.push(entry.marker);
+                    for (const [id, rawMarker] of _rawMarkerRefs) {
+                        if (!incomingIds.has(id)) {
+                            google.maps.event.clearInstanceListeners(rawMarker);
+                            toRemove.push(rawMarker);
+                            _rawMarkerRefs.delete(id);
                             delete this.markers[id];
                         }
-                    });
+                    }
                     
                     if (toRemove.length) this.markerGroup.removeMarkers(toRemove);
                     if (toAdd.length) this.markerGroup.addMarkers(toAdd);
