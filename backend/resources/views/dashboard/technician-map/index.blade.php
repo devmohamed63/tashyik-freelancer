@@ -556,10 +556,22 @@
                 <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
                     {{-- Legend --}}
                     <div class="flex items-center gap-4 text-xs text-gray-500">
-                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span> {{ __('ui.online_available') }}</span>
-                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-orange-500 inline-block"></span> {{ __('ui.online_busy') }}</span>
-                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-gray-400 inline-block"></span> {{ __('ui.offline') }}</span>
-                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-pink-500 inline-block"></span> {{ __('ui.pending_orders') ?? 'الطلبات المعلقة' }}</span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-full border-[2.5px] border-green-500 inline-block"></span>
+                            {{ __('ui.online_available') }}
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-full border-[2.5px] border-orange-500 inline-block"></span>
+                            {{ __('ui.online_busy') }}
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-full border-[2.5px] border-gray-400 inline-block"></span>
+                            {{ __('ui.offline') }}
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-full bg-pink-500 inline-block"></span>
+                            {{ __('ui.pending_orders') ?? 'الطلبات المعلقة' }}
+                        </span>
                     </div>
 
                     {{-- Map Controls --}}
@@ -626,23 +638,31 @@
                     offline: '{{ __("ui.offline") }}',
                 },
 
+                _markerColor: '#7c3aed', // purple for all technicians
+
                 _statusColors: {
                     online_available: '#22c55e',
                     online_busy: '#f97316',
                     offline: '#9ca3af',
                 },
 
-                _markerSvg(color) {
+                /**
+                 * Build marker pin SVG with dual color info:
+                 * - catColor: main pin body (represents category)
+                 * - statusColor: inner ring around the person icon (represents online status)
+                 */
+                _markerSvg(catColor, statusColor) {
                     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48">
                             <defs>
                                 <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
                                     <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
                                 </filter>
                             </defs>
-                            <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26s18-12.5 18-26C36 8.06 27.94 0 18 0z" fill="${color}" filter="url(#s)"/>
-                            <circle cx="18" cy="16" r="10" fill="white" opacity="0.3"/>
-                            <path d="M18 12a4 4 0 100 8 4 4 0 000-8zm0 10c-2.67 0-8 1.34-8 4v1h16v-1c0-2.66-5.33-4-8-4z" fill="white"/>
+                            <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 30 18 30s18-16.5 18-30C36 8.06 27.94 0 18 0z" fill="${catColor}" filter="url(#s)"/>
+                            <circle cx="18" cy="16" r="11" fill="${statusColor}" opacity="0.9"/>
+                            <circle cx="18" cy="16" r="9" fill="white" opacity="0.95"/>
+                            <path d="M18 12a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm0 9c-2.33 0-7 1.17-7 3.5V26h14v-1.5c0-2.33-4.67-3.5-7-3.5z" fill="${catColor}" opacity="0.85"/>
                         </svg>
                     `)}`;
                 },
@@ -857,30 +877,27 @@
 
                     if (forceRebuild) {
                         // ══ FULL REBUILD (filter change / tab switch) ══
-                        // 1. Remove all old markers from map
                         Object.values(this.markers).forEach(entry => {
                             entry.marker.setMap(null);
                             google.maps.event.clearInstanceListeners(entry.marker);
                         });
                         this.markers = {};
 
-                        // 2. Destroy old clusterer
                         if (this.markerGroup) {
                             this.markerGroup.setMap(null);
                             this.markerGroup = null;
                         }
 
-                        // 3. Create fresh markers (WITHOUT map — let clusterer manage)
                         const newMarkers = [];
                         technicians.forEach(tech => {
                             if (!tech.latitude || !tech.longitude) return;
+                            const statusColor = this._statusColors[tech.status] || '#9ca3af';
                             const pos = new google.maps.LatLng(parseFloat(tech.latitude), parseFloat(tech.longitude));
-                            const color = this._statusColors[tech.status] || '#9ca3af';
 
                             const marker = new google.maps.Marker({
                                 position: pos,
                                 title: tech.name,
-                                icon: this._buildIcon(color),
+                                icon: this._buildIcon(this._markerColor, statusColor),
                                 zIndex: tech.status === 'online_available' ? 100 : (tech.status === 'online_busy' ? 50 : 10),
                             });
                             marker.addListener('click', () => {
@@ -892,7 +909,6 @@
                             newMarkers.push(marker);
                         });
 
-                        // 4. Create new clusterer — it will manage showing/hiding markers
                         this.markerGroup = new markerClusterer.MarkerClusterer({
                             map: this.map,
                             markers: newMarkers,
@@ -907,24 +923,22 @@
                         technicians.forEach(tech => {
                             if (!tech.latitude || !tech.longitude) return;
                             incomingIds.add(tech.id);
+                            const statusColor = this._statusColors[tech.status] || '#9ca3af';
                             const pos = new google.maps.LatLng(parseFloat(tech.latitude), parseFloat(tech.longitude));
-                            const color = this._statusColors[tech.status] || '#9ca3af';
 
                             if (this.markers[tech.id]) {
-                                // Update existing marker
                                 const entry = this.markers[tech.id];
                                 entry.marker.setPosition(pos);
                                 if (entry.status !== tech.status) {
-                                    entry.marker.setIcon(this._buildIcon(color));
+                                    entry.marker.setIcon(this._buildIcon(this._markerColor, statusColor));
                                     entry.status = tech.status;
                                 }
                                 entry.tech = tech;
                             } else {
-                                // New technician — add to map
                                 const marker = new google.maps.Marker({
                                     position: pos,
                                     title: tech.name,
-                                    icon: this._buildIcon(color),
+                                    icon: this._buildIcon(this._markerColor, statusColor),
                                     zIndex: tech.status === 'online_available' ? 100 : (tech.status === 'online_busy' ? 50 : 10),
                                 });
                                 marker.addListener('click', () => {
@@ -1049,11 +1063,11 @@
                     });
                 },
 
-                _buildIcon(color) {
+                _buildIcon(catColor, statusColor) {
                     return {
-                        url: this._markerSvg(color),
-                        scaledSize: new google.maps.Size(32, 40),
-                        anchor: new google.maps.Point(16, 40),
+                        url: this._markerSvg(catColor, statusColor),
+                        scaledSize: new google.maps.Size(32, 42),
+                        anchor: new google.maps.Point(16, 42),
                     };
                 },
 
