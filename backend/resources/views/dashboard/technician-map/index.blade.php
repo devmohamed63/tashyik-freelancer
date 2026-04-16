@@ -905,7 +905,8 @@
                     if (forceRebuild) {
                         // 1. مسح الـ Clusterer تماماً من الخريطة
                         if (this.markerGroup) {
-                            this.markerGroup.clearMarkers(); // يمسح الماركرز من التجميعة
+                            // MUST NOT call clearMarkers() here, because it triggers an async render
+                            // that orphans the old cluster circles. setMap(null) safely deletes them synchronously.
                             this.markerGroup.setMap(null);   // يفصل التجميعة عن الخريطة
                             this.markerGroup = null;         // يمسح الكائن نفسه
                         }
