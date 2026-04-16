@@ -903,13 +903,7 @@
                     if (this.activeTab !== 'technicians') return;
 
                     if (forceRebuild) {
-                        // 1. مسح الـ Clusterer تماماً من الخريطة
-                        if (this.markerGroup) {
-                            // MUST NOT call clearMarkers() here, because it triggers an async render
-                            // that orphans the old cluster circles. setMap(null) safely deletes them synchronously.
-                            this.markerGroup.setMap(null);   // يفصل التجميعة عن الخريطة
-                            this.markerGroup = null;         // يمسح الكائن نفسه
-                        }
+                        // We DO NOT destroy the clusterer. We will reuse it so it can clean up its own circles!
 
                         // 2. مسح الـ Markers الفردية من الخريطة ومن الـ Array
                         Object.values(this.markers).forEach(entry => {
@@ -939,11 +933,18 @@
                             newMarkers.push(marker);
                         });
 
-                        this.markerGroup = new markerClusterer.MarkerClusterer({
-                            map: this.map,
-                            markers: newMarkers,
-                            renderer: this._clusterRenderer(),
-                        });
+                        if (this.markerGroup) {
+                            // 3. Clear existing markers safely (pass true to avoid sync rendering bug)
+                            //    and then add the new filtered markers allowing a clean render layout.
+                            this.markerGroup.clearMarkers(true);
+                            this.markerGroup.addMarkers(newMarkers);
+                        } else {
+                            this.markerGroup = new markerClusterer.MarkerClusterer({
+                                map: this.map,
+                                markers: newMarkers,
+                                renderer: this._clusterRenderer(),
+                            });
+                        }
 
                     } else {
                         // ══ INCREMENTAL UPDATE (poll refresh — keeps clusterer alive) ══
