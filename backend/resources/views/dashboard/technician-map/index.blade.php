@@ -305,7 +305,7 @@
                             <div class="tech-list-item" @click="flyToTechnician(tech)">
                                 <div class="relative">
                                     <img :src="tech.avatar" :alt="tech.name" class="tech-list-avatar" 
-                                         @error="$event.target.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%2212%22 fill=%22%23e5e7eb%22/%3E%3Cpath fill=%22%239ca3af%22 d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4%22/%3E%3C/svg%3E'">
+                                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%2212%22 fill=%22%23e5e7eb%22/%3E%3Cpath fill=%22%239ca3af%22 d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4%22/%3E%3C/svg%3E'">
                                     <div class="tech-list-status absolute -bottom-0.5 -end-0.5"
                                          :class="{
                                              'bg-green-500': tech.status === 'online_available',
