@@ -513,11 +513,11 @@
             // clusterer has, guaranteeing indexOf() matches.
             // ================================================================
             const _rawMarkerRefs = new Map(); // techId → raw google.maps.Marker
+            let _markerGroup = null; // MarkerClusterer — must NOT be proxied
             
             return {
                 // Core Google Maps properties
                 map: null,
-                markerGroup: null,
                 markers: {},
                 cityMarkers: [],
                 heatmapLayer: null,
@@ -913,11 +913,11 @@
                         });
                         
                         // 4. Swap markers on the clusterer
-                        if (this.markerGroup) {
+                        if (_markerGroup) {
                             // Step A: Clear the clusterer's internal state + re-render
                             // (this removes all cluster overlay circles from the map)
                             console.log(`🗑️ Clearing ${oldRawMarkers.length} old markers...`);
-                            this.markerGroup.clearMarkers();
+                            _markerGroup.clearMarkers();
                             
                             // Step B: Remove individual markers from the map
                             // (clearMarkers only removes cluster overlays, not individual markers)
@@ -925,10 +925,10 @@
                             
                             // Step C: Add new filtered markers
                             if (newMarkerObjects.length > 0) {
-                                this.markerGroup.addMarkers(newMarkerObjects);
+                                _markerGroup.addMarkers(newMarkerObjects);
                             }
                         } else {
-                            this.markerGroup = new markerClusterer.MarkerClusterer({
+                            _markerGroup = new markerClusterer.MarkerClusterer({
                                 map: this.map,
                                 markers: newMarkerObjects,
                                 renderer: this._clusterRenderer(),
@@ -942,7 +942,7 @@
                     // ═══════════════════════════════════════════════════════════
                     // INCREMENTAL UPDATE — polling, no filter change
                     // ═══════════════════════════════════════════════════════════
-                    if (!this.markerGroup) {
+                    if (!_markerGroup) {
                         return this.syncMarkers(technicians, true);
                     }
                     
@@ -996,8 +996,8 @@
                         }
                     }
                     
-                    if (toRemove.length) this.markerGroup.removeMarkers(toRemove);
-                    if (toAdd.length) this.markerGroup.addMarkers(toAdd);
+                    if (toRemove.length) _markerGroup.removeMarkers(toRemove);
+                    if (toAdd.length) _markerGroup.addMarkers(toAdd);
                 },
                 
                 syncOrderMarkers(orders) {
@@ -1128,9 +1128,9 @@
                     });
                     this.markers = {};
                     
-                    if (this.markerGroup) {
-                        this.markerGroup.setMap(null);
-                        this.markerGroup = null;
+                    if (_markerGroup) {
+                        _markerGroup.setMap(null);
+                        _markerGroup = null;
                     }
                     
                     this.cityMarkers.forEach(cm => cm.setMap(null));
