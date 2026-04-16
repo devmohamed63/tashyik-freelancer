@@ -90,7 +90,7 @@ class TechnicianMapController extends Controller
 
         // Filter by status
         if ($request->filled('status')) {
-            if ($request->status === 'online') {
+            if (in_array($request->status, ['online', 'online_available', 'online_busy'])) {
                 $query->isOnline();
             } elseif ($request->status === 'offline') {
                 $query->where(function ($q) {
@@ -99,6 +99,10 @@ class TechnicianMapController extends Controller
                 });
             }
         }
+
+        // If filtering specifically for online_available or online_busy,
+        // we narrow down after the main query (since busy status depends on orders)
+        $statusFilterNarrow = $request->status;
 
         $technicians = $query->get();
 
@@ -138,6 +142,11 @@ class TechnicianMapController extends Controller
                 'categories' => $tech->categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->toArray(),
             ];
         });
+
+        // Narrow down by sub-status if specifically requested
+        if (isset($statusFilterNarrow) && in_array($statusFilterNarrow, ['online_available', 'online_busy'])) {
+            $data = $data->where('status', $statusFilterNarrow);
+        }
 
         // Calculate stats
         $stats = [
