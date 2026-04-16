@@ -626,8 +626,8 @@
                 pollInterval: null,
                 isFullscreen: false,
                 _lastFilterKey: '__initial__', // forces first fetchData to be a full rebuild
-                _fetchController: null,         // AbortController for in-flight requests
-                _fetchSequence: 0,              // monotonic counter to discard stale responses
+                _isFetching: false,             // prevents overlapping poll requests
+                _fetchController: null,         // AbortController for filter-change cancellation
                 stats: {
                     online_available: {{ $stats['online_available'] }},
                     online_busy: {{ $stats['online_busy'] }},
@@ -715,44 +715,37 @@
                 },
 
                 async fetchData() {
+                    const params = new URLSearchParams();
+                    if (this.cityFilter) params.append('city_id', this.cityFilter);
+                    if (this.categoryFilter) params.append('category_id', this.categoryFilter);
+                    if (this.statusFilter) params.append('status', this.statusFilter);
+
+                    const currentFilterKey = `${this.cityFilter}|${this.categoryFilter}|${this.statusFilter}`;
+                    const filtersChanged = currentFilterKey !== this._lastFilterKey;
+                    this._lastFilterKey = currentFilterKey;
+
+                    if (filtersChanged) {
+                        // Filter change → abort any in-flight request and proceed immediately
+                        if (this._fetchController) this._fetchController.abort();
+                    } else if (this._isFetching) {
+                        // Poll → skip if a request is already in-flight
+                        return;
+                    }
+
+                    this._isFetching = true;
+                    this._fetchController = new AbortController();
+
                     try {
-                        const params = new URLSearchParams();
-                        if (this.cityFilter) params.append('city_id', this.cityFilter);
-                        if (this.categoryFilter) params.append('category_id', this.categoryFilter);
-                        if (this.statusFilter) params.append('status', this.statusFilter);
-
-                        // Detect if filters changed since last fetch
-                        const currentFilterKey = `${this.cityFilter}|${this.categoryFilter}|${this.statusFilter}`;
-                        const filtersChanged = currentFilterKey !== this._lastFilterKey;
-                        this._lastFilterKey = currentFilterKey;
-
-                        // Only abort in-flight requests when FILTERS change (user action)
-                        // Polls should NOT cancel each other — prevents initial load from being killed
-                        if (filtersChanged && this._fetchController) {
-                            this._fetchController.abort();
-                        }
-                        this._fetchController = new AbortController();
-
-                        // Sequence ID — only the latest response gets processed
-                        const fetchId = ++this._fetchSequence;
-
-                        console.log(`[MAP #${fetchId}]`, filtersChanged ? '🔄 FILTER CHANGED →' : '⟳ poll →', params.toString() || '(no filters)');
+                        console.log('[MAP]', filtersChanged ? '🔄 FILTER →' : '⟳ poll →', params.toString() || '(no filters)');
 
                         const response = await fetch(
                             `{{ route('dashboard.technician-map.api') }}?${params.toString()}`,
                             { signal: this._fetchController.signal }
                         );
-
-                        // If a newer request was fired while waiting, discard this response
-                        if (fetchId !== this._fetchSequence) {
-                            console.log(`[MAP #${fetchId}] ⏭ discarded (superseded by #${this._fetchSequence})`);
-                            return;
-                        }
-
                         if (!response.ok) throw new Error(`HTTP ${response.status}`);
                         const data = await response.json();
 
-                        console.log(`[MAP #${fetchId}] ← ${data.technicians.length} technicians`, filtersChanged ? '→ FULL REBUILD' : '→ incremental');
+                        console.log(`[MAP] ← ${data.technicians.length} technicians`, filtersChanged ? '→ REBUILD' : '');
 
                         this.stats = data.stats;
                         this.technicians = data.technicians;
@@ -763,8 +756,10 @@
                             this.syncOrderMarkers(this.pendingOrders);
                         }
                     } catch (error) {
-                        if (error.name === 'AbortError') return; // expected when a newer request cancels this one
+                        if (error.name === 'AbortError') return;
                         console.error('[TechnicianMap] Fetch failed:', error);
+                    } finally {
+                        this._isFetching = false;
                     }
                 },
                 
