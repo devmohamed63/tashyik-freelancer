@@ -865,18 +865,12 @@
                     
                     if (forceRebuild) {
                         // ═══════════════════════════════════════════════════════════
-                        // ✅ إعادة بناء كاملة
+                        // ✅ إعادة بناء كاملة — Nuclear Cleanup
                         // ═══════════════════════════════════════════════════════════
                         
-                        // 1. أول حاجة: امسح الـ clusterer (عشان يشيل الـ overlay circles)
                         console.log('🗑️ Removing all old markers...');
-                        if (this.markerGroup) {
-                            this.markerGroup.clearMarkers();
-                            this.markerGroup.setMap(null);
-                            this.markerGroup = null;
-                        }
                         
-                        // 2. بعدها: امسح أي marker لسه باقي على الخريطة
+                        // 1. امسح كل marker فردي من الخريطة وفك الـ listeners
                         Object.values(this.markers).forEach(entry => {
                             if (entry.marker) {
                                 entry.marker.setMap(null);
@@ -884,6 +878,25 @@
                             }
                         });
                         this.markers = {};
+                        
+                        // 2. Destroy the MarkerClusterer completely
+                        if (this.markerGroup) {
+                            // Get cluster overlay markers before clearing
+                            // (the renderer creates google.maps.Marker for each cluster bubble)
+                            try {
+                                if (this.markerGroup.clusters) {
+                                    this.markerGroup.clusters.forEach(cluster => {
+                                        if (cluster.marker) {
+                                            cluster.marker.setMap(null);
+                                        }
+                                    });
+                                }
+                            } catch(e) { console.warn('Cluster cleanup:', e); }
+                            
+                            try { this.markerGroup.clearMarkers(); } catch(e) {}
+                            try { this.markerGroup.setMap(null); } catch(e) {}
+                            this.markerGroup = null;
+                        }
                         
                         // 3. اعمل markers جديدة للفنيين المفلترين بس
                         const newMarkers = [];
