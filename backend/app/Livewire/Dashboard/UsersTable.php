@@ -47,6 +47,7 @@ class UsersTable extends DataTable
             'name',
             'phone',
             'city_id',
+            'balance',
             'created_at',
         ])->isUser()
           ->with('city:id,name')
@@ -79,6 +80,10 @@ class UsersTable extends DataTable
 
             Column::name('orders_count', __('ui.orders'))
                 ->customValue(fn($user) => number_format($user->orders_count))
+                ->sortable(),
+
+            Column::name('balance', __('ui.balance'))
+                ->customValue(fn($user) => number_format($user->balance ?? 0, config('app.decimal_places')) . ' ' . __('ui.currency'))
                 ->sortable(),
 
             Column::name('created_at', __('ui.created_at'))

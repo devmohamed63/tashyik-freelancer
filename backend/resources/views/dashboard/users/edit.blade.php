@@ -62,6 +62,13 @@
                     :value="$user->phone"
                     :required="true" />
 
+                <!-- Balance -->
+                <x-dashboard.inputs.default
+                    name="balance"
+                    type="number"
+                    step="any"
+                    :value="old('balance', $user->balance ?? 0)" />
+
                 <!-- Password -->
                 <x-dashboard.inputs.password
                     name="password" />
@@ -122,12 +129,6 @@
                         </select>
                         @error('city_id') <x-dashboard.inputs.error :message="$message" /> @enderror
                     </div>
-
-                    <!-- Balance -->
-                    <x-dashboard.inputs.default
-                        name="balance"
-                        type="number"
-                        :value="old('balance', $user->balance ?? 0)" />
 
                     <!-- Residence Name -->
                     <x-dashboard.inputs.default

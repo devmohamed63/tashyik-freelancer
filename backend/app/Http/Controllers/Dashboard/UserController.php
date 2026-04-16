@@ -131,6 +131,10 @@ class UserController extends Controller
             'phone' => $request->phone,
         ];
 
+        if ($request->filled('balance')) {
+            $data['balance'] = $request->balance;
+        }
+
         // Service provider fields
         if ($user->type !== User::USER_ACCOUNT_TYPE) {
             if ($request->filled('status')) $data['status'] = $request->status;
@@ -142,7 +146,6 @@ class UserController extends Controller
             if ($request->has('residence_number')) $data['residence_number'] = $request->residence_number;
             if ($request->has('commercial_registration_number')) $data['commercial_registration_number'] = $request->commercial_registration_number;
             if ($request->has('tax_registration_number')) $data['tax_registration_number'] = $request->tax_registration_number;
-            if ($request->filled('balance')) $data['balance'] = $request->balance;
         }
 
         $user->update($data);
