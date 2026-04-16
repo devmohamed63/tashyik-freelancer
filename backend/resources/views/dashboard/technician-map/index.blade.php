@@ -683,27 +683,33 @@
                 },
 
                 // Data Fetching
-                async fetchData(retryCount = 0) {
+                async fetchData() {
                     const params = new URLSearchParams();
                     if (this.cityFilter) params.append('city_id', this.cityFilter);
                     if (this.categoryFilter) params.append('category_id', this.categoryFilter);
                     if (this.statusFilter) params.append('status', this.statusFilter);
-                    
+
                     const currentFilterKey = this.getFilterKey();
                     const filtersChanged = currentFilterKey !== this._lastFilterKey;
                     this._lastFilterKey = currentFilterKey;
-                    
+
+                    console.log('🔍 Fetching data with filters:', {
+                        city: this.cityFilter,
+                        category: this.categoryFilter,
+                        status: this.statusFilter,
+                        filtersChanged
+                    });
+
                     if (filtersChanged && this._fetchController) {
+                        console.log('🛑 Aborting previous request due to filter change');
                         this._fetchController.abort();
-                    } else if (this._isFetching) {
-                        return;
                     }
                     
+                    if (this._isFetching) return;
+
                     this._isFetching = true;
                     this._fetchController = new AbortController();
-                    
-                    if (filtersChanged) this.isLoading = true;
-                    
+
                     try {
                         const response = await fetch(
                             `{{ route('dashboard.technician-map.api') }}?${params.toString()}`,
@@ -711,35 +717,33 @@
                         );
                         
                         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        
                         const data = await response.json();
-                        
+
+                        console.log('📦 Received data:', {
+                            techniciansCount: data.technicians.length,
+                            firstTech: data.technicians[0]?.name,
+                            filters: { city: this.cityFilter, category: this.categoryFilter }
+                        });
+
                         this.stats = data.stats;
-                        this.technicians = this._validateTechnicians(data.technicians || []);
+                        this.technicians = data.technicians;
                         this.pendingOrders = data.pending_orders || [];
                         this.filterLists();
                         
                         if (this.activeTab === 'technicians') {
-                            const shouldForceRebuild = filtersChanged || !this.markerGroup;
-                            await this.syncMarkers(this.technicians, shouldForceRebuild);
+                            // ✅ دا أهم شيء: forceRebuild = true
+                            await this.syncMarkers(data.technicians, true);
                             this.syncOrderMarkers(this.pendingOrders);
                         }
                         
                     } catch (error) {
-                        if (error.name === 'AbortError') return;
-                        console.error('[TechnicianMap] Fetch failed:', error);
-                        
-                        if (retryCount < this.MAP_CONFIG.MAX_RETRIES) {
-                            const delay = this.MAP_CONFIG.RETRY_DELAY * Math.pow(2, retryCount);
-                            console.log(`Retry ${retryCount + 1}/${this.MAP_CONFIG.MAX_RETRIES} in ${delay}ms`);
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                            return this.fetchData(retryCount + 1);
+                        if (error.name === 'AbortError') {
+                            console.log('Request was aborted');
+                            return;
                         }
-                        
-                        this._showError('فشل تحميل بيانات الفنيين');
+                        console.error('[TechnicianMap] Fetch failed:', error);
                     } finally {
                         this._isFetching = false;
-                        this.isLoading = false;
                     }
                 },
                 
@@ -840,72 +844,103 @@
                     `)}`;
                 },
                 
-                async syncMarkers(technicians, forceRebuild = false) {
+                syncMarkers(technicians, forceRebuild = false) {
                     if (this.activeTab !== 'technicians') return;
+
+                    // ═══════════════════════════════════════════════════════════
+                    // 🔥 IMPORTANT: أي فلتر = إعادة بناء كاملة
+                    // ═══════════════════════════════════════════════════════════
+                    const hasActiveFilter = this.cityFilter !== '' || this.categoryFilter !== '' || this.statusFilter !== '';
                     
-                    const shouldForceRebuild = forceRebuild || this.hasActiveFilters();
-                    
-                    if (shouldForceRebuild) {
-                        await this._rebuildAllMarkers(technicians);
-                    } else {
-                        await this._incrementalUpdateMarkers(technicians);
-                    }
-                },
-                
-                async _rebuildAllMarkers(technicians) {
-                    if (this.markerGroup) {
-                        this.markerGroup.clearMarkers();
-                        this.markerGroup.setMap(null);
-                        this.markerGroup = null;
+                    if (hasActiveFilter) {
+                        forceRebuild = true;
                     }
                     
-                    Object.values(this.markers).forEach(entry => {
-                        entry.marker.setMap(null);
-                        google.maps.event.clearInstanceListeners(entry.marker);
+                    console.log('🔄 Syncing markers:', { 
+                        techniciansCount: technicians.length, 
+                        forceRebuild, 
+                        filters: { city: this.cityFilter, category: this.categoryFilter, status: this.statusFilter }
                     });
-                    this.markers = {};
                     
-                    const newMarkers = [];
-                    for (const tech of technicians) {
-                        const statusColor = this._statusColors[tech.status] || '#9ca3af';
-                        const pos = new google.maps.LatLng(parseFloat(tech.latitude), parseFloat(tech.longitude));
+                    if (forceRebuild) {
+                        // ═══════════════════════════════════════════════════════════
+                        // ✅ إعادة بناء كاملة
+                        // ═══════════════════════════════════════════════════════════
                         
-                        const marker = new google.maps.Marker({
-                            position: pos,
-                            title: tech.name,
-                            icon: this._buildIcon(this._markerColor, statusColor),
-                            zIndex: tech.status === 'online_available' ? 100 : (tech.status === 'online_busy' ? 50 : 10),
+                        // 1. امسح كل الـ markers القديمة من الخريطة
+                        console.log('🗑️ Removing all old markers...');
+                        Object.values(this.markers).forEach(entry => {
+                            if (entry.marker) {
+                                entry.marker.setMap(null);
+                                google.maps.event.clearInstanceListeners(entry.marker);
+                            }
+                        });
+                        this.markers = {};
+                        
+                        // 2. امسح الـ clusterer
+                        if (this.markerGroup) {
+                            this.markerGroup.clearMarkers();
+                            this.markerGroup.setMap(null);
+                            this.markerGroup = null;
+                        }
+                        
+                        // 3. اعمل markers جديدة للفنيين المفلترين بس
+                        const newMarkers = [];
+                        
+                        technicians.forEach(tech => {
+                            if (!tech.latitude || !tech.longitude) {
+                                console.warn('⚠️ Technician missing coordinates:', tech.id);
+                                return;
+                            }
+                            
+                            const statusColor = this._statusColors[tech.status] || '#9ca3af';
+                            const pos = new google.maps.LatLng(parseFloat(tech.latitude), parseFloat(tech.longitude));
+                            
+                            const marker = new google.maps.Marker({
+                                position: pos,
+                                title: tech.name,
+                                icon: this._buildIcon(this._markerColor, statusColor),
+                                zIndex: tech.status === 'online_available' ? 100 : (tech.status === 'online_busy' ? 50 : 10),
+                            });
+                            
+                            marker.addListener('click', () => {
+                                if (this.infoWindow) this.infoWindow.close();
+                                const t = this.markers[tech.id]?.tech || tech;
+                                this.infoWindow.setContent(this._popupHTML(t));
+                                this.infoWindow.open({ anchor: marker, map: this.map });
+                            });
+                            
+                            this.markers[tech.id] = { marker, status: tech.status, tech };
+                            newMarkers.push(marker);
                         });
                         
-                        marker.addListener('click', () => {
-                            if (this.infoWindow) this.infoWindow.close();
-                            const t = this.markers[tech.id]?.tech || tech;
-                            this.infoWindow.setContent(this._popupHTML(t));
-                            this.infoWindow.open({ anchor: marker, map: this.map });
-                        });
+                        // 4. أضف الـ markers الجديدة للخريطة
+                        if (newMarkers.length > 0) {
+                            this.markerGroup = new markerClusterer.MarkerClusterer({
+                                map: this.map,
+                                markers: newMarkers,
+                                renderer: this._clusterRenderer(),
+                            });
+                            console.log(`✅ Added ${newMarkers.length} markers to map`);
+                        } else {
+                            console.log('⚠️ No markers to add');
+                        }
                         
-                        this.markers[tech.id] = { marker, status: tech.status, tech };
-                        newMarkers.push(marker);
+                        return; // مهم جداً: نخرج من الدالة هنا
                     }
                     
-                    if (newMarkers.length > 0) {
-                        this.markerGroup = new markerClusterer.MarkerClusterer({
-                            map: this.map,
-                            markers: newMarkers,
-                            renderer: this._clusterRenderer(),
-                        });
-                    }
-                },
-                
-                async _incrementalUpdateMarkers(technicians) {
+                    // ═══════════════════════════════════════════════════════════
+                    // Incremental update (لما مفيش فلتر - polling بس)
+                    // ═══════════════════════════════════════════════════════════
                     if (!this.markerGroup) {
-                        return this._rebuildAllMarkers(technicians);
+                        return this.syncMarkers(technicians, true);
                     }
                     
                     const incomingIds = new Set();
                     const newMarkers = [];
                     
-                    for (const tech of technicians) {
+                    technicians.forEach(tech => {
+                        if (!tech.latitude || !tech.longitude) return;
                         incomingIds.add(tech.id);
                         const statusColor = this._statusColors[tech.status] || '#9ca3af';
                         const pos = new google.maps.LatLng(parseFloat(tech.latitude), parseFloat(tech.longitude));
@@ -934,7 +969,7 @@
                             this.markers[tech.id] = { marker, status: tech.status, tech };
                             newMarkers.push(marker);
                         }
-                    }
+                    });
                     
                     const staleMarkers = [];
                     Object.keys(this.markers).forEach(id => {
