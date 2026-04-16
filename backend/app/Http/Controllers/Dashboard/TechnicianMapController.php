@@ -17,6 +17,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class TechnicianMapController extends Controller
 {
@@ -573,11 +574,7 @@ class TechnicianMapController extends Controller
         $headers = array_merge($fixedHeaders, $categoryHeaders);
         $fixedCount = count($fixedHeaders);
         $totalCols = count($headers);
-        $lastCol = chr(ord('A') + $totalCols - 1); // works for up to 26 columns
-        // For more than 26 columns
-        if ($totalCols > 26) {
-            $lastCol = 'A' . chr(ord('A') + $totalCols - 27);
-        }
+        $lastCol = Coordinate::stringFromColumnIndex($totalCols);
 
         // Title merge
         $sheet1->mergeCells("A1:{$lastCol}1");
@@ -590,10 +587,10 @@ class TechnicianMapController extends Controller
             $col++;
         }
         // Style fixed headers blue
-        $fixedLastCol = chr(ord('A') + $fixedCount - 1);
+        $fixedLastCol = Coordinate::stringFromColumnIndex($fixedCount);
         $this->applyHeaderStyle($sheet1, "A{$headerRow}:{$fixedLastCol}{$headerRow}", $headerBg, $headerFont);
         // Style category headers with different color (purple)
-        $catStartCol = chr(ord('A') + $fixedCount);
+        $catStartCol = Coordinate::stringFromColumnIndex($fixedCount + 1);
         $this->applyHeaderStyle($sheet1, "{$catStartCol}{$headerRow}:{$lastCol}{$headerRow}", '7B2D8E', $headerFont);
         $sheet1->getRowDimension($headerRow)->setRowHeight(32);
         $sheet1->freezePane('A' . ($headerRow + 1));
@@ -629,29 +626,30 @@ class TechnicianMapController extends Controller
             }
 
             // Dynamic category columns
-            $catCol = chr(ord('A') + $fixedCount);
+            $catColIdx = $fixedCount + 1;
             foreach ($categories as $cat) {
+                $catColLetter = Coordinate::stringFromColumnIndex($catColIdx);
                 $catCount = $data['category_providers'][$cat->id] ?? 0;
-                $sheet1->setCellValue("{$catCol}{$row}", $catCount);
+                $sheet1->setCellValue("{$catColLetter}{$row}", $catCount);
 
                 // Color code based on count
                 if ($catCount === 0) {
-                    $sheet1->getStyle("{$catCol}{$row}")->applyFromArray([
+                    $sheet1->getStyle("{$catColLetter}{$row}")->applyFromArray([
                         'font' => ['bold' => true, 'color' => ['rgb' => $criticalFont]],
                         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $criticalBg]],
                     ]);
                 } elseif ($catCount <= 2) {
-                    $sheet1->getStyle("{$catCol}{$row}")->applyFromArray([
+                    $sheet1->getStyle("{$catColLetter}{$row}")->applyFromArray([
                         'font' => ['bold' => true, 'color' => ['rgb' => $warningFont]],
                         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $warningBg]],
                     ]);
                 } else {
-                    $sheet1->getStyle("{$catCol}{$row}")->applyFromArray([
+                    $sheet1->getStyle("{$catColLetter}{$row}")->applyFromArray([
                         'font' => ['bold' => true, 'color' => ['rgb' => $goodFont]],
                         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $goodBg]],
                     ]);
                 }
-                $catCol++;
+                $catColIdx++;
             }
 
             // Zebra striping (fixed columns only, categories have their own colors)
@@ -674,11 +672,12 @@ class TechnicianMapController extends Controller
         $sheet1->setCellValue("E{$row}", $totalCompleted);
         $sheet1->setCellValue("F{$row}", $totalPending);
         // Category totals
-        $catCol = chr(ord('A') + $fixedCount);
+        $catColIdx = $fixedCount + 1;
         foreach ($categories as $cat) {
+            $catColLetter = Coordinate::stringFromColumnIndex($catColIdx);
             $catTotal = array_sum(array_column(array_column($cityData, 'category_providers'), $cat->id));
-            $sheet1->setCellValue("{$catCol}{$row}", $catTotal);
-            $catCol++;
+            $sheet1->setCellValue("{$catColLetter}{$row}", $catTotal);
+            $catColIdx++;
         }
         $sheet1->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray([
             'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => 'FFFFFF']],
@@ -689,86 +688,6 @@ class TechnicianMapController extends Controller
 
         // Add border to entire data range
         $this->applyTableBorder($sheet1, "A{$headerRow}:{$lastCol}{$row}");
-
-        // ── Categories Summary (below cities table) ──
-        $row += 2; // Skip a row for spacing
-        $catSectionTitle = $row;
-        $sheet1->setCellValue("A{$row}", '📊 ملخص الأقسام');
-        $sheet1->mergeCells("A{$row}:D{$row}");
-        $sheet1->getStyle("A{$row}")->applyFromArray([
-            'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $headerBg]],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-        ]);
-        $sheet1->getRowDimension($row)->setRowHeight(32);
-        $row++;
-
-        // Categories header
-        $catHeaders = ['القسم', 'عدد الفنيين', 'النسبة من الإجمالي', 'الحالة'];
-        $col = 'A';
-        foreach ($catHeaders as $ch) {
-            $sheet1->setCellValue("{$col}{$row}", $ch);
-            $col++;
-        }
-        $this->applyHeaderStyle($sheet1, "A{$row}:D{$row}", '2E75B6', $headerFont);
-        $sheet1->getRowDimension($row)->setRowHeight(30);
-        $catHeaderRow = $row;
-        $row++;
-
-        // Get category → technicians count (global)
-        $categoriesWithCounts = Category::isParent()
-            ->withCount(['serviceProviders as technicians_count' => function ($q) {
-                $q->where('type', User::SERVICE_PROVIDER_ACCOUNT_TYPE)
-                  ->where('status', User::ACTIVE_STATUS);
-            }])
-            ->orderBy('item_order')
-            ->get(['id', 'name']);
-
-        $totalTechsGlobal = $categoriesWithCounts->sum('technicians_count');
-
-        foreach ($categoriesWithCounts as $i => $cat) {
-            $pct = $totalTechsGlobal > 0
-                ? round(($cat->technicians_count / $totalTechsGlobal) * 100, 1) . '%'
-                : '0%';
-
-            $catStatus = $cat->technicians_count > 5 ? 'good'
-                : ($cat->technicians_count > 0 ? 'warning' : 'critical');
-
-            $catStatusLabel = match($catStatus) {
-                'good' => 'جيد ✅',
-                'warning' => 'قليل ⚠️',
-                'critical' => 'لا يوجد 🔴',
-            };
-
-            $sheet1->setCellValue("A{$row}", $cat->name);
-            $sheet1->setCellValue("B{$row}", $cat->technicians_count);
-            $sheet1->setCellValue("C{$row}", $pct);
-            $sheet1->setCellValue("D{$row}", $catStatusLabel);
-
-            $this->applyStatusColor($sheet1, "D{$row}", $catStatus, $goodBg, $goodFont, $warningBg, $warningFont, $criticalBg, $criticalFont);
-
-            // Zebra
-            if ($i % 2 === 1) {
-                $sheet1->getStyle("A{$row}:C{$row}")->applyFromArray([
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $stripeBg]],
-                ]);
-            }
-
-            $this->applyRowStyle($sheet1, "A{$row}:D{$row}");
-            $sheet1->getRowDimension($row)->setRowHeight(26);
-            $row++;
-        }
-
-        // Categories total row
-        $sheet1->setCellValue("A{$row}", 'الإجمالي');
-        $sheet1->setCellValue("B{$row}", $totalTechsGlobal);
-        $sheet1->setCellValue("C{$row}", '100%');
-        $sheet1->getStyle("A{$row}:D{$row}")->applyFromArray([
-            'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => 'FFFFFF']],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2E75B6']],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-        ]);
-        $sheet1->getRowDimension($row)->setRowHeight(28);
-        $this->applyTableBorder($sheet1, "A{$catHeaderRow}:D{$row}");
 
 
         // ═══════════════════════════════════════════════
@@ -888,6 +807,7 @@ class TechnicianMapController extends Controller
             $sheet3->setCellValue("A{$row}", $i + 1);
             $sheet3->setCellValue("B{$row}", $tech->name);
             $sheet3->setCellValue("C{$row}", $tech->phone);
+            $sheet3->getStyle("C{$row}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
             $sheet3->setCellValue("D{$row}", $entityLabel);
             $sheet3->setCellValue("E{$row}", $tech->city?->name ?? '-');
             $sheet3->setCellValue("F{$row}", $catNames ?: '-');
@@ -987,11 +907,22 @@ class TechnicianMapController extends Controller
         // ═══════════════════════════════════════════════
         $filename = 'technician-map-report-' . now()->format('Y-m-d-His') . '.xlsx';
 
-        if (!is_dir(public_path('excel'))) {
-            mkdir(public_path('excel'), 0755, true);
+        $excelDir = public_path('excel');
+        if (!is_dir($excelDir)) {
+            mkdir($excelDir, 0755, true);
         }
 
-        $filePath = public_path("excel/{$filename}");
+        // Cleanup old reports (keep last 5)
+        $oldFiles = glob($excelDir . '/technician-map-report-*.xlsx');
+        if (count($oldFiles) > 5) {
+            usort($oldFiles, fn($a, $b) => filemtime($a) - filemtime($b));
+            $toDelete = array_slice($oldFiles, 0, count($oldFiles) - 5);
+            foreach ($toDelete as $old) {
+                @unlink($old);
+            }
+        }
+
+        $filePath = $excelDir . '/' . $filename;
         $writer = new Xlsx($spreadsheet);
         $writer->save($filePath);
 
