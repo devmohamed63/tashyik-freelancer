@@ -703,6 +703,7 @@
                     if (filtersChanged && this._fetchController) {
                         console.log('🛑 Aborting previous request due to filter change');
                         this._fetchController.abort();
+                        this._isFetching = false; // Reset so new request can proceed
                     }
                     
                     if (this._isFetching) return;
