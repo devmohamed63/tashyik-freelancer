@@ -506,13 +506,10 @@
     <script>
         function technicianMap() {
             return {
-                // Core properties
-                map: null,
-                markerGroup: null,
-                markers: {},
-                cityMarkers: [],
-                heatmapLayer: null,
-                infoWindow: null,
+                // NOTE: Google Maps objects (map, markerGroup, markers, etc.)
+                // are stored as non-enumerable properties in init() to prevent
+                // Alpine.js Proxy wrapping which causes infinite recursion in
+                // MarkerClusterer's comparison functions.
                 
                 // UI State
                 activeTab: 'technicians',
@@ -526,7 +523,7 @@
                 technicians: [],
                 filteredTechnicians: [],
                 pendingOrders: [],
-                orderMarkers: {},
+                // orderMarkers: moved to non-reactive storage in init()
                 insights: {
                     cities_overview: [],
                     alerts: []
@@ -581,6 +578,26 @@
 
                 // Lifecycle
                 init() {
+                    // Store Google Maps objects as non-enumerable properties
+                    // so Alpine.js does NOT wrap them in reactive Proxy
+                    const nonReactive = {
+                        map: null,
+                        markerGroup: null,
+                        markers: {},
+                        cityMarkers: [],
+                        orderMarkers: {},
+                        heatmapLayer: null,
+                        infoWindow: null,
+                    };
+                    Object.keys(nonReactive).forEach(key => {
+                        Object.defineProperty(this, key, {
+                            value: nonReactive[key],
+                            writable: true,
+                            enumerable: false,
+                            configurable: true,
+                        });
+                    });
+                    
                     const waitForGoogle = () => {
                         if (window.googleMapsReady && google.maps && google.maps.visualization) {
                             this._initMap();
