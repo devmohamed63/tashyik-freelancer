@@ -506,10 +506,13 @@
     <script>
         function technicianMap() {
             return {
-                // NOTE: Google Maps objects (map, markerGroup, markers, etc.)
-                // are stored as non-enumerable properties in init() to prevent
-                // Alpine.js Proxy wrapping which causes infinite recursion in
-                // MarkerClusterer's comparison functions.
+                // Core Google Maps properties
+                map: null,
+                markerGroup: null,
+                markers: {},
+                cityMarkers: [],
+                heatmapLayer: null,
+                infoWindow: null,
                 
                 // UI State
                 activeTab: 'technicians',
@@ -523,7 +526,7 @@
                 technicians: [],
                 filteredTechnicians: [],
                 pendingOrders: [],
-                // orderMarkers: moved to non-reactive storage in init()
+                orderMarkers: {},
                 insights: {
                     cities_overview: [],
                     alerts: []
@@ -578,26 +581,6 @@
 
                 // Lifecycle
                 init() {
-                    // Store Google Maps objects as non-enumerable properties
-                    // so Alpine.js does NOT wrap them in reactive Proxy
-                    const nonReactive = {
-                        map: null,
-                        markerGroup: null,
-                        markers: {},
-                        cityMarkers: [],
-                        orderMarkers: {},
-                        heatmapLayer: null,
-                        infoWindow: null,
-                    };
-                    Object.keys(nonReactive).forEach(key => {
-                        Object.defineProperty(this, key, {
-                            value: nonReactive[key],
-                            writable: true,
-                            enumerable: false,
-                            configurable: true,
-                        });
-                    });
-                    
                     const waitForGoogle = () => {
                         if (window.googleMapsReady && google.maps && google.maps.visualization) {
                             this._initMap();
@@ -868,9 +851,13 @@
                     const hasActiveFilter = this.cityFilter !== '' || this.categoryFilter !== '' || this.statusFilter !== '';
                     if (hasActiveFilter) forceRebuild = true;
                     
+                    // Alpine.raw() unwraps Proxy so MarkerClusterer gets raw objects
+                    const rawMarkers = (typeof Alpine !== 'undefined' && Alpine.raw) 
+                        ? Alpine.raw(this.markers) : this.markers;
+                    
                     console.log('🔄 Syncing markers:', { 
                         count: technicians.length, forceRebuild,
-                        existingCount: Object.keys(this.markers).length
+                        existingCount: Object.keys(rawMarkers).length
                     });
                     
                     if (forceRebuild) {
@@ -878,8 +865,8 @@
                         // FULL REBUILD — keep clusterer alive, swap markers
                         // ═══════════════════════════════════════════════════════════
                         
-                        // 1. Collect old marker objects for removal
-                        const oldMarkerObjects = Object.values(this.markers)
+                        // 1. Collect old RAW marker objects for removal (unwrapped!)
+                        const oldMarkerObjects = Object.values(rawMarkers)
                             .map(e => e.marker)
                             .filter(Boolean);
                         
@@ -962,8 +949,8 @@
                             parseFloat(tech.longitude)
                         );
                         
-                        if (this.markers[tech.id]) {
-                            const entry = this.markers[tech.id];
+                        if (rawMarkers[tech.id]) {
+                            const entry = rawMarkers[tech.id];
                             entry.marker.setPosition(pos);
                             if (entry.status !== tech.status) {
                                 entry.marker.setIcon(this._buildIcon(this._markerColor, statusColor));
@@ -989,12 +976,13 @@
                         }
                     });
                     
-                    // Remove stale markers
+                    // Remove stale markers (use raw refs for clusterer)
                     const toRemove = [];
-                    Object.keys(this.markers).forEach(id => {
+                    Object.keys(rawMarkers).forEach(id => {
                         if (!incomingIds.has(parseInt(id))) {
-                            google.maps.event.clearInstanceListeners(this.markers[id].marker);
-                            toRemove.push(this.markers[id].marker);
+                            const entry = rawMarkers[id];
+                            google.maps.event.clearInstanceListeners(entry.marker);
+                            toRemove.push(entry.marker);
                             delete this.markers[id];
                         }
                     });
