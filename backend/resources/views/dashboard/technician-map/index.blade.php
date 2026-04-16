@@ -230,6 +230,14 @@
                     <span>LIVE</span>
                 </div>
 
+                <a href="{{ route('dashboard.technician-map.export-excel') }}"
+                   style="display:inline-flex;align-items:center;gap:8px;padding:9px 20px;border-radius:12px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#0d9373,#0a7c5a);box-shadow:0 4px 14px rgba(13,147,115,0.35);text-decoration:none;transition:all 0.2s;border:none;cursor:pointer;"
+                   onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(13,147,115,0.45)'"
+                   onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 14px rgba(13,147,115,0.35)'"
+                   title="تصدير تقرير Excel">
+                    <span>📥 تصدير Excel</span>
+                </a>
+
                 <button @click="toggleFullscreen()" class="map-control-btn text-gray-600" title="Fullscreen">
                     <svg x-show="!isFullscreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M7 14H5v5h5v-2H7zm-2-4h2V7h3V5H5zm12 7h-3v2h5v-5h-2zM14 5v2h3v3h2V5z"/></svg>
                     <svg x-show="isFullscreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M5 16h3v3h2v-5H5zm3-8H5v2h5V5H8zm6 11h2v-3h3v-2h-5zm2-11V5h-2v5h5V8z"/></svg>

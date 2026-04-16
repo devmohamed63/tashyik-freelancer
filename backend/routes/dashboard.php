@@ -55,6 +55,9 @@ Route::domain(env('DASHBOARD_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(func
             Route::get('/technician-map/heatmap-data', [TechnicianMapController::class, 'heatmapData'])
                 ->name('technician-map.heatmap-data');
 
+            Route::get('/technician-map/export-excel', [TechnicianMapController::class, 'exportExcel'])
+                ->name('technician-map.export-excel');
+
             // Reviews route
             Route::get('/reviews', [ReviewsController::class, 'index'])
                 ->name('reviews');
