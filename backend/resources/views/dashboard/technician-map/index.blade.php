@@ -898,10 +898,9 @@
                     if (this.activeTab !== 'technicians') return;
 
                     if (forceRebuild) {
-                        // ══ FULL REBUILD (filter change / tab switch) ══
-                        // 1. Destroy clusterer FIRST — it internally manages marker visibility
+                        // ══ FULL REBUILD ══
+                        // 1. Destroy clusterer (setMap(null) → reset() removes all markers from map)
                         if (this.markerGroup) {
-                            this.markerGroup.clearMarkers();
                             this.markerGroup.setMap(null);
                             this.markerGroup = null;
                         }
