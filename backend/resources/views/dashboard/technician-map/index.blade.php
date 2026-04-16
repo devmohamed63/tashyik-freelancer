@@ -287,7 +287,7 @@
                                 <select x-model="categoryFilter" @change="onFilterChange()" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
                                     <option value="">🏷️ {{ __('ui.filter_by_category') }}</option>
                                     @foreach ($categories as $category)
-                                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                        <option value="{{ $category->id }}">{{ $category->name }} ({{ $category->technicians_count }})</option>
                                     @endforeach
                                 </select>
                                 <select x-model="statusFilter" @change="onFilterChange()" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">

@@ -43,7 +43,12 @@ class TechnicianMapController extends Controller
         ];
 
         $googleMapsApiKey = config('services.google_maps.key');
-        $categories = Category::isParent()->orderBy('item_order')->get(['id', 'name']);
+        $categories = Category::isParent()
+            ->withCount(['serviceProviders as technicians_count' => function ($q) {
+                $q->where('type', User::SERVICE_PROVIDER_ACCOUNT_TYPE);
+            }])
+            ->orderBy('item_order')
+            ->get(['id', 'name']);
         return view('dashboard.technician-map.index', compact('cities', 'categories', 'stats', 'googleMapsApiKey'));
     }
 
