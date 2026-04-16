@@ -369,7 +369,7 @@
                                     </div>
                                     
                                     <div class="space-y-2">
-                                        <template x-for="cat in city.categories_breakdown" :key="cat.id">
+                                        <template x-for="(cat, catIdx) in city.categories_breakdown" :key="city.city_id + '-' + catIdx">
                                             <div class="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
                                                 <div class="flex items-center gap-2">
                                                     <span class="w-2 h-2 rounded-full" :class="cat.status === 'good' ? 'bg-green-500' : (cat.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500')"></span>
