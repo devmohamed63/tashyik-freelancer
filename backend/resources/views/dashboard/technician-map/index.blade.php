@@ -23,29 +23,42 @@
             border-radius: 0;
         }
 
-        /* ── Custom Markers (AdvancedMarkerElement) ──── */
-        .adv-marker-pin {
+        /* ── Custom Markers ──────────────────────────── */
+        .marker-pin {
             position: relative;
-            cursor: pointer;
-            transform-origin: bottom center;
-            transition: transform 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .adv-marker-pin:hover { transform: scale(1.15); }
-        .adv-marker-pin svg { display: block; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3)); }
-
-        .adv-order-marker {
-            cursor: pointer;
-            transform-origin: center center;
-            transition: transform 0.15s ease;
+        .marker-pin .pin-core {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
         }
-        .adv-order-marker:hover { transform: scale(1.2); }
-
-        .adv-city-marker {
-            cursor: pointer;
-            transform-origin: center center;
-            transition: transform 0.15s ease;
+        .marker-pin .pin-core svg {
+            width: 16px;
+            height: 16px;
+            fill: #fff;
         }
-        .adv-city-marker:hover { transform: scale(1.1); }
+        
+        .marker-city {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 3px solid rgba(255,255,255,0.8);
+            font-weight: 700;
+            color: #fff;
+        }
 
         /* ── Premium Popup ───────────────────────────── */
         .popup-card { direction: rtl; font-family: inherit; }
@@ -125,9 +138,15 @@
             transition: all 0.2s;
             cursor: pointer;
         }
-        .popup-btn-call { background: #eff6ff; color: #3b82f6; }
+        .popup-btn-call {
+            background: #eff6ff;
+            color: #3b82f6;
+        }
         .popup-btn-call:hover { background: #dbeafe; }
-        .popup-btn-whatsapp { background: #f0fdf4; color: #22c55e; }
+        .popup-btn-whatsapp {
+            background: #f0fdf4;
+            color: #22c55e;
+        }
         .popup-btn-whatsapp:hover { background: #dcfce7; }
 
         /* ── Side Panel ──────────────────────────────── */
@@ -144,11 +163,21 @@
             max-height: calc(100vh - 220px);
             min-height: 500px;
         }
-        .dark .side-panel { background: rgba(255,255,255,0.03); border-color: #374151; }
-        .side-panel-header { padding: 16px; border-bottom: 1px solid #f3f4f6; }
+        .dark .side-panel {
+            background: rgba(255,255,255,0.03);
+            border-color: #374151;
+        }
+        .side-panel-header {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+        }
         .dark .side-panel-header { border-color: #374151; }
 
-        .side-panel-list { flex: 1; overflow-y: auto; scrollbar-width: thin; }
+        .side-panel-list {
+            flex: 1;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
         .side-panel-list::-webkit-scrollbar { width: 4px; }
         .side-panel-list::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
 
@@ -165,52 +194,109 @@
         .dark .tech-list-item:hover, .dark .city-list-item:hover, .dark .alert-list-item:hover { background: rgba(255,255,255,0.05); }
         .dark .tech-list-item, .dark .city-list-item, .dark .alert-list-item { border-color: #1f2937; }
 
-        .tech-list-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        .tech-list-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
         .tech-list-status {
-            width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-            border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
         }
 
         /* ── Tabs ────────────────────────────────────── */
-        .panel-tabs { display: flex; border-bottom: 1px solid #e5e7eb; background: #f9fafb; }
+        .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
         .dark .panel-tabs { border-color: #374151; background: #1f2937; }
         .panel-tab {
-            flex: 1; padding: 12px 0; text-align: center;
-            font-size: 13px; font-weight: 600; color: #6b7280;
-            border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s;
+            flex: 1;
+            padding: 12px 0;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
         }
         .panel-tab:hover { color: #374151; }
-        .panel-tab.active { color: #4f46e5; border-bottom-color: #4f46e5; background: #fff; }
+        .panel-tab.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+            background: #fff;
+        }
         .dark .panel-tab.active { background: transparent; color: #818cf8; border-bottom-color: #818cf8; }
 
         /* ── Action Buttons ──────────────────────────── */
         .btn-action-small {
-            padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
-            background: #4f46e5; color: #fff; transition: all 0.2s; text-align: center;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #4f46e5;
+            color: #fff;
+            transition: all 0.2s;
+            text-align: center;
         }
         .btn-action-small:hover { background: #4338ca; }
 
         /* ── Stat Mini Cards ─────────────────────────── */
-        .stat-mini { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; transition: all 0.2s; }
+        .stat-mini {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
         .stat-mini:hover { transform: translateY(-1px); }
-        .stat-mini-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .stat-mini-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
         .stat-mini-icon svg { width: 18px; height: 18px; }
 
         /* ── Control Buttons ─────────────────────────── */
         .map-control-btn {
-            width: 36px; height: 36px; border-radius: 10px; background: #fff;
-            border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         .map-control-btn:hover { background: #f3f4f6; transform: scale(1.05); }
         .map-control-btn.active { color: #ef4444; border-color: #ef4444; background: #fef2f2; }
         .map-control-btn svg { width: 18px; height: 18px; }
 
         /* ── Responsive ──────────────────────────────── */
-        @media (max-width: 1024px) { .side-panel { display: none; } }
+        @media (max-width: 1024px) {
+            .side-panel { display: none; }
+        }
 
         .live-dot {
-            width: 8px; height: 8px; background: #22c55e; border-radius: 50%;
+            width: 8px; height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
             animation: live-pulse 2s ease-in-out infinite;
         }
         @keyframes live-pulse {
@@ -227,6 +313,7 @@
         <div class="flex items-center justify-between flex-wrap gap-3">
             <div class="flex items-center gap-3">
                 <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20">
+                    <!-- material-symbols:map -->
                     <svg class="w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M14.5 7a3.5 3.5 0 1 0-3.5 3.5A3.5 3.5 0 0 0 14.5 7M11 2a5 5 0 0 1 5 5c0 3.87-5 9-5 9S6 10.87 6 7a5 5 0 0 1 5-5m7.5 7A2.5 2.5 0 1 0 16 11.5A2.5 2.5 0 0 0 18.5 9M16 6a4 4 0 0 1 4 4c0 2.8-4 7-4 7s-1.42-1.49-2.53-3.21A7 7 0 0 0 16 6M3.5 9A2.5 2.5 0 1 1 6 11.5A2.5 2.5 0 0 1 3.5 9M6 6a4 4 0 0 0-4 4c0 2.8 4 7 4 7s1.42-1.49 2.53-3.21A7 7 0 0 1 6 6"/></svg>
                 </div>
                 <div>
@@ -238,6 +325,7 @@
             </div>
 
             <div class="flex items-center gap-3">
+                {{-- Search --}}
                 <div class="relative">
                     <input type="text"
                            x-model="searchQuery"
@@ -247,11 +335,13 @@
                     <svg class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5A6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14"/></svg>
                 </div>
 
+                {{-- Live indicator --}}
                 <div class="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700">
                     <div class="live-dot"></div>
                     <span>LIVE</span>
                 </div>
 
+                {{-- Fullscreen toggle --}}
                 <button @click="toggleFullscreen()" class="map-control-btn text-gray-600" title="Fullscreen">
                     <svg x-show="!isFullscreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M7 14H5v5h5v-2H7zm-2-4h2V7h3V5H5zm12 7h-3v2h5v-5h-2zM14 5v2h3v3h2V5z"/></svg>
                     <svg x-show="isFullscreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M5 16h3v3h2v-5H5zm3-8H5v2h5V5H8zm6 11h2v-3h3v-2h-5zm2-11V5h-2v5h5V8z"/></svg>
@@ -267,6 +357,7 @@
             {{-- ── Side Panel ─────────────────────────── --}}
             <div class="side-panel">
 
+                {{-- Tabs --}}
                 <div class="panel-tabs">
                     <div @click="activeTab = 'technicians'" :class="{'active': activeTab === 'technicians'}" class="panel-tab">{{ __('ui.technicians_tab') }}</div>
                     <div @click="activeTab = 'cities'" :class="{'active': activeTab === 'cities'}" class="panel-tab">{{ __('ui.cities_tab') }}</div>
@@ -276,8 +367,9 @@
                     </div>
                 </div>
 
-                {{-- Tab: Technicians --}}
+                {{-- Tab Content: Technicians --}}
                 <div x-show="activeTab === 'technicians'" class="flex flex-col h-full overflow-hidden">
+                    {{-- Mini Stats --}}
                     <div class="grid grid-cols-2 gap-2 p-3">
                         <div class="stat-mini bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-500/5 dark:to-emerald-500/5">
                             <div class="stat-mini-icon bg-green-500/10">
@@ -288,6 +380,7 @@
                                 <p class="text-[10px] text-gray-500 leading-tight">{{ __('ui.online_available') }}</p>
                             </div>
                         </div>
+
                         <div class="stat-mini bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-500/5 dark:to-amber-500/5">
                             <div class="stat-mini-icon bg-orange-500/10">
                                 <svg class="text-orange-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m-1 5h2v6h-2zm0 8h2v2h-2z"/></svg>
@@ -299,6 +392,7 @@
                         </div>
                     </div>
 
+                    {{-- Filters --}}
                     <div class="side-panel-header">
                         <div class="flex flex-col gap-2">
                             <select x-model="cityFilter" @change="fetchData()" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
@@ -323,6 +417,7 @@
                         </div>
                     </div>
 
+                    {{-- Technician List --}}
                     <div class="side-panel-list">
                         <template x-for="tech in filteredTechnicians" :key="tech.id">
                             <div class="tech-list-item" @click="flyToTechnician(tech)">
@@ -354,7 +449,7 @@
                     </div>
                 </div>
 
-                {{-- Tab: Cities --}}
+                {{-- Tab Content: Cities --}}
                 <div x-show="activeTab === 'cities'" class="flex flex-col h-full overflow-hidden" x-cloak>
                     <div class="side-panel-list pt-2">
                         <template x-for="city in insights.cities_overview" :key="city.id">
@@ -373,7 +468,7 @@
                                                 <svg class="w-3 h-3 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4"/></svg>
                                                 <span x-text="city.total_providers"></span>
                                             </span>
-                                            <span class="text-[11px] text-gray-500 flex items-center gap-1">
+                                            <span class="text-[11px] text-gray-500 flex items-center gap-1" title="{{ __('ui.demand_supply') }}">
                                                 <svg class="w-3 h-3 text-indigo-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M16 6l2.29 2.29l-4.88 4.88l-4-4L2 16.59L3.41 18l6-6l4 4l6.3-6.29L22 12V6z"/></svg>
                                                 <span x-text="city.demand_supply_ratio + ' {{ __('ui.orders_per_provider') }}'"></span>
                                             </span>
@@ -384,11 +479,13 @@
                                     </div>
                                 </div>
 
+                                {{-- City Detail Drawer --}}
                                 <div x-show="expandedCity === city.id" class="bg-gray-50 dark:bg-gray-800/50 p-4 text-sm" x-collapse>
                                     <div class="mb-3 flex justify-between text-[11px] text-gray-500">
                                         <span>{{ __('ui.categories_covered') }}: <strong x-text="city.categories_covered + '/' + city.categories_total" class="text-gray-800 dark:text-gray-200"></strong></span>
                                         <span>{{ __('ui.total_orders_7d') }}: <strong x-text="city.total_orders_7d" class="text-gray-800 dark:text-gray-200"></strong></span>
                                     </div>
+                                    
                                     <div class="space-y-2">
                                         <template x-for="cat in city.categories_breakdown" :key="cat.id">
                                             <div class="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
@@ -409,7 +506,7 @@
                     </div>
                 </div>
 
-                {{-- Tab: Alerts --}}
+                {{-- Tab Content: Alerts --}}
                 <div x-show="activeTab === 'alerts'" class="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-900/50" x-cloak>
                     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-gray-800">
                         <h3 class="font-bold text-gray-800 dark:text-white flex items-center gap-2">
@@ -418,6 +515,7 @@
                         </h3>
                         <span class="text-xs bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full" x-text="insights.alerts.length + ' {{ __('ui.shortage') }}'"></span>
                     </div>
+                    
                     <div class="side-panel-list p-3 space-y-3">
                         <template x-for="(alert, index) in insights.alerts" :key="index">
                             <div class="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-900/50 p-4 shadow-sm relative overflow-hidden">
@@ -431,6 +529,7 @@
                                     <div class="flex-1">
                                         <h4 class="text-sm font-bold text-gray-800 dark:text-white" x-text="alert.city_name + ' - ' + alert.category_name"></h4>
                                         <p class="text-[11px] text-red-600 mt-1 dark:text-red-400">{{ __('ui.category_enabled_no_providers') }}</p>
+                                        
                                         <div class="mt-3 flex justify-end">
                                             <a :href="'{{ route('dashboard.users.create_service_provider') }}?city_id=' + alert.city_id" class="btn-action-small">
                                                 {{ __('ui.action_add_provider') }}
@@ -440,6 +539,7 @@
                                 </div>
                             </div>
                         </template>
+
                         <div x-show="insights.alerts.length === 0" class="flex flex-col items-center justify-center py-10 opacity-60">
                             <svg class="w-16 h-16 text-green-500 mb-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22a10 10 0 1 1 0-20a10 10 0 0 1 0 20m0-2a8 8 0 1 0 0-16a8 8 0 0 0 0 16m-2.3-8.7l1.3 1.29l3.3-3.3a1 1 0 0 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-2-2a1 1 0 0 1 1.4-1.42"/></svg>
                             <p class="text-sm text-gray-500 font-medium">{{ __('ui.no_shortage_alerts') }}</p>
@@ -452,7 +552,9 @@
             {{-- ── Map Container ──────────────────────── --}}
             <div class="flex-1 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm relative bg-white dark:bg-white/[0.03]">
 
+                {{-- Map Top Bar --}}
                 <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+                    {{-- Legend --}}
                     <div class="flex items-center gap-4 text-xs text-gray-500">
                         <span class="flex items-center gap-1.5">
                             <span class="w-3 h-3 rounded-full border-[2.5px] border-green-500 inline-block"></span>
@@ -472,6 +574,7 @@
                         </span>
                     </div>
 
+                    {{-- Map Controls --}}
                     <div class="flex items-center gap-2">
                         <button @click="toggleOrders()" class="map-control-btn text-gray-600" :class="{'active': showOrders}" title="{{ __('ui.toggle_orders') ?? 'إظهار الطلبات' }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21H6c-1.11 0-2-.89-2-2V5c0-1.11.89-2 2-2h12c1.11 0 2 .89 2 2v7.83c-.6-.42-1.28-.73-2-.92V5H6v14h6.54c.16.73.47 1.41.87 2m-5-8h10v-2H7zm0-4h10V7H7zm11 13a4.5 4.5 0 0 1-4.5-4.5c0-2.49 2.01-4.5 4.5-4.5H19v-2h-2v2h-1c-.55 0-1-.45-1-1s.45-1 1-1h1c1.1 0 2 .9 2 2v2h2v-2h1c.55 0 1 .45 1 1s-.45 1-1 1h-1c-1.1 0-2-.9-2-2v-2h-2v2z"/></svg>
@@ -491,38 +594,34 @@
         </div>
     </div>
 
-    {{-- ══ Scripts ═══════════════════════════════════════════ --}}
-    {{--
-        IMPORTANT CHANGES vs. previous version:
-        1. API loaded with loading=async (fixes performance warning)
-        2. Using AdvancedMarkerElement instead of deprecated google.maps.Marker
-        3. Fixed marker cleanup order: markers first → clusterer second (fixes stale markers bug)
-        4. Fixed WhatsApp phone stripping (keeps + sign)
-        5. Pinned markerclusterer to stable version
-    --}}
-    <script src="https://unpkg.com/@googlemaps/markerclusterer@2.5.3/dist/index.min.js"></script>
+    {{-- Google Maps JS --}}
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
     <script>
-        (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries","marker,visualization");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;a.onerror=()=>n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)},n=>h=f);d[q]?console.warn(p+" only loads once. Ignoring:",g):d[q]=(f,...n)=>r.add(f)&&u().then(()=>d[q](f,...n))});
-        })({key: "{{ $googleMapsApiKey }}", v: "weekly"});
+        window.initMap = function() {
+            // Google Maps is ready, Alpine's init() will detect it automatically via waitForGoogle
+        };
     </script>
-
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ $googleMapsApiKey }}&libraries=marker,visualization&callback=initMap" async defer></script>
     <script>
         function technicianMap() {
             return {
                 map: null,
                 markerGroup: null,
-                markers: {},          // { techId: { marker: AdvancedMarkerElement, status, tech, el } }
-                cityMarkers: [],      // AdvancedMarkerElement[]
+                markers: {},
+                cityMarkers: [],
                 heatmapLayer: null,
                 infoWindow: null,
-                activeTab: 'technicians',
+                activeTab: 'technicians', // technicians, cities, alerts
                 expandedCity: null,
                 technicians: [],
                 filteredTechnicians: [],
                 pendingOrders: [],
-                orderMarkers: {},     // { orderId: { marker: AdvancedMarkerElement, order } }
+                orderMarkers: {},
                 showOrders: true,
-                insights: { cities_overview: [], alerts: [] },
+                insights: {
+                    cities_overview: [],
+                    alerts: []
+                },
                 heatmapDataPoints: [],
                 heatmapVisible: false,
                 cityFilter: '',
@@ -531,9 +630,9 @@
                 searchQuery: '',
                 pollInterval: null,
                 isFullscreen: false,
-                _lastFilterKey: '__initial__',
-                _isFetching: false,
-                _fetchController: null,
+                _lastFilterKey: '__initial__', // forces first fetchData to be a full rebuild
+                _isFetching: false,             // prevents overlapping poll requests
+                _fetchController: null,         // AbortController for filter-change cancellation
                 stats: {
                     online_available: {{ $stats['online_available'] }},
                     online_busy: {{ $stats['online_busy'] }},
@@ -546,91 +645,63 @@
                     offline: '{{ __("ui.offline") }}',
                 },
 
-                _markerColor: '#7c3aed',
+                _markerColor: '#7c3aed', // purple for all technicians
+
                 _statusColors: {
                     online_available: '#22c55e',
                     online_busy: '#f97316',
-                    offline:    '#9ca3af',
+                    offline: '#9ca3af',
                 },
 
-                // ─────────────────────────────────────────────────
-                // Build a DOM element used as an AdvancedMarkerElement
-                // content (replaces deprecated SVG data-URI icon)
-                // ─────────────────────────────────────────────────
-                _buildMarkerElement(catColor, statusColor) {
-                    const div = document.createElement('div');
-                    div.className = 'adv-marker-pin';
-                    div.innerHTML = `
+                /**
+                 * Build marker pin SVG with dual color info:
+                 * - catColor: main pin body (represents category)
+                 * - statusColor: inner ring around the person icon (represents online status)
+                 */
+                _markerSvg(catColor, statusColor) {
+                    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
                         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48">
                             <defs>
-                                <filter id="s${Math.random().toString(36).slice(2,6)}" x="-20%" y="-20%" width="140%" height="140%">
+                                <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
                                     <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
                                 </filter>
                             </defs>
-                            <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 30 18 30s18-16.5 18-30C36 8.06 27.94 0 18 0z"
-                                  fill="${catColor}"/>
+                            <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 30 18 30s18-16.5 18-30C36 8.06 27.94 0 18 0z" fill="${catColor}" filter="url(#s)"/>
                             <circle cx="18" cy="16" r="11" fill="${statusColor}" opacity="0.9"/>
                             <circle cx="18" cy="16" r="9" fill="white" opacity="0.95"/>
-                            <path d="M18 12a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm0 9c-2.33 0-7 1.17-7 3.5V26h14v-1.5c0-2.33-4.67-3.5-7-3.5z"
-                                  fill="${catColor}" opacity="0.85"/>
-                        </svg>`;
-                    return div;
+                            <path d="M18 12a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm0 9c-2.33 0-7 1.17-7 3.5V26h14v-1.5c0-2.33-4.67-3.5-7-3.5z" fill="${catColor}" opacity="0.85"/>
+                        </svg>
+                    `)}`;
                 },
 
-                _buildOrderElement() {
-                    const div = document.createElement('div');
-                    div.className = 'adv-order-marker';
-                    div.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" fill="#ec4899" stroke="#fff" stroke-width="2"/>
-                            <path fill="white" d="M12 6a3 3 0 0 0-3 3v1h-1v7h8v-7h-1v-1a3 3 0 0 0-3-3m0 2a1 1 0 0 1 1 1v1h-2v-1a1 1 0 0 1 1-1Z"/>
-                        </svg>`;
-                    return div;
-                },
-
-                _buildCityElement(name, pct, bg) {
-                    const div = document.createElement('div');
-                    div.className = 'adv-city-marker';
-                    div.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
-                            <circle cx="28" cy="28" r="26" fill="${bg}" stroke="rgba(255,255,255,0.9)" stroke-width="3"/>
-                            <text x="50%" y="36%" text-anchor="middle" dy=".35em" fill="white"
-                                  font-family="Arial,sans-serif" font-weight="700" font-size="10">${name}</text>
-                            <text x="50%" y="62%" text-anchor="middle" dy=".35em" fill="white"
-                                  font-family="Arial,sans-serif" font-weight="700" font-size="14">${pct}%</text>
-                        </svg>`;
-                    return div;
-                },
-
-                // ─────────────────────────────────────────────────
-                // Init
-                // ─────────────────────────────────────────────────
                 init() {
-                    const wait = () => {
-                        if (typeof google !== 'undefined' && google.maps?.marker?.AdvancedMarkerElement && google.maps.visualization) {
+                    const waitForGoogle = () => {
+                        if (typeof google !== 'undefined' && google.maps && google.maps.visualization) {
                             this._initMap();
                         } else {
-                            setTimeout(wait, 100);
+                            setTimeout(waitForGoogle, 100);
                         }
                     };
-                    wait();
+                    waitForGoogle();
                 },
 
-                async _initMap() {
+                _initMap() {
                     try {
-                        const { Map } = await google.maps.importLibrary('maps');
-
-                        this.map = new Map(document.getElementById('technician-map'), {
+                        this.map = new google.maps.Map(document.getElementById('technician-map'), {
                             center: { lat: 24.0, lng: 45.0 },
                             zoom: 6,
-                            mapId: 'technician_map',   // required for AdvancedMarkerElement
                             disableDefaultUI: true,
                             zoomControl: true,
                             gestureHandling: 'greedy',
-                            mapTypeControlOptions: { mapTypeIds: [] },
+                            styles: [
+                                { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+                                { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+                            ],
                         });
 
                         this.infoWindow = new google.maps.InfoWindow({ minWidth: 280, maxWidth: 350 });
+
+                        // Note: markerGroup (clusterer) is created by syncMarkers on first fetchData
 
                         this.fetchData();
                         this.fetchInsights();
@@ -638,34 +709,35 @@
                             this.fetchData();
                             this.fetchInsights();
                         }, 15000);
-
-                        this.$watch('activeTab', () => this.renderMapIcons());
+                        
+                        this.$watch('activeTab', (val) => {
+                            this.renderMapIcons();
+                        });
 
                     } catch (err) {
                         console.error('[TechnicianMap] Init failed:', err);
                     }
                 },
 
-                // ─────────────────────────────────────────────────
-                // Data fetching
-                // ─────────────────────────────────────────────────
                 async fetchData() {
                     const params = new URLSearchParams();
-                    if (this.cityFilter)     params.append('city_id',     this.cityFilter);
+                    if (this.cityFilter) params.append('city_id', this.cityFilter);
                     if (this.categoryFilter) params.append('category_id', this.categoryFilter);
-                    if (this.statusFilter)   params.append('status',      this.statusFilter);
+                    if (this.statusFilter) params.append('status', this.statusFilter);
 
                     const currentFilterKey = `${this.cityFilter}|${this.categoryFilter}|${this.statusFilter}`;
-                    const filtersChanged   = currentFilterKey !== this._lastFilterKey;
-                    this._lastFilterKey    = currentFilterKey;
+                    const filtersChanged = currentFilterKey !== this._lastFilterKey;
+                    this._lastFilterKey = currentFilterKey;
 
                     if (filtersChanged) {
+                        // Filter change → abort any in-flight request and proceed immediately
                         if (this._fetchController) this._fetchController.abort();
                     } else if (this._isFetching) {
+                        // Poll → skip if a request is already in-flight
                         return;
                     }
 
-                    this._isFetching    = true;
+                    this._isFetching = true;
                     this._fetchController = new AbortController();
 
                     try {
@@ -680,11 +752,10 @@
 
                         console.log(`[MAP] ← ${data.technicians.length} technicians`, filtersChanged ? '→ REBUILD' : '');
 
-                        this.stats         = data.stats;
-                        this.technicians   = data.technicians;
+                        this.stats = data.stats;
+                        this.technicians = data.technicians;
                         this.pendingOrders = data.pending_orders || [];
                         this.filterLists();
-
                         if (this.activeTab === 'technicians') {
                             this.syncMarkers(data.technicians, filtersChanged);
                             this.syncOrderMarkers(this.pendingOrders);
@@ -696,25 +767,29 @@
                         this._isFetching = false;
                     }
                 },
-
+                
                 async fetchInsights() {
                     try {
                         const [insightsRes, heatmapRes] = await Promise.all([
                             fetch(`{{ route('dashboard.technician-map.city-insights') }}`),
                             fetch(`{{ route('dashboard.technician-map.heatmap-data') }}`)
                         ]);
-
+                        
                         if (insightsRes.ok) {
                             this.insights = await insightsRes.json();
-                            if (this.activeTab === 'cities') this.renderMapIcons();
+                            if (this.activeTab === 'cities') {
+                                this.renderMapIcons();
+                            }
                         }
-
+                        
                         if (heatmapRes.ok) {
                             const hData = await heatmapRes.json();
-                            this.heatmapDataPoints = hData.map(p => ({
-                                location: new google.maps.LatLng(p.lat, p.lng),
-                                weight: p.weight
-                            }));
+                            this.heatmapDataPoints = hData.map(p => {
+                                return {
+                                    location: new google.maps.LatLng(p.lat, p.lng),
+                                    weight: p.weight
+                                };
+                            });
                             this._updateHeatmapLayer();
                         }
                     } catch (error) {
@@ -724,83 +799,144 @@
 
                 filterLists() {
                     const q = this.searchQuery.toLowerCase().trim();
-                    this.filteredTechnicians = !q
-                        ? [...this.technicians]
-                        : this.technicians.filter(t =>
+                    if (!q) {
+                        this.filteredTechnicians = [...this.technicians];
+                    } else {
+                        this.filteredTechnicians = this.technicians.filter(t =>
                             t.name.toLowerCase().includes(q) ||
                             t.phone.includes(q) ||
                             t.city.toLowerCase().includes(q)
                         );
+                    }
                 },
-
-                // ─────────────────────────────────────────────────
-                // Marker management
-                // ─────────────────────────────────────────────────
-
-                /**
-                 * ✅ FIX: Correct cleanup order
-                 *    OLD (buggy):  clusterer.setMap(null) → then markers.setMap(null)
-                 *    NEW (fixed):  markers.setMap(null) first → then clusterer cleanup
-                 */
-                _destroyAllTechMarkers() {
-                    // Step 1: detach every individual marker from the map FIRST
-                    Object.values(this.markers).forEach(({ marker, el }) => {
-                        marker.map = null;  // AdvancedMarkerElement: set .map = null to remove
-                    });
-                    this.markers = {};
-
-                    // Step 2: AFTER markers are gone, destroy the clusterer
-                    if (this.markerGroup) {
-                        this.markerGroup.clearMarkers();
-                        this.markerGroup.setMap(null);
-                        this.markerGroup = null;
+                
+                toggleCityDetail(id) {
+                    this.expandedCity = this.expandedCity === id ? null : id;
+                },
+                
+                toggleHeatmap() {
+                    this.heatmapVisible = !this.heatmapVisible;
+                    this._updateHeatmapLayer();
+                },
+                
+                toggleOrders() {
+                    this.showOrders = !this.showOrders;
+                    this.renderMapIcons();
+                },
+                
+                _updateHeatmapLayer() {
+                    if (this.heatmapVisible) {
+                        if (!this.heatmapLayer) {
+                            this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
+                                data: this.heatmapDataPoints,
+                                map: this.map,
+                                radius: 30,
+                                opacity: 0.8
+                            });
+                        } else {
+                            this.heatmapLayer.setData(this.heatmapDataPoints);
+                            this.heatmapLayer.setMap(this.map);
+                        }
+                    } else if (this.heatmapLayer) {
+                        this.heatmapLayer.setMap(null);
+                    }
+                },
+                
+                renderMapIcons() {
+                    // Clear all markers
+                    this._clearAllMarkers();
+                    
+                    if (this.activeTab === 'technicians') {
+                        this.syncMarkers(this.technicians, true);
+                        this.syncOrderMarkers(this.pendingOrders);
+                    } else if (this.activeTab === 'cities' || this.activeTab === 'alerts') {
+                        this.syncCityMarkers(this.insights.cities_overview);
                     }
                 },
 
                 _clearAllMarkers() {
-                    this._destroyAllTechMarkers();
-
-                    // City markers
-                    this.cityMarkers.forEach(m => { m.map = null; });
+                    // Remove technician markers from map
+                    Object.values(this.markers).forEach(entry => {
+                        entry.marker.setMap(null);
+                        google.maps.event.clearInstanceListeners(entry.marker);
+                    });
+                    this.markers = {};
+                    // Destroy clusterer
+                    if (this.markerGroup) {
+                        this.markerGroup.setMap(null);
+                        this.markerGroup = null;
+                    }
+                    // Remove city markers
+                    this.cityMarkers.forEach(cm => cm.setMap(null));
                     this.cityMarkers = [];
-
-                    // Order markers
-                    Object.values(this.orderMarkers).forEach(({ marker }) => { marker.map = null; });
+                    // Remove order markers
+                    Object.values(this.orderMarkers).forEach(m => m.marker.setMap(null));
                     this.orderMarkers = {};
+                },
+
+                _clusterRenderer() {
+                    return {
+                        render: ({ count, position }) => {
+                            let size = 40, bg = '#6366f1', fontSize = 13;
+                            if (count >= 50) { size = 60; bg = '#ec4899'; fontSize = 16; }
+                            else if (count >= 10) { size = 50; bg = '#8b5cf6'; fontSize = 14; }
+
+                            return new google.maps.Marker({
+                                position,
+                                icon: {
+                                    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+                                            <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${bg}" stroke="rgba(255,255,255,0.8)" stroke-width="3"/>
+                                            <text x="50%" y="52%" text-anchor="middle" dy=".35em" fill="white" font-family="Arial,sans-serif" font-weight="700" font-size="${fontSize}">${count}</text>
+                                        </svg>
+                                    `)}`,
+                                    scaledSize: new google.maps.Size(size, size),
+                                    anchor: new google.maps.Point(size/2, size/2),
+                                },
+                                zIndex: 1000 + count,
+                            });
+                        }
+                    };
                 },
 
                 syncMarkers(technicians, forceRebuild = false) {
                     if (this.activeTab !== 'technicians') return;
 
                     if (forceRebuild) {
-                        // ── FULL REBUILD ──────────────────────────────
-                        // Uses _destroyAllTechMarkers which has the correct order
-                        this._destroyAllTechMarkers();
+                        // امسح كل حاجة بالترتيب الصح حسب التوجيهات
+                        if (this.markerGroup) {
+                            this.markerGroup.clearMarkers(); // بيشيل الـ markers من الـ clusterer
+                        }
+                        
+                        Object.values(this.markers).forEach(entry => {
+                            entry.marker.setMap(null);
+                            google.maps.event.clearInstanceListeners(entry.marker);
+                        });
+                        this.markers = {};
+                        
+                        if (this.markerGroup) {
+                            this.markerGroup.setMap(null);
+                            this.markerGroup = null;
+                        }
 
-                        const { AdvancedMarkerElement } = google.maps.marker;
                         const newMarkers = [];
-
                         technicians.forEach(tech => {
                             if (!tech.latitude || !tech.longitude) return;
-
                             const statusColor = this._statusColors[tech.status] || '#9ca3af';
-                            const el          = this._buildMarkerElement(this._markerColor, statusColor);
+                            const pos = new google.maps.LatLng(parseFloat(tech.latitude), parseFloat(tech.longitude));
 
-                            const marker = new AdvancedMarkerElement({
-                                position: { lat: parseFloat(tech.latitude), lng: parseFloat(tech.longitude) },
-                                map: null, // don't attach to map yet — clusterer will do it
+                            const marker = new google.maps.Marker({
+                                position: pos,
                                 title: tech.name,
-                                content: el,
+                                icon: this._buildIcon(this._markerColor, statusColor),
                                 zIndex: tech.status === 'online_available' ? 100 : (tech.status === 'online_busy' ? 50 : 10),
                             });
-
                             marker.addListener('click', () => {
                                 const t = this.markers[tech.id]?.tech || tech;
                                 this.infoWindow.setContent(this._popupHTML(t));
                                 this.infoWindow.open({ anchor: marker, map: this.map });
                             });
-
-                            this.markers[tech.id] = { marker, status: tech.status, tech, el };
+                            this.markers[tech.id] = { marker, status: tech.status, tech };
                             newMarkers.push(marker);
                         });
 
@@ -811,51 +947,42 @@
                         });
 
                     } else {
-                        // ── INCREMENTAL UPDATE (poll) ─────────────────
+                        // ══ INCREMENTAL UPDATE (poll refresh — keeps clusterer alive) ══
+                        // Safety: if clusterer doesn't exist yet (initial load was slow), do a full rebuild
                         if (!this.markerGroup) {
+                            console.log('[MAP] No clusterer yet — escalating to full rebuild');
                             return this.syncMarkers(technicians, true);
                         }
-
-                        const { AdvancedMarkerElement } = google.maps.marker;
                         const incomingIds = new Set();
-                        const newMarkers  = [];
+                        const newMarkers = [];
 
                         technicians.forEach(tech => {
                             if (!tech.latitude || !tech.longitude) return;
                             incomingIds.add(tech.id);
-
-                            const pos = { lat: parseFloat(tech.latitude), lng: parseFloat(tech.longitude) };
+                            const statusColor = this._statusColors[tech.status] || '#9ca3af';
+                            const pos = new google.maps.LatLng(parseFloat(tech.latitude), parseFloat(tech.longitude));
 
                             if (this.markers[tech.id]) {
                                 const entry = this.markers[tech.id];
-                                entry.marker.position = pos;
-
+                                entry.marker.setPosition(pos);
                                 if (entry.status !== tech.status) {
-                                    // Re-render the SVG inside the existing DOM element
-                                    const statusColor = this._statusColors[tech.status] || '#9ca3af';
-                                    entry.el.innerHTML = this._buildMarkerElement(this._markerColor, statusColor).innerHTML;
+                                    entry.marker.setIcon(this._buildIcon(this._markerColor, statusColor));
                                     entry.status = tech.status;
                                 }
                                 entry.tech = tech;
                             } else {
-                                const statusColor = this._statusColors[tech.status] || '#9ca3af';
-                                const el          = this._buildMarkerElement(this._markerColor, statusColor);
-
-                                const marker = new AdvancedMarkerElement({
+                                const marker = new google.maps.Marker({
                                     position: pos,
-                                    map: null,
                                     title: tech.name,
-                                    content: el,
+                                    icon: this._buildIcon(this._markerColor, statusColor),
                                     zIndex: tech.status === 'online_available' ? 100 : (tech.status === 'online_busy' ? 50 : 10),
                                 });
-
                                 marker.addListener('click', () => {
                                     const t = this.markers[tech.id]?.tech || tech;
                                     this.infoWindow.setContent(this._popupHTML(t));
                                     this.infoWindow.open({ anchor: marker, map: this.map });
                                 });
-
-                                this.markers[tech.id] = { marker, status: tech.status, tech, el };
+                                this.markers[tech.id] = { marker, status: tech.status, tech };
                                 newMarkers.push(marker);
                             }
                         });
@@ -864,39 +991,52 @@
                         const staleMarkers = [];
                         Object.keys(this.markers).forEach(id => {
                             if (!incomingIds.has(parseInt(id))) {
-                                this.markers[id].marker.map = null;
+                                this.markers[id].marker.setMap(null);
+                                google.maps.event.clearInstanceListeners(this.markers[id].marker);
                                 staleMarkers.push(this.markers[id].marker);
                                 delete this.markers[id];
                             }
                         });
 
-                        if (staleMarkers.length) this.markerGroup.removeMarkers(staleMarkers);
-                        if (newMarkers.length)   this.markerGroup.addMarkers(newMarkers);
+                        if (this.markerGroup) {
+                            if (staleMarkers.length) this.markerGroup.removeMarkers(staleMarkers);
+                            if (newMarkers.length) this.markerGroup.addMarkers(newMarkers);
+                        }
                     }
                 },
-
+                
                 syncOrderMarkers(orders) {
-                    if (this.activeTab !== 'technicians' || !this.showOrders) return;
-
-                    const { AdvancedMarkerElement } = google.maps.marker;
+                    if (this.activeTab !== 'technicians' || !this.showOrders) {
+                        return;
+                    }
+                    
                     const incomingIds = new Set();
-
                     orders.forEach(order => {
                         if (!order.latitude || !order.longitude) return;
                         incomingIds.add(order.id);
 
-                        const pos = { lat: parseFloat(order.latitude), lng: parseFloat(order.longitude) };
-
+                        const pos = new google.maps.LatLng(parseFloat(order.latitude), parseFloat(order.longitude));
+                        
                         if (this.orderMarkers[order.id]) {
-                            this.orderMarkers[order.id].marker.position = pos;
-                            this.orderMarkers[order.id].order = order;
+                            const entry = this.orderMarkers[order.id];
+                            entry.marker.setPosition(pos);
+                            entry.order = order;
                         } else {
-                            const el     = this._buildOrderElement();
-                            const marker = new AdvancedMarkerElement({
+                            const marker = new google.maps.Marker({
                                 position: pos,
                                 map: this.map,
                                 title: order.customer_name,
-                                content: el,
+                                icon: {
+                                    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24">
+                                            <circle cx="12" cy="12" r="10" fill="#ec4899" stroke="#fff" stroke-width="2" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/>
+                                            <path fill="white" d="M12 6a3 3 0 0 0-3 3v1h-1v7h8v-7h-1v-1a3 3 0 0 0-3-3m0 2a1 1 0 0 1 1 1v1h-2v-1a1 1 0 0 1 1-1Z"/>
+                                        </svg>
+                                    `)}`,
+                                    scaledSize: new google.maps.Size(30, 30),
+                                    anchor: new google.maps.Point(15, 15),
+                                },
+                                animation: google.maps.Animation.DROP,
                                 zIndex: 90,
                             });
 
@@ -912,100 +1052,68 @@
 
                     Object.keys(this.orderMarkers).forEach(id => {
                         if (!incomingIds.has(parseInt(id))) {
-                            this.orderMarkers[id].marker.map = null;
+                            this.orderMarkers[id].marker.setMap(null);
                             delete this.orderMarkers[id];
                         }
                     });
                 },
 
                 syncCityMarkers(cities) {
-                    // Clear old city markers first (prevents accumulation on repeated calls)
-                    this.cityMarkers.forEach(m => { m.map = null; });
-                    this.cityMarkers = [];
-
-                    const { AdvancedMarkerElement } = google.maps.marker;
-
                     cities.forEach(city => {
                         if (!city.latitude || !city.longitude) return;
-
-                        const bg  = city.coverage_status === 'good' ? '#22c55e' : (city.coverage_status === 'warning' ? '#eab308' : '#ef4444');
-                        const el  = this._buildCityElement(city.name, city.coverage_percentage, bg);
-                        const pos = { lat: parseFloat(city.latitude), lng: parseFloat(city.longitude) };
-
-                        const marker = new AdvancedMarkerElement({
+                        
+                        const pos = new google.maps.LatLng(parseFloat(city.latitude), parseFloat(city.longitude));
+                        const bg = city.coverage_status === 'good' ? '#22c55e' : (city.coverage_status === 'warning' ? '#eab308' : '#ef4444');
+                        
+                        const marker = new google.maps.Marker({
                             position: pos,
                             map: this.map,
                             title: city.name,
-                            content: el,
+                            icon: {
+                                url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50">
+                                        <circle cx="25" cy="25" r="23" fill="${bg}" stroke="rgba(255,255,255,0.9)" stroke-width="3"/>
+                                        <text x="50%" y="30%" text-anchor="middle" dy=".35em" fill="white" font-family="Arial,sans-serif" font-weight="700" font-size="12">${city.name}</text>
+                                        <text x="50%" y="60%" text-anchor="middle" dy=".35em" fill="white" font-family="Arial,sans-serif" font-weight="700" font-size="16">${city.coverage_percentage}%</text>
+                                    </svg>
+                                `)}`,
+                                scaledSize: new google.maps.Size(50, 50),
+                                anchor: new google.maps.Point(25, 25),
+                            },
                         });
-
+                        
                         marker.addListener('click', () => {
-                            this.activeTab   = 'cities';
+                            this.activeTab = 'cities';
                             this.expandedCity = city.id;
                             this.map.panTo(pos);
                             this.map.setZoom(10);
+                            
+                            // Scroll panel
                             setTimeout(() => {
-                                const el = document.querySelector(`[data-city-id="${city.id}"]`);
-                                el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                            }, 150);
+                                const el = document.querySelector('.side-panel-list');
+                                if(el) el.scrollTop = 0; // simplistic scroll
+                            }, 100);
                         });
-
+                        
                         this.cityMarkers.push(marker);
                     });
                 },
 
-                renderMapIcons() {
-                    this._clearAllMarkers();
-                    if (this.activeTab === 'technicians') {
-                        this.syncMarkers(this.technicians, true);
-                        this.syncOrderMarkers(this.pendingOrders);
-                    } else {
-                        this.syncCityMarkers(this.insights.cities_overview);
-                    }
-                },
-
-                // ─────────────────────────────────────────────────
-                // Cluster renderer (uses AdvancedMarkerElement)
-                // ─────────────────────────────────────────────────
-                _clusterRenderer() {
+                _buildIcon(catColor, statusColor) {
                     return {
-                        render: ({ count, position }) => {
-                            let size = 40, bg = '#6366f1', fontSize = 13;
-                            if (count >= 50) { size = 60; bg = '#ec4899'; fontSize = 16; }
-                            else if (count >= 10) { size = 50; bg = '#8b5cf6'; fontSize = 14; }
-
-                            const { AdvancedMarkerElement } = google.maps.marker;
-                            const div = document.createElement('div');
-                            div.innerHTML = `
-                                <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-                                    <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${bg}" stroke="rgba(255,255,255,0.8)" stroke-width="3"/>
-                                    <text x="50%" y="52%" text-anchor="middle" dy=".35em" fill="white"
-                                          font-family="Arial,sans-serif" font-weight="700" font-size="${fontSize}">${count}</text>
-                                </svg>`;
-                            div.style.cursor = 'pointer';
-
-                            return new AdvancedMarkerElement({
-                                position,
-                                content: div,
-                                zIndex: 1000 + count,
-                            });
-                        }
+                        url: this._markerSvg(catColor, statusColor),
+                        scaledSize: new google.maps.Size(32, 42),
+                        anchor: new google.maps.Point(16, 42),
                     };
                 },
 
-                // ─────────────────────────────────────────────────
-                // Popups
-                // ─────────────────────────────────────────────────
                 _popupHTML(tech) {
                     const categoriesHtml = (tech.categories || []).map(c => `<span class="cat-badge">${c.name}</span>`).join('');
-                    // ✅ FIX: keep the + sign for international numbers
-                    const waNumber = tech.phone.replace(/[^0-9+]/g, '');
-
+                    
                     return `
                         <div class="popup-card">
                             <div class="popup-header">
-                                <img src="${tech.avatar}" class="popup-avatar" alt="${tech.name}"
-                                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%2212%22 r=%2212%22 fill=%22%23e5e7eb%22/><path fill=%22%239ca3af%22 d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4%22/></svg>'">
+                                <img src="${tech.avatar}" class="popup-avatar" alt="${tech.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%2212%22 r=%2212%22 fill=%22%23e5e7eb%22/><path fill=%22%239ca3af%22 d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4%22/></svg>'">
                                 <div style="min-width:0">
                                     <div class="popup-name">${tech.name}</div>
                                     <span class="popup-badge ${tech.status}">${this.statusLabels[tech.status]}</span>
@@ -1031,7 +1139,7 @@
                                     <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24c1.12.37 2.33.57 3.57.57c.55 0 1 .45 1 1V20c0 .55-.45 1-1 1c-9.39 0-17-7.61-17-17c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1c0 1.25.2 2.45.57 3.57c.11.35.03.74-.25 1.02z"/></svg>
                                     {{ __('ui.call') }}
                                 </a>
-                                <a href="https://wa.me/${waNumber}" target="_blank" class="popup-btn popup-btn-whatsapp">
+                                <a href="https://wa.me/${tech.phone.replace(/[^0-9]/g, '')}" target="_blank" class="popup-btn popup-btn-whatsapp">
                                     <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967c-.273-.099-.471-.148-.67.15c-.197.297-.767.966-.94 1.164c-.173.199-.347.223-.644.075c-.297-.15-1.255-.463-2.39-1.475c-.883-.788-1.48-1.761-1.653-2.059c-.173-.297-.018-.458.13-.606c.134-.133.298-.347.446-.52c.149-.174.198-.298.298-.497c.099-.198.05-.371-.025-.52c-.075-.149-.669-1.612-.916-2.207c-.242-.579-.487-.5-.669-.51c-.173-.008-.371-.01-.57-.01c-.198 0-.52.074-.792.372c-.272.297-1.04 1.016-1.04 2.479c0 1.462 1.065 2.875 1.213 3.074c.149.198 2.096 3.2 5.077 4.487c.709.306 1.262.489 1.694.625c.712.227 1.36.195 1.871.118c.571-.085 1.758-.719 2.006-1.413c.248-.694.248-1.289.173-1.413c-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214l-3.741.982l.998-3.648l-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884c2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
                                     {{ __('ui.whatsapp') }}
                                 </a>
@@ -1039,7 +1147,7 @@
                         </div>
                     `;
                 },
-
+                
                 _popupOrderHTML(order) {
                     return `
                         <div class="popup-card">
@@ -1059,65 +1167,26 @@
                                 </div>
                             </div>
                             <div class="popup-actions" style="background:#fdf2f8; border-top:1px solid #fce7f3;">
-                                <a href="/dashboard/orders/${order.id}" class="popup-btn" style="background:#fbcfe8; color:#be185d;">
-                                    {{ __('ui.view_order') ?? 'عرض تفاصيل الطلب' }} #${order.id}
+                                <a href="/dashboard/orders" class="popup-btn" style="background:#fbcfe8; color:#be185d;">
+                                    {{ __('ui.view_order') ?? 'عرض تفاصيل الطلب' }} # ${order.id}
                                 </a>
                             </div>
                         </div>
                     `;
                 },
 
-                // ─────────────────────────────────────────────────
-                // Controls
-                // ─────────────────────────────────────────────────
                 flyToTechnician(tech) {
                     if (!tech.latitude || !tech.longitude || !this.map) return;
+
                     this.map.panTo({ lat: parseFloat(tech.latitude), lng: parseFloat(tech.longitude) });
                     this.map.setZoom(14);
+
                     setTimeout(() => {
                         const entry = this.markers[tech.id];
-                        if (entry?.marker) {
-                            this.infoWindow.setContent(this._popupHTML(entry.tech));
-                            this.infoWindow.open({ anchor: entry.marker, map: this.map });
+                        if (entry && entry.marker) {
+                            google.maps.event.trigger(entry.marker, 'click');
                         }
                     }, 500);
-                },
-
-                toggleCityDetail(id) {
-                    this.expandedCity = this.expandedCity === id ? null : id;
-                },
-
-                toggleHeatmap() {
-                    this.heatmapVisible = !this.heatmapVisible;
-                    this._updateHeatmapLayer();
-                },
-
-                toggleOrders() {
-                    this.showOrders = !this.showOrders;
-                    if (!this.showOrders) {
-                        Object.values(this.orderMarkers).forEach(({ marker }) => { marker.map = null; });
-                        this.orderMarkers = {};
-                    } else {
-                        this.syncOrderMarkers(this.pendingOrders);
-                    }
-                },
-
-                _updateHeatmapLayer() {
-                    if (this.heatmapVisible) {
-                        if (!this.heatmapLayer) {
-                            this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
-                                data: this.heatmapDataPoints,
-                                map: this.map,
-                                radius: 30,
-                                opacity: 0.8
-                            });
-                        } else {
-                            this.heatmapLayer.setData(this.heatmapDataPoints);
-                            this.heatmapLayer.setMap(this.map);
-                        }
-                    } else if (this.heatmapLayer) {
-                        this.heatmapLayer.setMap(null);
-                    }
                 },
 
                 resetView() {
@@ -1130,12 +1199,11 @@
 
                 toggleFullscreen() {
                     this.isFullscreen = !this.isFullscreen;
-                    this.$nextTick(() => { if (this.map) google.maps.event.trigger(this.map, 'resize'); });
+                    this.$nextTick(() => { if (this.map) google.maps.event.trigger(this.map, "resize"); });
                 },
 
                 destroy() {
                     if (this.pollInterval) clearInterval(this.pollInterval);
-                    this._clearAllMarkers();
                 }
             };
         }
