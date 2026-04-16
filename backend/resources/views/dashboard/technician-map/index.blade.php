@@ -868,8 +868,15 @@
                         // ✅ إعادة بناء كاملة
                         // ═══════════════════════════════════════════════════════════
                         
-                        // 1. امسح كل الـ markers القديمة من الخريطة
+                        // 1. أول حاجة: امسح الـ clusterer (عشان يشيل الـ overlay circles)
                         console.log('🗑️ Removing all old markers...');
+                        if (this.markerGroup) {
+                            this.markerGroup.clearMarkers();
+                            this.markerGroup.setMap(null);
+                            this.markerGroup = null;
+                        }
+                        
+                        // 2. بعدها: امسح أي marker لسه باقي على الخريطة
                         Object.values(this.markers).forEach(entry => {
                             if (entry.marker) {
                                 entry.marker.setMap(null);
@@ -877,13 +884,6 @@
                             }
                         });
                         this.markers = {};
-                        
-                        // 2. امسح الـ clusterer
-                        if (this.markerGroup) {
-                            this.markerGroup.clearMarkers();
-                            this.markerGroup.setMap(null);
-                            this.markerGroup = null;
-                        }
                         
                         // 3. اعمل markers جديدة للفنيين المفلترين بس
                         const newMarkers = [];
