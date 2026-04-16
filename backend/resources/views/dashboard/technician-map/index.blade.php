@@ -912,12 +912,18 @@
                             newMarkerObjects.push(marker);
                         });
                         
-                        // 4. Swap markers on the clusterer using RAW refs
+                        // 4. Swap markers on the clusterer
                         if (this.markerGroup) {
-                            if (oldRawMarkers.length > 0) {
-                                console.log(`🗑️ Removing ${oldRawMarkers.length} old markers...`);
-                                this.markerGroup.removeMarkers(oldRawMarkers);
-                            }
+                            // Step A: Clear the clusterer's internal state + re-render
+                            // (this removes all cluster overlay circles from the map)
+                            console.log(`🗑️ Clearing ${oldRawMarkers.length} old markers...`);
+                            this.markerGroup.clearMarkers();
+                            
+                            // Step B: Remove individual markers from the map
+                            // (clearMarkers only removes cluster overlays, not individual markers)
+                            oldRawMarkers.forEach(m => m.setMap(null));
+                            
+                            // Step C: Add new filtered markers
                             if (newMarkerObjects.length > 0) {
                                 this.markerGroup.addMarkers(newMarkerObjects);
                             }
