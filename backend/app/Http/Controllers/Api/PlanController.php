@@ -24,7 +24,9 @@ class PlanController extends ApiController
     {
         $serviceProvider = Auth::user();
 
-        $plans = Plan::where('target_group', $serviceProvider->entity_type)
+        $plans = Plan::when($serviceProvider->entity_type, function ($query) use ($serviceProvider) {
+                $query->where('target_group', $serviceProvider->entity_type);
+            })
             ->orderBy('price')
             ->get([
                 'id',
