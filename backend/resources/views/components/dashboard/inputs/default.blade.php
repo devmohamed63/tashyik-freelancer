@@ -1,5 +1,7 @@
 <div>
-    <x-dashboard.label :name="$name" :locale="$locale ?? null" :for="$id ?? $name" :required="$required ?? false" />
+    @if(!isset($label) || $label !== false)
+        <x-dashboard.label :name="$name" :locale="$locale ?? null" :for="$id ?? $name" :required="$required ?? false" />
+    @endif
 
     <div class="relative">
         <input

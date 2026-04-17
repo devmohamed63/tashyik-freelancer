@@ -7,10 +7,13 @@ use App\Models\Plan;
 use App\Models\User;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Illuminate\Validation\Rule;
 
-class Create extends Component
+class Edit extends Component
 {
+    public ?Plan $plan;
+
     public string $name;
 
     public int $price = 0;
@@ -28,6 +31,29 @@ class Create extends Component
     public function mount()
     {
         $this->authorize('manage plans');
+    }
+
+    #[On('editResult')]
+    public function loadPlan($id)
+    {
+        $this->plan = Plan::with('features')->find($id);
+
+        if (!$this->plan) {
+            return;
+        }
+
+        $this->name = $this->plan->getTranslation('name', 'ar') ?? '';
+        $this->price = (int) $this->plan->price;
+        $this->target_group = $this->plan->target_group;
+        $this->badge = $this->plan->badge;
+        $this->duration_in_months = (int) ($this->plan->duration_in_days / 30);
+        
+        $featuresList = $this->plan->features->map(fn($f) => $f->getTranslation('title', 'ar') ?? '')->toArray();
+        $this->features = count($featuresList) > 0 ? $featuresList : [''];
+
+        $this->selectedCategories = $this->plan->categories->pluck('id')->toArray();
+
+        $this->dispatch('initModal'); // Just in case
     }
 
     public function addFeature()
@@ -53,7 +79,7 @@ class Create extends Component
         return Category::isChild()->orderBy('name')->get();
     }
 
-    public function store()
+    public function update()
     {
         $this->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -69,7 +95,7 @@ class Create extends Component
             'features.*' => __('ui.feature'),
         ]);
 
-        $plan = Plan::create([
+        $this->plan->update([
             'name' => $this->name,
             'price' => $this->price,
             'target_group' => $this->target_group,
@@ -77,25 +103,22 @@ class Create extends Component
             'duration_in_days' => $this->duration_in_months * 30,
         ]);
 
+        $this->plan->features()->delete();
         $featuresList = array_filter($this->features, fn($f) => trim($f ?? '') !== '');
         if (!empty($featuresList)) {
             $featuresData = array_map(fn($f) => ['title' => $f], $featuresList);
-            $plan->features()->createMany($featuresData);
+            $this->plan->features()->createMany($featuresData);
         }
 
-        if (!empty($this->selectedCategories)) {
-            $plan->categories()->attach($this->selectedCategories);
-        }
+        $this->plan->categories()->sync($this->selectedCategories);
 
-        $this->dispatch('hideModal', ['id' => 'createResultModal']);
+        $this->dispatch('hideModal', ['id' => 'editResultModal']);
 
         $this->dispatch('refreshTable');
-
-        $this->reset();
     }
 
     public function render()
     {
-        return view('livewire.dashboard.plans.create');
+        return view('livewire.dashboard.plans.edit');
     }
 }

@@ -1,11 +1,15 @@
 <div>
     <x-dashboard.label :name="$label" :for="$label" :required="$required ?? false" />
 
+    @php
+        $jsId = isset($id) ? str_replace('-', '_', $id) : '';
+    @endphp
+
     <div
         class="relative"
         x-data="{
             search: '',
-            selected{{ isset($id) ? "_$id" : '' }}: [
+            selected_{{ $jsId }}: [
                 @if (is_array($selected)) @foreach ($selected ?? [] as $selectedChild) '{{ $selectedChild }}', @endforeach
             @else
             {{ $selected }} @endif
@@ -18,24 +22,24 @@
             },
             get selectedItems() {
                 return @isset($single)
-                this.items.filter(i => i.id == this.selected{{ isset($id) ? "_$id" : '' }})
+                this.items.filter(i => i.id == this.selected_{{ $jsId }})
                 @else
-                this.items.filter(i => this.selected{{ isset($id) ? "_$id" : '' }}.includes((i.value).toString()))
+                this.items.filter(i => this.selected_{{ $jsId }}.includes((i.value).toString()))
                 @endisset
             }
             @isset($single),
             removeSelected() {
-                this.selected{{ isset($id) ? "_$id" : '' }} = ''
+                this.selected_{{ $jsId }} = ''
             }
             @endisset
         }"
         @isset($globalValue)
-            x-init="$watch('selected{{ isset($id) ? "_$id" : '' }}', value => {{ $globalValue }} = !selected{{ isset($id) ? "_$id" : '' }}.length > 0)"
+            x-init="$watch('selected_{{ $jsId }}', value => {{ $globalValue }} = !selected_{{ $jsId }}.length > 0)"
         @endisset>
 
         <div class="flex flex-col gap-2 border border-gray-200 dark:border-gray-700 rounded-lg p-2 shadow-theme-xs">
 
-            <span x-show="selected{{ isset($id) ? "_$id" : '' }}.length > 0" class="text-gray-500 my-1">
+            <span x-show="selected_{{ $jsId }}.length > 0" class="text-gray-500 my-1">
                 <div class="flex flex-wrap gap-2">
                     <template x-for="selectedItem in selectedItems" :key="selectedItem.id">
                         <div class="inline-flex items-center justify-center gap-1 rounded-full bg-success-50 px-2.5 py-0.5 text-xs font-medium text-success-600 dark:bg-success-500/15 dark:text-success-500">
@@ -64,8 +68,9 @@
                                 x-bind:id="`{{ $id ?? 'item' }}-${item.id}`"
                                 x-bind:value="item.value"
                                 @isset($single) type="radio" @else type="checkbox" @endisset
-                                x-model="selected{{ isset($id) ? "_$id" : '' }}"
+                                x-model="selected_{{ $jsId }}"
                                 name="{{ $name }}"
+                                {{ $attributes->only(['wire:model', 'wire:model.live', 'wire:change']) }}
                                 class="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary-ultra-light focus:ring-2 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary dark:ring-offset-gray-800">
                             <label x-bind:for="`{{ $id ?? 'item' }}-${item.id}`" class="ms-2 text-sm font-medium text-gray-500 dark:text-gray-300" x-text="item.name"></label>
                         </div>

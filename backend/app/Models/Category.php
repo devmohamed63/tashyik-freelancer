@@ -101,6 +101,14 @@ class Category extends Model implements HasMedia
     }
 
     /**
+     * The category plans.
+     */
+    public function plans(): BelongsToMany
+    {
+        return $this->belongsToMany(Plan::class);
+    }
+
+    /**
      * The category services.
      */
     public function services(): HasMany

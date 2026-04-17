@@ -23,9 +23,18 @@ class Plan extends Model
      */
     protected $fillable = [
         'name',
-        'target_group',
         'price',
+        'badge',
+        'target_group',
         'duration_in_days',
+    ];
+
+    public const BADGES = [
+        'most_chosen' => 'الأكثر اختيارًا ⭐',
+        'best_value' => 'الأفضل قيمة 🎯',
+        'premium' => 'باقة مميزة 💎',
+        'customers_choice' => 'اختيار العملاء 👑',
+        'special_offer' => 'عرض مميز 🔥',
     ];
 
     public array $translatable = [
@@ -62,5 +71,21 @@ class Plan extends Model
                 return $duration;
             },
         );
+    }
+
+    /**
+     * Get plan features.
+     */
+    public function features(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PlanFeature::class);
+    }
+
+    /**
+     * Get plan categories.
+     */
+    public function categories(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Category::class);
     }
 }

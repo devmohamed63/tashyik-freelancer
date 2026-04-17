@@ -46,6 +46,12 @@ class PlansTable extends DataTable
         $this->dispatch('showModal', ['id' => 'createResultModal']);
     }
 
+    public function edit($id)
+    {
+        $this->dispatch('editResult', id: $id)->to(\App\Livewire\Dashboard\Plans\Edit::class);
+        $this->dispatch('showModal', ['id' => 'editResultModal']);
+    }
+
     protected function columns(): Collection|null
     {
         return new Collection([
@@ -67,6 +73,11 @@ class PlansTable extends DataTable
             Column::name('duration_in_days', __('validation.attributes.duration_in_months'))
                 ->sortable()
                 ->customValue(fn($plan) => $plan->duration_in_months),
+
+            Column::name('edit', __('ui.edit'))
+                ->action()
+                ->wireAction('edit')
+                ->view('components.dashboard.tables.buttons.edit'),
 
             Column::name('delete', __('ui.delete'))
                 ->action()
@@ -102,6 +113,9 @@ class PlansTable extends DataTable
 
             Modal::id('createResultModal')
                 ->view('dashboard.plans.create'),
+
+            Modal::id('editResultModal')
+                ->view('dashboard.plans.edit'),
 
         ]);
     }

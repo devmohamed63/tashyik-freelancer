@@ -23,15 +23,26 @@ class PlanController extends ApiController
     public function index()
     {
         $serviceProvider = Auth::user();
+        $userCategoryIds = $serviceProvider->categories()->pluck('categories.id');
 
-        $plans = Plan::when($serviceProvider->entity_type, function ($query) use ($serviceProvider) {
+        $plans = Plan::with(['features', 'categories'])
+            ->when($serviceProvider->entity_type, function ($query) use ($serviceProvider) {
                 $query->where('target_group', $serviceProvider->entity_type);
+            })
+            ->where(function ($query) use ($userCategoryIds) {
+                // Plans with no categories (available to all)
+                $query->whereDoesntHave('categories')
+                    // OR plans that share at least one category with the user
+                    ->orWhereHas('categories', function ($q) use ($userCategoryIds) {
+                        $q->whereIn('categories.id', $userCategoryIds);
+                    });
             })
             ->orderBy('price')
             ->get([
                 'id',
                 'name',
                 'price',
+                'badge',
                 'duration_in_days',
             ]);
 

@@ -5,14 +5,14 @@
         <x-dashboard.loaders.centered wire:loading.class.remove="hidden" />
 
         <!-- Modal title -->
-        <x-dashboard.modals.title :value="__('ui.add_plan')" />
+        <x-dashboard.modals.title :value="__('ui.edit_plan')" />
 
-        <form class="flex flex-col md:grid grid-cols-2 gap-5" wire:submit="store" x-data="{ loading: false }">
+        <form class="flex flex-col md:grid grid-cols-2 gap-5" wire:submit="update" x-data="{ loading: false }">
 
             <!-- Name -->
             <x-dashboard.inputs.default
                 name="name"
-                id="plan-name"
+                id="edit-plan-name"
                 wire:model="name"
                 :required="true" />
 
@@ -30,7 +30,7 @@
             <!-- Price -->
             <x-dashboard.inputs.default
                 name="price"
-                id="plan-price"
+                id="edit-plan-price"
                 wire:model="price"
                 type="number"
                 min="0"
@@ -39,7 +39,7 @@
             <!-- Duration in months -->
             <x-dashboard.inputs.default
                 name="duration_in_months"
-                id="plan-duration_in_months"
+                id="edit-plan-duration_in_months"
                 wire:model="duration_in_months"
                 type="number"
                 min="1"
@@ -60,7 +60,7 @@
             <div class="col-span-full">
                 <x-dashboard.inputs.select
                     label="categories"
-                    id="plan-categories"
+                    id="edit-plan-categories"
                     name="selectedCategories[]"
                     wire:model="selectedCategories"
                     :children="$this->categoriesList"
@@ -81,7 +81,7 @@
                     <div class="relative">
                         <x-dashboard.inputs.default
                             name="features.{{ $index }}"
-                            id="plan-feature-{{ $index }}"
+                            id="edit-plan-feature-{{ $index }}"
                             wire:model="features.{{ $index }}"
                             :required="false"
                             :label="false" />
@@ -99,7 +99,7 @@
             </div>
 
             <!-- Submit button -->
-            <x-dashboard.buttons.primary :name="__('ui.add')" />
+            <x-dashboard.buttons.primary :name="__('ui.edit')" />
 
         </form>
 
