@@ -19,18 +19,8 @@ class AppLogo extends Component
     public function __construct()
     {
         $this->lightMode = Cache::get('light_mode_logo');
+
         $this->darkMode = Cache::get('dark_mode_logo');
-
-        // Fallback: re-cache from database if cache was cleared
-        if (!$this->lightMode || !$this->darkMode) {
-            $settings = \App\Models\Settings::with('media')->first();
-
-            if ($settings) {
-                $settings->updateCache();
-                $this->lightMode = Cache::get('light_mode_logo');
-                $this->darkMode = Cache::get('dark_mode_logo');
-            }
-        }
     }
 
     /**
