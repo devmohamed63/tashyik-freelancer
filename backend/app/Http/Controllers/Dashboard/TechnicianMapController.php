@@ -498,8 +498,16 @@ class TechnicianMapController extends Controller
             }
 
             $coveragePct = $categoriesTotal > 0 ? round(($categoriesCovered / $categoriesTotal) * 100) : 0;
-            $cityStatus = $categoriesTotal > 0 && $coveragePct == 0 ? 'critical'
-                : ($categoriesTotal > 0 && $coveragePct < 100 ? 'warning' : 'good');
+
+            if ($categoriesTotal == 0 || ($providers->count() == 0 && $categoriesTotal > 0)) {
+                $cityStatus = 'critical';
+            } elseif ($categoriesTotal > 0 && $coveragePct == 0) {
+                $cityStatus = 'critical';
+            } elseif ($categoriesTotal > 0 && $coveragePct < 100) {
+                $cityStatus = 'warning';
+            } else {
+                $cityStatus = 'good';
+            }
 
             $cityData[] = [
                 'name' => $city->name,
