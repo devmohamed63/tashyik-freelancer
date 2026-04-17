@@ -45,12 +45,16 @@ class Category extends Model implements HasMedia
         'name',
         'slug',
         'description',
+        'meta_title',
+        'meta_description',
         'item_order',
     ];
 
     public array $translatable = [
         'name',
         'description',
+        'meta_title',
+        'meta_description',
     ];
 
     public function maxDraggableIndex()

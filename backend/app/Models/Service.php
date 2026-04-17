@@ -37,6 +37,8 @@ class Service extends Model implements HasMedia
     protected $fillable = [
         'name',
         'description',
+        'meta_title',
+        'meta_description',
         'price',
         'item_order',
         'warranty_days',
@@ -45,6 +47,8 @@ class Service extends Model implements HasMedia
     public array $translatable = [
         'name',
         'description',
+        'meta_title',
+        'meta_description',
     ];
 
     public function maxDraggableIndex()

@@ -28,18 +28,20 @@
 
   const ogImage = computed(() => service.value?.og_image || service.value?.image);
   const canonicalUrl = computed(() => `${config.public.appUrl}${switchLocalePath(locale.value)}`);
+  const seoTitle = computed(() => service.value?.meta_title || t('alt.service', { service: service.value?.name }));
+  const seoDescription = computed(() => service.value?.meta_description || service.value?.description);
 
   useSeoMeta({
-    title: t('alt.service', { service: service.value?.name }),
-    ogTitle: t('alt.service', { service: service.value?.name }),
-    description: service.value?.description,
-    ogDescription: service.value?.description,
+    title: seoTitle.value,
+    ogTitle: seoTitle.value,
+    description: seoDescription.value,
+    ogDescription: seoDescription.value,
     ogImage: ogImage.value,
     ogType: 'website',
     ogUrl: canonicalUrl.value,
     twitterCard: 'summary_large_image',
-    twitterTitle: t('alt.service', { service: service.value?.name }),
-    twitterDescription: service.value?.description,
+    twitterTitle: seoTitle.value,
+    twitterDescription: seoDescription.value,
     twitterImage: ogImage.value,
   });
 

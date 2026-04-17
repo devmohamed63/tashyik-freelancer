@@ -109,6 +109,33 @@
 
             </div>
 
+            <div class="mt-5 border-t border-gray-200 dark:border-gray-700 pt-5">
+                <h3 class="text-lg font-medium text-gray-800 dark:text-white/90 mb-4">{{ __('ui.seo_settings') }}</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Meta Title ar -->
+                    <x-dashboard.inputs.default
+                        name="meta_title"
+                        locale="ar"
+                        id="service-meta-title-ar"
+                        :value="$service->getTranslation('meta_title', 'ar')"
+                        :required="false" />
+
+                    <!-- Meta Description ar -->
+                    <div>
+                        <x-dashboard.label name="meta_description" locale="ar" :required="false" />
+                        <textarea
+                            name="meta_description[ar]"
+                            id="service-meta-description-ar"
+                            rows="2"
+                            class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800">{{ old('meta_description.ar', $service->getTranslation('meta_description', 'ar')) }}</textarea>
+                        @error('meta_description.ar')
+                            <x-dashboard.inputs.error :message="$message" />
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
             <div class="mt-5">
                 <!-- Submit button -->
                 <x-dashboard.buttons.primary :name="__('ui.update')" />

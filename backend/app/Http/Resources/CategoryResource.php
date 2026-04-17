@@ -66,6 +66,14 @@ class CategoryResource extends JsonResource
                 $request->routeIs('*.categories.show'),
                 fn() => $this->getMedia('image')->first()?->getUrl('og')
             ),
+            'meta_title' => $this->when(
+                $request->routeIs('*.categories.show'),
+                $this->meta_title
+            ),
+            'meta_description' => $this->when(
+                $request->routeIs('*.categories.show'),
+                $this->meta_description
+            ),
         ];
     }
 }

@@ -54,6 +54,14 @@ class ServiceResource extends JsonResource
                 $request->routeIs('*.services.show'),
                 fn() => $this->getMedia('image')->first()?->getUrl('og')
             ),
+            'meta_title' => $this->when(
+                $request->routeIs('*.services.show'),
+                $this->meta_title
+            ),
+            'meta_description' => $this->when(
+                $request->routeIs('*.services.show'),
+                $this->meta_description
+            ),
         ];
     }
 }

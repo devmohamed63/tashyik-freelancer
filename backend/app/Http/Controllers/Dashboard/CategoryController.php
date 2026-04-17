@@ -54,6 +54,8 @@ class CategoryController extends Controller
         $category = new Category([
             'name' => $request->name,
             'description' => $request->description,
+            'meta_title' => $request->meta_title,
+            'meta_description' => $request->meta_description,
         ]);
 
         $category->category_id = $request->parent;
@@ -122,6 +124,8 @@ class CategoryController extends Controller
         $category->update([
             'name' => $request->name,
             'description' => $request->description,
+            'meta_title' => $request->meta_title,
+            'meta_description' => $request->meta_description,
         ]);
 
         $category->category_id = $request->parent;

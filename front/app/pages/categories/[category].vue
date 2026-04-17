@@ -37,18 +37,20 @@
 
   const ogImage = computed(() => data.value?.og_image || data.value?.image);
   const canonicalUrl = computed(() => `${config.public.appUrl}${switchLocalePath(locale.value)}`);
+  const seoTitle = computed(() => data.value?.meta_title || t('alt.category', { category: data.value?.name }));
+  const seoDescription = computed(() => data.value?.meta_description || data.value?.description);
 
   useSeoMeta({
-    title: t('alt.category', { category: data.value?.name }),
-    ogTitle: t('alt.category', { category: data.value?.name }),
-    description: data.value?.description,
-    ogDescription: data.value?.description,
+    title: seoTitle.value,
+    ogTitle: seoTitle.value,
+    description: seoDescription.value,
+    ogDescription: seoDescription.value,
     ogImage: ogImage.value,
     ogType: 'website',
     ogUrl: canonicalUrl.value,
     twitterCard: 'summary_large_image',
-    twitterTitle: t('alt.category', { category: data.value?.name }),
-    twitterDescription: data.value?.description,
+    twitterTitle: seoTitle.value,
+    twitterDescription: seoDescription.value,
     twitterImage: ogImage.value,
   });
 
