@@ -44,8 +44,16 @@ class Guest extends Component
             : 'ar';
 
         $settings = Cache::get('settings');
-
         $icon = Cache::get('icon');
+
+        if (!$settings || !$icon) {
+            $settingsModel = \App\Models\Settings::with('media')->first();
+            if ($settingsModel) {
+                $settingsModel->updateCache();
+                $settings = Cache::get('settings');
+                $icon = Cache::get('icon');
+            }
+        }
 
         $this->app = new stdClass();
         $this->app->name = $settings?->name;
