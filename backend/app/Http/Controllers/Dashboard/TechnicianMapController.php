@@ -304,7 +304,9 @@ class TechnicianMapController extends Controller
             $coveragePercentage = $categoriesTotal > 0 ? round(($categoriesCoveredCount / $categoriesTotal) * 100) : 0;
             
             $cityStatus = 'good';
-            if ($categoriesTotal > 0 && $coveragePercentage == 0) {
+            if ($categoriesTotal == 0 || ($providers->count() == 0 && $categoriesTotal > 0)) {
+                $cityStatus = 'critical';
+            } elseif ($categoriesTotal > 0 && $coveragePercentage == 0) {
                 $cityStatus = 'critical';
             } elseif ($categoriesTotal > 0 && $coveragePercentage < 100) {
                 $cityStatus = 'warning';
