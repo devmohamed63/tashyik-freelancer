@@ -15,11 +15,19 @@
             z-index: 1;
         }
         
-        .map-fullscreen #technician-map {
+        .map-fullscreen .flex-1.rounded-2xl {
             position: fixed !important;
             inset: 0;
+            width: 100vw !important;
             height: 100vh !important;
             z-index: 99999;
+            border-radius: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .map-fullscreen #technician-map {
+            flex: 1;
+            height: 100% !important;
             border-radius: 0;
         }
 
@@ -199,6 +207,7 @@
          x-data="technicianMap()" 
          x-init="init()" 
          x-on:destroyed.window="destroy()"
+         @fullscreenchange.window="isFullscreen = !!document.fullscreenElement"
          :class="{ 'map-fullscreen': isFullscreen }">
 
         {{-- Header Bar --}}
@@ -221,7 +230,7 @@
                            x-model="searchQuery"
                            @input.debounce.300ms="filterLists()"
                            placeholder="{{ __('ui.search_technician') }}"
-                           class="w-64 rounded-xl border border-gray-200 bg-white pe-4 ps-10 py-2.5 text-sm text-gray-700 placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                           class="w-64 rounded-xl border border-gray-200 bg-white pe-4 ps-10 py-2.5 text-xs text-gray-700 placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                     <svg class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5A6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14"/></svg>
                 </div>
 
@@ -238,10 +247,7 @@
                     <span>📥 تصدير Excel</span>
                 </a>
 
-                <button @click="toggleFullscreen()" class="map-control-btn text-gray-600" title="Fullscreen">
-                    <svg x-show="!isFullscreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M7 14H5v5h5v-2H7zm-2-4h2V7h3V5H5zm12 7h-3v2h5v-5h-2zM14 5v2h3v3h2V5z"/></svg>
-                    <svg x-show="isFullscreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M5 16h3v3h2v-5H5zm3-8H5v2h5V5H8zm6 11h2v-3h3v-2h-5zm2-11V5h-2v5h5V8z"/></svg>
-                </button>
+
             </div>
         </div>
 
@@ -253,9 +259,8 @@
                 <div class="panel-tabs">
                     <div @click="activeTab = 'technicians'; renderMapIcons()" :class="{'active': activeTab === 'technicians'}" class="panel-tab">{{ __('ui.technicians_tab') }}</div>
                     <div @click="activeTab = 'cities'; renderMapIcons(); fetchInsights()" :class="{'active': activeTab === 'cities'}" class="panel-tab">{{ __('ui.cities_tab') }}</div>
-                    <div @click="activeTab = 'alerts'; renderMapIcons(); fetchInsights()" :class="{'active': activeTab === 'alerts'}" class="panel-tab relative">
+                    <div @click="activeTab = 'alerts'; renderMapIcons(); fetchInsights()" :class="{'active': activeTab === 'alerts'}" class="panel-tab">
                         {{ __('ui.alerts_tab') }}
-                        <span x-show="insights.alerts.length > 0" class="absolute top-1.5 start-2 flex h-2 w-2 rounded-full bg-red-500"></span>
                     </div>
                 </div>
 
@@ -291,14 +296,14 @@
                                     <option value="{{ $city->id }}">{{ $city->name }}</option>
                                 @endforeach
                             </select>
-                            <div class="grid grid-cols-2 gap-2">
-                                <select x-model="categoryFilter" @change="onFilterChange()" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            <div class="flex flex-col gap-2">
+                                <select x-model="categoryFilter" @change="onFilterChange()" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
                                     <option value="">🏷️ {{ __('ui.filter_by_category') }}</option>
                                     @foreach ($categories as $category)
                                         <option value="{{ $category->id }}">{{ $category->name }} ({{ $category->technicians_count }})</option>
                                     @endforeach
                                 </select>
-                                <select x-model="statusFilter" @change="onFilterChange()" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                                <select x-model="statusFilter" @change="onFilterChange()" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
                                     <option value="">📊 {{ __('ui.all_statuses') }}</option>
                                     <option value="online_available">🟢 {{ __('ui.online_available') }}</option>
                                     <option value="online_busy">🟠 {{ __('ui.online_busy') }}</option>
@@ -323,10 +328,10 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm font-semibold text-gray-800 dark:text-white truncate" x-text="tech.name"></p>
-                                    <div class="flex items-center gap-2 mt-0.5">
-                                        <span class="text-[11px] text-gray-400 truncate" x-text="tech.city"></span>
-                                        <span class="text-[10px] text-gray-300">•</span>
-                                        <span class="text-[11px] text-gray-400 truncate" x-text="tech.last_seen_at"></span>
+                                    <div class="flex items-center gap-1 mt-0.5">
+                                        <span class="text-[10px] text-gray-400 truncate" x-text="tech.city"></span>
+                                        <span class="text-[9px] text-gray-300">•</span>
+                                        <span class="text-[10px] text-gray-400 truncate" x-text="tech.last_seen_at"></span>
                                     </div>
                                 </div>
                                 <span class="popup-badge text-[10px] flex-shrink-0" :class="tech.status" x-text="statusLabels[tech.status]"></span>
@@ -439,7 +444,7 @@
             </div>
 
             {{-- Map Container --}}
-            <div class="flex-1 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm relative bg-white dark:bg-white/[0.03]">
+            <div class="flex-1 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm relative bg-white dark:bg-white/[0.03] flex flex-col">
 
                 {{-- Filter Badge --}}
                 <div x-show="hasActiveFilters()" class="filter-badge" x-cloak>
@@ -460,29 +465,12 @@
                 </div>
 
                 {{-- Map Top Bar --}}
-                <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-                    <div class="flex items-center gap-4 text-xs text-gray-500">
-                        <span class="flex items-center gap-1.5">
-                            <span class="w-3 h-3 rounded-full border-[2.5px] border-green-500 inline-block"></span>
-                            {{ __('ui.online_available') }}
-                        </span>
-                        <span class="flex items-center gap-1.5">
-                            <span class="w-3 h-3 rounded-full border-[2.5px] border-orange-500 inline-block"></span>
-                            {{ __('ui.online_busy') }}
-                        </span>
-                        <span class="flex items-center gap-1.5">
-                            <span class="w-3 h-3 rounded-full border-[2.5px] border-gray-400 inline-block"></span>
-                            {{ __('ui.offline') }}
-                        </span>
-                        <span class="flex items-center gap-1.5">
-                            <span class="w-3 h-3 rounded-full bg-pink-500 inline-block"></span>
-                            {{ __('ui.pending_orders') ?? 'الطلبات المعلقة' }}
-                        </span>
-                    </div>
+                <div class="flex items-center justify-end px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
 
                     <div class="flex items-center gap-2">
-                        <button @click="toggleOrders()" class="map-control-btn text-gray-600" :class="{'active': showOrders}" :aria-pressed="showOrders" title="{{ __('ui.toggle_orders') ?? 'إظهار الطلبات' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21H6c-1.11 0-2-.89-2-2V5c0-1.11.89-2 2-2h12c1.11 0 2 .89 2 2v7.83c-.6-.42-1.28-.73-2-.92V5H6v14h6.54c.16.73.47 1.41.87 2m-5-8h10v-2H7zm0-4h10V7H7zm11 13a4.5 4.5 0 0 1-4.5-4.5c0-2.49 2.01-4.5 4.5-4.5H19v-2h-2v2h-1c-.55 0-1-.45-1-1s.45-1 1-1h1c1.1 0 2 .9 2 2v2h2v-2h1c.55 0 1 .45 1 1s-.45 1-1 1h-1c-1.1 0-2-.9-2-2v-2h-2v2z"/></svg>
+                        <button @click="toggleFullscreen()" class="map-control-btn text-gray-600" title="Fullscreen">
+                            <svg x-show="!isFullscreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M7 14H5v5h5v-2H7zm-2-4h2V7h3V5H5zm12 7h-3v2h5v-5h-2zM14 5v2h3v3h2V5z"/></svg>
+                            <svg x-show="isFullscreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M5 16h3v3h2v-5H5zm3-8H5v2h5V5H8zm6 11h2v-3h3v-2h-5zm2-11V5h-2v5h5V8z"/></svg>
                         </button>
                         <button @click="toggleHeatmap()" class="map-control-btn text-gray-600" :class="{'active': heatmapVisible}" :aria-pressed="heatmapVisible" title="{{ __('ui.heatmap_toggle') }}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3s-3-1.34-3-3s1.34-3 3-3m0 14.2c-2.5 0-4.71-1.28-6-3.22c.03-1.99 4-3.08 6-3.08s5.97 1.09 6 3.08c-1.29 1.94-3.5 3.22-6 3.22"/></svg>
@@ -534,7 +522,7 @@
                 // UI State
                 activeTab: 'technicians',
                 expandedCity: null,
-                showOrders: true,
+                showOrders: false,
                 heatmapVisible: false,
                 isFullscreen: false,
                 isLoading: false,

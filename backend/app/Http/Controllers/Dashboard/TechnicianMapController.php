@@ -382,6 +382,9 @@ class TechnicianMapController extends Controller
     public function exportExcel()
     {
         Gate::authorize('view users');
+        
+        // Allow enough time for complex location-based calculations across all cities
+        set_time_limit(300);
 
         $spreadsheet = new Spreadsheet();
         $spreadsheet->getDefaultStyle()->getFont()->setName('Segoe UI')->setSize(11);
@@ -499,14 +502,15 @@ class TechnicianMapController extends Controller
 
             $coveragePct = $categoriesTotal > 0 ? round(($categoriesCovered / $categoriesTotal) * 100) : 0;
 
-            if ($categoriesTotal == 0 || ($providers->count() == 0 && $categoriesTotal > 0)) {
+            $providersCount = $providers->count();
+            if ($providersCount < 15) {
                 $cityStatus = 'critical';
-            } elseif ($categoriesTotal > 0 && $coveragePct == 0) {
-                $cityStatus = 'critical';
-            } elseif ($categoriesTotal > 0 && $coveragePct < 100) {
+            } elseif ($providersCount < 30) {
                 $cityStatus = 'warning';
-            } else {
+            } elseif ($providersCount <= 50) {
                 $cityStatus = 'good';
+            } else {
+                $cityStatus = 'excellent';
             }
 
             $cityData[] = [
@@ -617,7 +621,8 @@ class TechnicianMapController extends Controller
             $sheet1->setCellValue("G{$row}", $data['coverage']);
 
             $statusLabel = match($data['status']) {
-                'good' => 'ممتاز ✅',
+                'excellent' => 'ممتاز 🌟',
+                'good' => 'جيد ✅',
                 'warning' => 'تحذير ⚠️',
                 'critical' => 'حرج 🔴',
                 default => $data['status'],
@@ -963,6 +968,7 @@ class TechnicianMapController extends Controller
     private function applyStatusColor($sheet, string $cell, string $status, string $goodBg, string $goodFont, string $warningBg, string $warningFont, string $criticalBg, string $criticalFont): void
     {
         [$bg, $font] = match($status) {
+            'excellent' => ['00B050', 'FFFFFF'],
             'good' => [$goodBg, $goodFont],
             'warning' => [$warningBg, $warningFont],
             'critical' => [$criticalBg, $criticalFont],
