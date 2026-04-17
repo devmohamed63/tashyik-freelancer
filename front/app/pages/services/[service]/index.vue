@@ -1,5 +1,7 @@
 <script setup>
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const config = useRuntimeConfig();
+  const switchLocalePath = useSwitchLocalePath();
   const route = useRoute();
   const service = ref(null);
   const galleryContainer = ref(null);
@@ -24,12 +26,21 @@
     });
   }
 
+  const ogImage = computed(() => service.value?.og_image || service.value?.image);
+  const canonicalUrl = computed(() => `${config.public.appUrl}${switchLocalePath(locale.value)}`);
+
   useSeoMeta({
     title: t('alt.service', { service: service.value?.name }),
     ogTitle: t('alt.service', { service: service.value?.name }),
     description: service.value?.description,
     ogDescription: service.value?.description,
-    ogImage: service.value?.og_image || service.value?.image,
+    ogImage: ogImage.value,
+    ogType: 'website',
+    ogUrl: canonicalUrl.value,
+    twitterCard: 'summary_large_image',
+    twitterTitle: t('alt.service', { service: service.value?.name }),
+    twitterDescription: service.value?.description,
+    twitterImage: ogImage.value,
   });
 
   // JSON-LD Structured Data

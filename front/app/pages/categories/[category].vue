@@ -1,5 +1,7 @@
 <script setup>
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const config = useRuntimeConfig();
+  const switchLocalePath = useSwitchLocalePath();
   const salesIq = useSalesIq();
   const route = useRoute();
   const data = ref(null);
@@ -33,12 +35,21 @@
     });
   }
 
+  const ogImage = computed(() => data.value?.og_image || data.value?.image);
+  const canonicalUrl = computed(() => `${config.public.appUrl}${switchLocalePath(locale.value)}`);
+
   useSeoMeta({
     title: t('alt.category', { category: data.value?.name }),
     ogTitle: t('alt.category', { category: data.value?.name }),
     description: data.value?.description,
     ogDescription: data.value?.description,
-    ogImage: data.value?.og_image || data.value?.image,
+    ogImage: ogImage.value,
+    ogType: 'website',
+    ogUrl: canonicalUrl.value,
+    twitterCard: 'summary_large_image',
+    twitterTitle: t('alt.category', { category: data.value?.name }),
+    twitterDescription: data.value?.description,
+    twitterImage: ogImage.value,
   });
 
   async function loadServices() {
