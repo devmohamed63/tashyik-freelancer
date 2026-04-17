@@ -648,12 +648,12 @@ class TechnicianMapController extends Controller
                 $sheet1->setCellValue("{$catColLetter}{$row}", $catCount);
 
                 // Color code based on count
-                if ($catCount === 0) {
+                if ($catCount < 10) {
                     $sheet1->getStyle("{$catColLetter}{$row}")->applyFromArray([
                         'font' => ['bold' => true, 'color' => ['rgb' => $criticalFont]],
                         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $criticalBg]],
                     ]);
-                } elseif ($catCount <= 2) {
+                } elseif ($catCount < 20) {
                     $sheet1->getStyle("{$catColLetter}{$row}")->applyFromArray([
                         'font' => ['bold' => true, 'color' => ['rgb' => $warningFont]],
                         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $warningBg]],
