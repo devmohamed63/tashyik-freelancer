@@ -1,5 +1,6 @@
 <script setup>
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const config = useRuntimeConfig();
   const categories = ref(null);
 
   useSeoMeta({
@@ -15,6 +16,28 @@
     categories.value = response.data;
   } catch (error) {
     console.error('Failed to load categories:', error);
+  }
+
+  // JSON-LD Structured Data
+  if (categories.value?.length) {
+    useHead({
+      script: [
+        {
+          type: 'application/ld+json',
+          innerHTML: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: t('seo.categories.title'),
+            itemListElement: categories.value.map((cat, i) => ({
+              '@type': 'ListItem',
+              position: i + 1,
+              name: cat.name,
+              url: `${config.public.appUrl}/${locale.value}/categories/${cat.slug}`,
+            })),
+          }),
+        },
+      ],
+    });
   }
 </script>
 

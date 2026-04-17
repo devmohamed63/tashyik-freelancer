@@ -38,6 +38,7 @@
     ogTitle: t('alt.category', { category: data.value?.name }),
     description: data.value?.description,
     ogDescription: data.value?.description,
+    ogImage: data.value?.og_image || data.value?.image,
   });
 
   async function loadServices() {

@@ -62,6 +62,10 @@ class CategoryResource extends JsonResource
             'gallery' => $gallery,
             'rating' => $this->getRating(),
             'subcategories' => $subcategories,
+            'og_image' => $this->when(
+                $request->routeIs('*.categories.show'),
+                fn() => $this->getMedia('image')->first()?->getUrl('sm')
+            ),
         ];
     }
 }

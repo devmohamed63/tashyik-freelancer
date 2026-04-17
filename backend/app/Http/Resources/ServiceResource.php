@@ -50,6 +50,10 @@ class ServiceResource extends JsonResource
             'image' => $image,
             'gallery' => $gallery,
             'rating' => $this->getRating(),
+            'og_image' => $this->when(
+                $request->routeIs('*.services.show'),
+                fn() => $this->getMedia('image')->first()?->getUrl('og')
+            ),
         ];
     }
 }

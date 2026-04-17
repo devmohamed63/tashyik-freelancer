@@ -29,6 +29,37 @@
     ogTitle: t('alt.service', { service: service.value?.name }),
     description: service.value?.description,
     ogDescription: service.value?.description,
+    ogImage: service.value?.og_image || service.value?.image,
+  });
+
+  // JSON-LD Structured Data
+  useHead({
+    script: [
+      {
+        type: 'application/ld+json',
+        innerHTML: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Service',
+          name: service.value?.name,
+          description: service.value?.description,
+          provider: {
+            '@type': 'Organization',
+            name: t('common.brand'),
+          },
+          offers: {
+            '@type': 'Offer',
+            price: service.value?.price?.after_discount,
+            priceCurrency: 'SAR',
+            availability: 'https://schema.org/InStock',
+          },
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: service.value?.rating,
+            bestRating: '5',
+          },
+        }),
+      },
+    ],
   });
 
   useSwiper(galleryContainer, {
@@ -50,7 +81,7 @@
     <ClientOnly>
       <swiper-container ref="galleryContainer" id="galleryCarousel">
         <swiper-slide v-for="(image, index) of service.gallery" :key="index">
-          <img :src="image" class="w-full aspect-video md:aspect-16/6 object-center object-cover rounded-xl" alt="..." loading="lazy" />
+          <img :src="image" class="w-full aspect-video md:aspect-16/6 object-center object-cover rounded-xl" :alt="service.name" loading="lazy" />
         </swiper-slide>
       </swiper-container>
     </ClientOnly>
