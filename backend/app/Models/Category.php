@@ -135,6 +135,13 @@ class Category extends Model implements HasMedia
             ->height(800)
             ->nonOptimized()
             ->format('webp');
+
+        $this->addMediaConversion('og')
+            ->performOnCollections('image')
+            ->width(1200)
+            ->height(630)
+            ->nonOptimized()
+            ->format('webp');
     }
 
     public function getImageUrl(string $conversionName = ''): string|null
