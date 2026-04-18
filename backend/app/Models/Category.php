@@ -194,6 +194,12 @@ class Category extends Model implements HasMedia
                 $category->slug = static::generateUniqueSlug($category->getTranslation('name', 'ar') ?: 'cat');
             }
         });
+
+        static::saving(function ($category) {
+            if (!empty($category->slug)) {
+                $category->slug = trim(preg_replace('/\s+/', '-', $category->slug), '-');
+            }
+        });
     }
 
     public static function generateUniqueSlug(string $name): string

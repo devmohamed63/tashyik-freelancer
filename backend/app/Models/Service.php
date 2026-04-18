@@ -249,6 +249,12 @@ class Service extends Model implements HasMedia
                 $service->slug = static::generateUniqueSlug($service->getTranslation('name', 'ar') ?: 'srv');
             }
         });
+
+        static::saving(function ($service) {
+            if (!empty($service->slug)) {
+                $service->slug = trim(preg_replace('/\s+/', '-', $service->slug), '-');
+            }
+        });
     }
 
     public static function generateUniqueSlug(string $name): string

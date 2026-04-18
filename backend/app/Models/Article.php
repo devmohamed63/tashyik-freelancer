@@ -86,6 +86,13 @@ class Article extends Model implements HasMedia
                 $article->slug = static::generateUniqueSlug($article->getTranslation('title', 'ar'));
             }
         });
+
+        static::saving(function ($article) {
+            if (!empty($article->slug)) {
+                // Ensure there are no spaces in the slug and words are separated by dashes
+                $article->slug = trim(preg_replace('/\s+/', '-', $article->slug), '-');
+            }
+        });
     }
 
     /**
