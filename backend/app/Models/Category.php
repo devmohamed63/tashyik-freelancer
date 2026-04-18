@@ -47,6 +47,7 @@ class Category extends Model implements HasMedia
         'description',
         'meta_title',
         'meta_description',
+        'badge',
         'item_order',
     ];
 

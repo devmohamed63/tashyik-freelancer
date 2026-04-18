@@ -120,6 +120,12 @@ class PlansTable extends DataTable
         ]);
     }
 
+    #[On('resetPage')]
+    public function resetTablePage()
+    {
+        $this->resetPage();
+    }
+
     #[On('refreshTable')]
     public function render()
     {

@@ -45,6 +45,7 @@ class ServiceController extends Controller
             'description' => $request->description,
             'meta_title' => $request->meta_title,
             'meta_description' => $request->meta_description,
+            'badge' => $request->badge ?: null,
             'warranty_days' => $request->total_warranty_days,
         ]);
 
@@ -116,6 +117,7 @@ class ServiceController extends Controller
             'description' => $request->description,
             'meta_title' => $request->meta_title,
             'meta_description' => $request->meta_description,
+            'badge' => $request->badge ?: null,
             'warranty_days' => $request->total_warranty_days,
         ]);
 

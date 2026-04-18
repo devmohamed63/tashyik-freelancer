@@ -40,6 +40,7 @@ class Service extends Model implements HasMedia
         'meta_title',
         'meta_description',
         'price',
+        'badge',
         'item_order',
         'warranty_days',
     ];

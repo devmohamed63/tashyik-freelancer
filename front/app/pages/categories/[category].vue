@@ -134,7 +134,10 @@
       </form>
       <div class="inline-flex gap-3 overflow-x-auto">
         <button v-if="q" @click="selectedCategory = null" v-text="$t('common.all')" class="px-6 py-3 rounded-lg text-sm text-nowrap" :class="[selectedCategory == null ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200']"></button>
-        <button v-for="subcategory in data?.subcategories" :key="subcategory.id" v-text="subcategory.name" @click="selectedCategory = subcategory.id" class="px-6 py-3 rounded-lg text-sm text-nowrap" :class="[subcategory.id == selectedCategory ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200']"></button>
+        <button v-for="subcategory in data?.subcategories" :key="subcategory.id" @click="selectedCategory = subcategory.id" class="px-6 py-3 rounded-lg text-sm text-nowrap inline-flex items-center gap-1.5" :class="[subcategory.id == selectedCategory ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200']">
+            <span v-text="subcategory.name"></span>
+            <span v-if="subcategory.badge" class="text-[9px] px-1.5 py-0.5 rounded font-medium leading-none" :class="[subcategory.id == selectedCategory ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-600']" v-text="subcategory.badge"></span>
+          </button>
       </div>
     </div>
 

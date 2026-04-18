@@ -50,7 +50,7 @@
                 name="badge"
                 wire:model="badge"
                 :required="false">
-                <option value="">بدون شارة (إختياري)</option>
+                <option value="">{{ __('ui.no_badge') }}</option>
                 @foreach (App\Models\Plan::BADGES as $key => $title)
                     <option value="{{ $key }}">{{ $title }}</option>
                 @endforeach

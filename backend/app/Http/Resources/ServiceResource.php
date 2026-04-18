@@ -42,6 +42,7 @@ class ServiceResource extends JsonResource
             'id' => $this->id,
             'slug' => $this->slug,
             'name' => $this->name,
+            'badge' => $this->badge ? __("ui.badges.{$this->badge}") : null,
             'description' => $this->description,
             'available_in_user_city' => $this->available_in_user_city,
             'warranty_duration' => $this->warranty_duration,

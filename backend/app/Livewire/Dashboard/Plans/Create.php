@@ -89,6 +89,8 @@ class Create extends Component
 
         $this->dispatch('hideModal', ['id' => 'createResultModal']);
 
+        $this->dispatch('resetPage');
+
         $this->dispatch('refreshTable');
 
         $this->reset();

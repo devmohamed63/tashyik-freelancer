@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Highlight;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ServiceRequest extends FormRequest
 {
@@ -48,6 +49,7 @@ class ServiceRequest extends FormRequest
             'warranty_months' => ['nullable', 'integer'],
             'highlights' => ['required', 'array', 'min:1'],
             'highlights.*' => ['required', 'string', 'max:255'],
+            'badge' => ['nullable', 'string', Rule::in(config('badges'))],
         ];
 
         if ($this->isMethod('PUT')) {

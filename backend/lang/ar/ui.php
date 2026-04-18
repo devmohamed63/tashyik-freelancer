@@ -367,4 +367,19 @@ return [
     'toggle_orders'          => 'إظهار/إخفاء الطلبات',
     'waiting_since'          => 'قيد الانتظار منذ',
     'view_order'             => 'عرض الطلب',
+
+    // Promotional Badges
+    'badges' => [
+        'hot_deals'       => 'عروض نار 🔥',
+        'big_discounts'   => 'تخفيضات قوية ⚡',
+        'special_offers'  => 'عروض خاصة 🚀',
+        'best_price'      => 'أفضل سعر 🎯',
+        'save_more'       => 'وفر أكثر 💰',
+        'limited_time'    => 'لفترة محدودة ⏳',
+        'deal_of_day'     => 'عرض اليوم 🔥',
+        'exclusive'       => 'عرض حصري ✨',
+        'value_pack'      => 'باقة موفرة 💸',
+    ],
+    'select_badge'           => 'اختر شارة (إختياري)',
+    'no_badge'               => 'بدون شارة',
 ];

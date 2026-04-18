@@ -42,6 +42,7 @@ class CategoryResource extends JsonResource
                         'id' => $child->id,
                         'slug' => $child->slug,
                         'name' => $child->name,
+                        'badge' => $child->badge ? __('ui.badges.' . $child->badge) : null,
                         'image' => $this->getMediaUrl($image, id: $child->id),
                         'rating' => $child->getRating(),
                     ];
@@ -53,6 +54,7 @@ class CategoryResource extends JsonResource
             'id' => $this->id,
             'slug' => $this->slug,
             'name' => $this->name,
+            'badge' => $this->badge ? __('ui.badges.' . $this->badge) : null,
             'description' => $this->description,
             'parent' => $this->when(
                 $this->relationLoaded('parent'),

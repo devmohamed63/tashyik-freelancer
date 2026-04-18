@@ -14,7 +14,7 @@ class CategoryController extends ApiController
         $categories = Category::isParent()
             ->with('media')
             ->orderBy('item_order')
-            ->get(['id', 'slug', 'name', 'description']);
+            ->get(['id', 'slug', 'name', 'badge', 'description']);
 
         return CategoryResource::collection($categories);
     }

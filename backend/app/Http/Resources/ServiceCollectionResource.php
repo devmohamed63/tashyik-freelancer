@@ -24,6 +24,7 @@ class ServiceCollectionResource extends JsonResource
                 'id' => $service->id,
                 'name' => $service->name,
                 'slug' => $service->slug,
+                'badge' => $service->badge ? __('ui.badges.' . $service->badge) : null,
                 'price' => $service->getPrice(),
                 'image' => $this->getMediaUrl($image, id: $service->id),
                 'rating' => $service->getRating(),

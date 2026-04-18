@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CategoryRequest extends FormRequest
 {
@@ -29,7 +30,8 @@ class CategoryRequest extends FormRequest
             'gallery.*' => ['image', 'mimes:' . config('app.allowed_image_mimes'), 'max:' . config('app.upload_max_size')],
             'parent' => ['nullable', 'integer', 'exists:categories,id'],
             'cities' => ['nullable', 'required_without:parent', 'array', 'min:1'],
-            'cities.*' => ['nullable', 'integer', 'exists:cities,id']
+            'cities.*' => ['nullable', 'integer', 'exists:cities,id'],
+            'badge' => ['nullable', 'string', Rule::in(config('badges'))],
         ];
 
         if ($this->isMethod('PUT')) {

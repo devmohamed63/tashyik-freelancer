@@ -56,6 +56,7 @@ class CategoryController extends Controller
             'description' => $request->description,
             'meta_title' => $request->meta_title,
             'meta_description' => $request->meta_description,
+            'badge' => $request->badge ?: null,
         ]);
 
         $category->category_id = $request->parent;
@@ -126,6 +127,7 @@ class CategoryController extends Controller
             'description' => $request->description,
             'meta_title' => $request->meta_title,
             'meta_description' => $request->meta_description,
+            'badge' => $request->badge ?: null,
         ]);
 
         $category->category_id = $request->parent;

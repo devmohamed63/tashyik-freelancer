@@ -355,4 +355,19 @@ return [
     'toggle_orders'          => 'Toggle Orders Visibility',
     'waiting_since'          => 'Waiting since',
     'view_order'             => 'View Order',
+
+    // Promotional Badges
+    'badges' => [
+        'hot_deals'       => 'Hot Deals 🔥',
+        'big_discounts'   => 'Big Discounts ⚡',
+        'special_offers'  => 'Special Offers 🚀',
+        'best_price'      => 'Best Price 🎯',
+        'save_more'       => 'Save More 💰',
+        'limited_time'    => 'Limited Time ⏳',
+        'deal_of_day'     => 'Deal of the Day 🔥',
+        'exclusive'       => 'Exclusive ✨',
+        'value_pack'      => 'Value Pack 💸',
+    ],
+    'select_badge'           => 'Select Badge (Optional)',
+    'no_badge'               => 'No Badge',
 ];

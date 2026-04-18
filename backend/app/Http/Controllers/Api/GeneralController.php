@@ -108,7 +108,7 @@ class GeneralController extends Controller
     public function service_collections()
     {
         $collections = ServiceCollection::with([
-            'services:id,promotion_id,name,slug,price',
+            'services:id,promotion_id,name,slug,price,badge',
             'services.promotion',
             'services.media',
         ])

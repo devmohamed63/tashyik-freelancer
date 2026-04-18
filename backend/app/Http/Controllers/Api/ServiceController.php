@@ -47,6 +47,7 @@ class ServiceController extends ApiController
             'promotion_id',
             'category_id',
             'name',
+            'badge',
             'price',
             'warranty_days',
         ]);
