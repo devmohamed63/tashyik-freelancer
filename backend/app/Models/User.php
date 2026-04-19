@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Notifications\ResetPasswordNotification;
 use App\Utils\Traits\Models\HasStatus;
 use App\Utils\Traits\Models\HasRating;
+use App\Traits\SyncableWithDaftra;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -33,7 +34,8 @@ class User extends Authenticatable implements HasMedia
         HasRoles,
         InteractsWithMedia,
         HasStatus,
-        HasRating;
+        HasRating,
+        SyncableWithDaftra;
 
     const AVAILABLE_ACCOUNT_TYPES = [
         self::USER_ACCOUNT_TYPE,
@@ -104,6 +106,7 @@ class User extends Authenticatable implements HasMedia
         'last_seen_at',
         'balance',
         'used_welcome_coupon',
+        'daftra_id',
     ];
 
     /**

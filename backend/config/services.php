@@ -46,4 +46,13 @@ return [
         'key' => env('GOOGLE_MAPS_API_KEY'),
     ],
 
+    'daftra' => [
+        'api_key' => env('DAFTRA_API_KEY'),
+        'subdomain' => env('DAFTRA_SUBDOMAIN', 'wadhacompany'),
+        'cost_center_id' => env('DAFTRA_COST_CENTER_ID', 1),
+        'bank_account_id' => env('DAFTRA_BANK_ACCOUNT_ID'),
+        'revenue_account_id' => env('DAFTRA_REVENUE_ACCOUNT_ID'),
+        'return_account_id' => env('DAFTRA_RETURN_ACCOUNT_ID'),
+    ],
+
 ];

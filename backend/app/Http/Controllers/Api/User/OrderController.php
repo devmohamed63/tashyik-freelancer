@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Request;
 use Carbon\CarbonInterval;
+use App\Jobs\SyncCreditNoteToDaftra;
 
 class OrderController extends ApiController
 {
@@ -232,6 +233,17 @@ class OrderController extends ApiController
             $amount = $order->total + $order->wallet_balance;
 
             $user->increment('balance', $amount);
+
+            // Sync credit note to Daftra (capture data before deletion)
+            if ($order->subtotal > 0) {
+                SyncCreditNoteToDaftra::dispatch(
+                    customerId: $order->customer_id,
+                    serviceName: $order->service?->getTranslation('name', 'ar') ?? 'طلب خدمة',
+                    subtotal: (float) $order->subtotal,
+                    taxRate: (float) ($order->tax_rate ?? config('app.tax_rate', 15)),
+                    orderId: $order->id,
+                );
+            }
 
             $order->delete();
         },  now()->addMinutes(30));

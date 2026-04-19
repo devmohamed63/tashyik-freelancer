@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\OrderCompleted;
 use App\Models\Invoice;
+use App\Jobs\SyncInvoiceToDaftra;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
@@ -53,5 +54,10 @@ class CreateOrderInvoice
             : $serviceProvider;
 
         $creditTarget->increment('balance', $order->subtotal);
+
+        // Sync with Daftra ERP in Background
+        if (isset($invoice)) {
+            SyncInvoiceToDaftra::dispatch($invoice);
+        }
     }
 }

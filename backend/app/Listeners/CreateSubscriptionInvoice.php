@@ -5,6 +5,7 @@ namespace App\Listeners;
 use App\Events\PlanPaid;
 use App\Models\Invoice;
 use App\Utils\Traits\HasTax;
+use App\Jobs\SyncInvoiceToDaftra;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
@@ -43,5 +44,8 @@ class CreateSubscriptionInvoice
             $taxInvoice->amount = $tax;
             $taxInvoice->save();
         }
+
+        // Sync main invoice with Daftra ERP in Background
+        SyncInvoiceToDaftra::dispatch($invoice);
     }
 }

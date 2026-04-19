@@ -6,6 +6,7 @@ use Carbon\CarbonInterval;
 use App\Utils\Traits\Models\HasAutoTranslations;
 use App\Utils\Traits\Models\HasDraggableOrder;
 use App\Utils\Traits\Models\ResolvesByIdOrSlug;
+use App\Traits\SyncableWithDaftra;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -27,7 +28,8 @@ class Service extends Model implements HasMedia
         HasAutoTranslations,
         InteractsWithMedia,
         HasDraggableOrder,
-        ResolvesByIdOrSlug;
+        ResolvesByIdOrSlug,
+        SyncableWithDaftra;
 
     /**
      * The attributes that are mass assignable.
@@ -43,6 +45,7 @@ class Service extends Model implements HasMedia
         'badge',
         'item_order',
         'warranty_days',
+        'daftra_id',
     ];
 
     public array $translatable = [
