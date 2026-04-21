@@ -56,8 +56,15 @@ class CreateOrderInvoice
         $creditTarget->increment('balance', $order->subtotal);
 
         // Sync with Daftra ERP in Background
+        // bankAmount = order.total is what actually reached the payment gateway
+        // (i.e. after coupons and wallet deductions). This is what we must
+        // record as a bank receipt in Daftra — not invoice.amount which is the
+        // gross (subtotal + tax).
         if (isset($invoice)) {
-            SyncInvoiceToDaftra::dispatch($invoice);
+            SyncInvoiceToDaftra::dispatch(
+                $invoice,
+                bankAmount: (float) ($order->total ?? 0),
+            );
         }
     }
 }

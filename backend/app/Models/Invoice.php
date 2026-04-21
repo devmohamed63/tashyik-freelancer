@@ -24,6 +24,7 @@ class Invoice extends Model
         'amount',
         'target_id',
         'daftra_id',
+        'daftra_payment_id',
     ];
 
     /**

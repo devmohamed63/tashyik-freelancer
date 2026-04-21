@@ -69,19 +69,22 @@ class SyncInvoiceToDaftraTest extends TestCase
     // 1. IDEMPOTENCY — لا يُرسل فاتورة مُزامنة مسبقاً
     // ─────────────────────────────────────────────────────────
 
-    public function test_skips_already_synced_invoice(): void
+    public function test_skips_already_fully_synced_invoice(): void
     {
-        Http::fake(); // Should not be called
+        // Both daftra_id AND daftra_payment_id set = fully synced,
+        // retries must be complete no-ops.
+        Http::fake();
 
         $invoice = Invoice::factory()->create([
             'service_provider_id' => $this->serviceProvider->id,
             'type' => Invoice::COMPLETED_ORDER_TYPE,
             'action' => Invoice::CREDIT_ACTION,
             'amount' => 230,
-            'daftra_id' => 999, // Already synced!
+            'daftra_id' => 999,
+            'daftra_payment_id' => 888,
         ]);
 
-        $job = new SyncInvoiceToDaftra($invoice);
+        $job = new SyncInvoiceToDaftra($invoice, bankAmount: 230);
         $job->handle(app(Daftra::class));
 
         Http::assertNothingSent();
@@ -150,7 +153,8 @@ class SyncInvoiceToDaftraTest extends TestCase
             '*/api2/client_payments' => Http::response(['ClientPayment' => ['id' => 300]], 200),
         ]);
 
-        $job = new SyncInvoiceToDaftra($invoice);
+        // bankAmount should be order.total (what actually reached the bank)
+        $job = new SyncInvoiceToDaftra($invoice, bankAmount: (float) $order->total);
         $job->handle(app(Daftra::class));
 
         // Verify: 3 API calls (client + invoice + payment)
@@ -181,14 +185,16 @@ class SyncInvoiceToDaftraTest extends TestCase
             return true;
         });
 
-        // Verify: Payment was routed to bank
+        // Verify: Payment was routed to bank with the ACTUAL bank amount
+        // (order.total = 487.50), NOT the gross invoice.amount (517.50).
+        // This is the fix that prevents phantom money in the Daftra bank.
         Http::assertSent(function ($request) {
             if (!str_contains($request->url(), '/client_payments')) return false;
 
             $data = $request->data();
 
-            // Payment amount = invoice amount
-            $this->assertEquals(517.50, $data['ClientPayment']['amount']);
+            // Payment amount = order.total (what actually hit the bank)
+            $this->assertEquals(487.50, $data['ClientPayment']['amount']);
 
             // Treasury = bank account
             $this->assertEquals(2, $data['ClientPayment']['treasury_id']);
@@ -237,7 +243,7 @@ class SyncInvoiceToDaftraTest extends TestCase
             '*/api2/client_payments' => Http::response(['ClientPayment' => ['id' => 301]], 200),
         ]);
 
-        $job = new SyncInvoiceToDaftra($invoice);
+        $job = new SyncInvoiceToDaftra($invoice, bankAmount: (float) $order->total);
         $job->handle(app(Daftra::class));
 
         Http::assertSent(function ($request) {
@@ -291,7 +297,8 @@ class SyncInvoiceToDaftraTest extends TestCase
             '*/api2/client_payments' => Http::response(['ClientPayment' => ['id' => 302]], 200),
         ]);
 
-        $job = new SyncInvoiceToDaftra($invoice);
+        // No wallet used → bankAmount = paid_amount (115)
+        $job = new SyncInvoiceToDaftra($invoice, bankAmount: 115);
         $job->handle(app(Daftra::class));
 
         Http::assertSent(function ($request) {
@@ -362,7 +369,7 @@ class SyncInvoiceToDaftraTest extends TestCase
             '*/api2/client_payments' => Http::response(['ClientPayment' => ['id' => 303]], 200),
         ]);
 
-        $job = new SyncInvoiceToDaftra($invoice);
+        $job = new SyncInvoiceToDaftra($invoice, bankAmount: (float) $order->total);
         $job->handle(app(Daftra::class));
 
         // Client endpoint should NOT have been called (only invoice + payment)
@@ -533,7 +540,7 @@ class SyncInvoiceToDaftraTest extends TestCase
             '*/api2/client_payments' => Http::response(['ClientPayment' => ['id' => 304]], 200),
         ]);
 
-        $job = new SyncInvoiceToDaftra($invoice);
+        $job = new SyncInvoiceToDaftra($invoice, bankAmount: (float) $order->total);
         $job->handle(app(Daftra::class));
 
         Http::assertSent(function ($request) {
@@ -639,5 +646,348 @@ class SyncInvoiceToDaftraTest extends TestCase
 
         // No API calls (customer not in Daftra = skip)
         Http::assertNothingSent();
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // 13. BANK AMOUNT — تحصيل البنك = ما وصل فعلاً
+    // ─────────────────────────────────────────────────────────
+
+    public function test_order_with_coupon_records_bank_payment_equal_to_total(): void
+    {
+        // subtotal 200 + tax 30 = invoice.amount 230
+        // coupon discount 50 → total actually charged to Paymob = 180
+        // Expected: bank receipt = 180, NOT 230
+
+        $order = Order::factory()->create([
+            'customer_id' => $this->customer->id,
+            'service_provider_id' => $this->serviceProvider->id,
+            'service_id' => $this->service->id,
+            'category_id' => $this->category->id,
+            'quantity' => 1,
+            'subtotal' => 200,
+            'tax_rate' => 15,
+            'tax' => 30,
+            'coupons_total' => 50,
+            'wallet_balance' => 0,
+            'total' => 180,
+            'status' => Order::COMPLETED_STATUS,
+        ]);
+
+        $invoice = Invoice::factory()->create([
+            'service_provider_id' => $this->serviceProvider->id,
+            'target_id' => $order->id,
+            'type' => Invoice::COMPLETED_ORDER_TYPE,
+            'action' => Invoice::CREDIT_ACTION,
+            'amount' => 230,
+        ]);
+
+        Http::fake([
+            '*/api2/clients' => Http::response(['Client' => ['id' => 100]], 200),
+            '*/api2/invoices' => Http::response(['Invoice' => ['id' => 205]], 200),
+            '*/api2/client_payments' => Http::response(['ClientPayment' => ['id' => 305]], 200),
+        ]);
+
+        $job = new SyncInvoiceToDaftra($invoice, bankAmount: (float) $order->total);
+        $job->handle(app(Daftra::class));
+
+        Http::assertSent(function ($request) {
+            if (!str_contains($request->url(), '/client_payments')) return false;
+
+            $data = $request->data();
+
+            // Bank receipt = what actually reached the gateway (180),
+            // NOT the gross invoice amount (230)
+            $this->assertEquals(180, $data['ClientPayment']['amount']);
+
+            return true;
+        });
+    }
+
+    public function test_wallet_only_order_skips_bank_payment(): void
+    {
+        // Order paid entirely from wallet: nothing reached the bank
+        // bankAmount = 0 → recordPayment must be skipped completely
+
+        $this->customer->update(['daftra_id' => 555]);
+
+        $order = Order::factory()->create([
+            'customer_id' => $this->customer->id,
+            'service_provider_id' => $this->serviceProvider->id,
+            'service_id' => $this->service->id,
+            'category_id' => $this->category->id,
+            'quantity' => 1,
+            'subtotal' => 200,
+            'tax_rate' => 15,
+            'tax' => 30,
+            'coupons_total' => 0,
+            'wallet_balance' => 230,
+            'total' => 0,
+            'status' => Order::COMPLETED_STATUS,
+        ]);
+
+        $invoice = Invoice::factory()->create([
+            'service_provider_id' => $this->serviceProvider->id,
+            'target_id' => $order->id,
+            'type' => Invoice::COMPLETED_ORDER_TYPE,
+            'action' => Invoice::CREDIT_ACTION,
+            'amount' => 230,
+        ]);
+
+        Http::fake([
+            '*/api2/invoices' => Http::response(['Invoice' => ['id' => 206]], 200),
+        ]);
+
+        $job = new SyncInvoiceToDaftra($invoice, bankAmount: 0.0);
+        $job->handle(app(Daftra::class));
+
+        // Invoice should still be created in Daftra
+        Http::assertSent(fn($req) => str_contains($req->url(), '/invoices'));
+
+        // But NO payment should be recorded (no real money hit the bank)
+        Http::assertNotSent(function ($request) {
+            return str_contains($request->url(), '/client_payments');
+        });
+    }
+
+    public function test_subscription_paid_from_wallet_skips_bank_payment(): void
+    {
+        // SP paid full renewal from their wallet: no bank movement
+        $plan = Plan::factory()->create([
+            'name' => 'الخطة',
+            'price' => 100,
+            'duration_in_days' => 30,
+        ]);
+
+        Subscription::factory()->create([
+            'user_id' => $this->serviceProvider->id,
+            'plan_id' => $plan->id,
+            'paid_amount' => 115,
+        ]);
+
+        $invoice = Invoice::factory()->create([
+            'service_provider_id' => $this->serviceProvider->id,
+            'type' => Invoice::RENEW_SUBSCRIPTION_TYPE,
+            'action' => Invoice::DEBIT_ACTION,
+            'amount' => 115,
+            'target_id' => null,
+        ]);
+
+        Http::fake([
+            '*/api2/clients' => Http::response(['Client' => ['id' => 100]], 200),
+            '*/api2/invoices' => Http::response(['Invoice' => ['id' => 207]], 200),
+        ]);
+
+        // bankAmount = paid_amount - wallet_balance = 115 - 115 = 0
+        $job = new SyncInvoiceToDaftra($invoice, bankAmount: 0.0);
+        $job->handle(app(Daftra::class));
+
+        Http::assertNotSent(function ($request) {
+            return str_contains($request->url(), '/client_payments');
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // 14. CREDIT NOTE WITH COUPON — مردود يحترم الخصم
+    // ─────────────────────────────────────────────────────────
+
+    public function test_credit_note_applies_coupon_as_discount(): void
+    {
+        $this->customer->update(['daftra_id' => 555]);
+
+        Http::fake([
+            '*/api2/credit_notes' => Http::response(['CreditNote' => ['id' => 401]], 200),
+        ]);
+
+        $job = new SyncCreditNoteToDaftra(
+            customerId: $this->customer->id,
+            serviceName: 'خدمة تكييف',
+            subtotal: 200.00,
+            taxRate: 15,
+            orderId: 1000,
+            couponsTotal: 50.00,
+        );
+
+        $job->handle(app(Daftra::class));
+
+        Http::assertSent(function ($request) {
+            if (!str_contains($request->url(), '/credit_notes')) return false;
+
+            $data = $request->data();
+
+            // Credit note must mirror the original invoice discount
+            $this->assertEquals(50, $data['CreditNote']['discount']);
+            $this->assertEquals(2, $data['CreditNote']['discount_type']);
+
+            return true;
+        });
+    }
+
+    public function test_credit_note_without_coupon_has_no_discount_key(): void
+    {
+        $this->customer->update(['daftra_id' => 555]);
+
+        Http::fake([
+            '*/api2/credit_notes' => Http::response(['CreditNote' => ['id' => 402]], 200),
+        ]);
+
+        $job = new SyncCreditNoteToDaftra(
+            customerId: $this->customer->id,
+            serviceName: 'خدمة',
+            subtotal: 100.00,
+            taxRate: 15,
+            orderId: 1001,
+            couponsTotal: 0,
+        );
+
+        $job->handle(app(Daftra::class));
+
+        Http::assertSent(function ($request) {
+            if (!str_contains($request->url(), '/credit_notes')) return false;
+
+            $data = $request->data();
+            $this->assertArrayNotHasKey('discount', $data['CreditNote']);
+
+            return true;
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // 15. TWO-PHASE IDEMPOTENCY — إعادة المحاولة تستكمل الخطوة الناقصة
+    // ─────────────────────────────────────────────────────────
+
+    public function test_retry_only_records_payment_when_invoice_already_created(): void
+    {
+        // Previous attempt created the invoice but failed on payment recording.
+        // Retry must NOT create a duplicate invoice, only record the payment.
+        $this->customer->update(['daftra_id' => 555]);
+
+        $order = Order::factory()->create([
+            'customer_id' => $this->customer->id,
+            'service_provider_id' => $this->serviceProvider->id,
+            'service_id' => $this->service->id,
+            'category_id' => $this->category->id,
+            'quantity' => 1,
+            'subtotal' => 200,
+            'tax_rate' => 15,
+            'tax' => 30,
+            'coupons_total' => 0,
+            'wallet_balance' => 0,
+            'total' => 230,
+            'status' => Order::COMPLETED_STATUS,
+        ]);
+
+        $invoice = Invoice::factory()->create([
+            'service_provider_id' => $this->serviceProvider->id,
+            'target_id' => $order->id,
+            'type' => Invoice::COMPLETED_ORDER_TYPE,
+            'action' => Invoice::CREDIT_ACTION,
+            'amount' => 230,
+            'daftra_id' => 777, // Invoice already pushed before
+            'daftra_payment_id' => null, // Payment failed previously
+        ]);
+
+        Http::fake([
+            '*/api2/client_payments' => Http::response(['ClientPayment' => ['id' => 999]], 200),
+        ]);
+
+        $job = new SyncInvoiceToDaftra($invoice, bankAmount: (float) $order->total);
+        $job->handle(app(Daftra::class));
+
+        // Must NOT call /invoices again
+        Http::assertNotSent(fn($req) => str_contains($req->url(), '/invoices'));
+
+        // Must call /client_payments exactly once
+        Http::assertSent(function ($request) {
+            if (!str_contains($request->url(), '/client_payments')) return false;
+            $this->assertEquals(230, $request->data()['ClientPayment']['amount']);
+            return true;
+        });
+
+        // Persist payment id so the next retry is a full no-op
+        $invoice->refresh();
+        $this->assertEquals(999, $invoice->daftra_payment_id);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // 16. SYNC CLIENT — Fallback & Atomicity
+    // ─────────────────────────────────────────────────────────
+
+    public function test_sync_client_uses_fallbacks_for_missing_email_and_phone(): void
+    {
+        // Edge case: users registered via OTP may have empty email/phone.
+        // Daftra rejects empty strings so we provide deterministic fallbacks.
+        $user = User::factory()->create([
+            'type'  => User::USER_ACCOUNT_TYPE,
+            'name'  => '',
+            'email' => '',
+            'phone' => '',
+        ]);
+
+        Http::fake([
+            '*/api2/clients' => Http::response(['Client' => ['id' => 777]], 200),
+        ]);
+
+        $daftraId = app(Daftra::class)->syncClient($user);
+
+        $this->assertEquals(777, $daftraId);
+
+        Http::assertSent(function ($request) use ($user) {
+            if (!str_contains($request->url(), '/clients')) return false;
+
+            $data = $request->data()['Client'];
+            $this->assertSame("User #{$user->id}", $data['first_name']);
+            $this->assertSame("user-{$user->id}@noemail.semiona.local", $data['email']);
+            $this->assertSame('-', $data['phone1']);
+
+            return true;
+        });
+    }
+
+    public function test_sync_client_skips_api_when_user_already_has_daftra_id(): void
+    {
+        $user = User::factory()->create([
+            'type' => User::USER_ACCOUNT_TYPE,
+            'daftra_id' => 42,
+        ]);
+
+        Http::fake();
+
+        $daftraId = app(Daftra::class)->syncClient($user);
+
+        $this->assertEquals(42, $daftraId);
+        Http::assertNothingSent();
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // 17. PRODUCTION FAIL-LOUD — مفتاح API فاضي في production
+    // ─────────────────────────────────────────────────────────
+
+    public function test_throws_in_production_when_api_key_is_missing(): void
+    {
+        config(['services.daftra.api_key' => null]);
+        $this->app->detectEnvironment(fn() => 'production');
+
+        $user = User::factory()->create([
+            'type' => User::USER_ACCOUNT_TYPE,
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('DAFTRA_API_KEY is missing');
+
+        // Build a fresh Daftra instance so it picks up the nulled config
+        (new Daftra())->syncClient($user);
+    }
+
+    public function test_returns_null_silently_in_non_production_when_api_key_is_missing(): void
+    {
+        config(['services.daftra.api_key' => null]);
+
+        $user = User::factory()->create([
+            'type' => User::USER_ACCOUNT_TYPE,
+        ]);
+
+        $daftraId = (new Daftra())->syncClient($user);
+
+        $this->assertNull($daftraId);
     }
 }

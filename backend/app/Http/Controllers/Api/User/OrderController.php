@@ -242,6 +242,7 @@ class OrderController extends ApiController
                     subtotal: (float) $order->subtotal,
                     taxRate: (float) ($order->tax_rate ?? config('app.tax_rate', 15)),
                     orderId: $order->id,
+                    couponsTotal: (float) ($order->coupons_total ?? 0),
                 );
             }
 

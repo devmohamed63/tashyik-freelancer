@@ -28,6 +28,7 @@ class SyncCreditNoteToDaftra implements ShouldQueue
         public float $subtotal,
         public float $taxRate,
         public int $orderId,
+        public float $couponsTotal = 0,
     ) {
     }
 
@@ -69,6 +70,13 @@ class SyncCreditNoteToDaftra implements ShouldQueue
                 unitPrice: $this->subtotal,
                 quantity: 1,
             );
+
+            // Mirror coupon discount from original invoice so the credit note
+            // does not exceed the actual sale value
+            if ($this->couponsTotal > 0) {
+                $dto->discount = (int) round($this->couponsTotal);
+                $dto->discountType = 2;
+            }
 
             $creditNoteId = $daftra->createCreditNote($dto);
 

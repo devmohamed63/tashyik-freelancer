@@ -23,6 +23,10 @@ use Spatie\Translatable\HasTranslations;
 class Service extends Model implements HasMedia
 {
     /** @use HasFactory<\Database\Factories\ServiceFactory> */
+    // TODO(daftra): Service-as-Product sync is not implemented yet.
+    // The `daftra_id` column and SyncableWithDaftra trait are kept for a
+    // future phase where each Service will be pushed to Daftra as a Product
+    // (via Daftra::createProduct) so invoice items can reference it by id.
     use HasFactory,
         HasTranslations,
         HasAutoTranslations,

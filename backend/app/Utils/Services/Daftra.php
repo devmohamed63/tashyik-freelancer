@@ -3,6 +3,7 @@
 namespace App\Utils\Services;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Utils\Services\Daftra\DTOs\InvoiceDTO;
@@ -13,7 +14,7 @@ use App\Utils\Services\Daftra\DTOs\CreditNoteDTO;
 class Daftra
 {
     private string $baseUrl;
-    private string $apiKey;
+    private ?string $apiKey;
 
     public function __construct()
     {
@@ -35,22 +36,38 @@ class Daftra
      */
     private function request(string $method, string $endpoint, array $data = [])
     {
-        // Skip calling API if no key is set yet
-        if (!$this->apiKey) return null;
+        // Fail loud in production so missing credentials surface immediately
+        // via the queue's failed_jobs table instead of silently succeeding.
+        if (!$this->apiKey) {
+            if (app()->environment('production')) {
+                throw new \RuntimeException(
+                    'Daftra integration is not configured: DAFTRA_API_KEY is missing.'
+                );
+            }
+            return null;
+        }
 
+        // Retry only on connection errors / 5xx; NEVER throw on client errors
+        // so callers receive `null` and can log+continue without crashing the
+        // job or the HTTP request that dispatched it.
         $response = Http::withHeaders([
             'APIKEY' => $this->apiKey,
             'Accept' => 'application/json',
             'Content-Type' => 'application/json',
         ])
-        ->retry(3, 2000) // Retry 3 times, wait 2 seconds between each
+        ->retry(
+            times: 3,
+            sleepMilliseconds: 2000,
+            when: fn ($exception) => $exception instanceof \Illuminate\Http\Client\ConnectionException,
+            throw: false,
+        )
         ->{$method}("{$this->baseUrl}/{$endpoint}", $data);
 
         if ($response->failed()) {
             Log::error("Daftra API error [{$method} {$endpoint}]", [
                 'status' => $response->status(),
-                'body' => $response->body(),
-                'data' => $data,
+                'body'   => $response->body(),
+                'data'   => $data,
             ]);
 
             return null;
@@ -61,6 +78,10 @@ class Daftra
 
     /**
      * Create or Sync a client in Daftra from a User model.
+     *
+     * Wrapped in an atomic lock per-user so that two concurrent jobs for the
+     * same customer (e.g. two orders placed simultaneously) cannot both call
+     * the Daftra API and create duplicate clients.
      */
     public function syncClient(User $user): ?int
     {
@@ -68,30 +89,46 @@ class Daftra
             return $user->daftra_id;
         }
 
-        $typeId = $user->isInstitutionOrCompany() ? 2 : 1; // 1=individual, 2=company
+        return Cache::lock("daftra:sync-client:{$user->id}", 10)
+            ->block(5, function () use ($user) {
+                // Re-check inside the lock to avoid duplicate creates
+                $user->refresh();
+                if ($user->hasDaftraId()) {
+                    return $user->daftra_id;
+                }
 
-        $response = $this->request('post', 'clients', [
-            'Client' => [
-                'first_name' => $user->name,
-                'email' => $user->email,
-                'phone1' => $user->phone,
-                'type' => $typeId,
-                'notes' => "Synced from Semiona | User #{$user->id}",
-            ],
-        ]);
+                $typeId = $user->isInstitutionOrCompany() ? 2 : 1;
 
-        if ($response && isset($response['id'])) {
-            $daftraId = $response['id'];
-        } elseif ($response && isset($response['Client']['id'])) {
-            $daftraId = $response['Client']['id'];
-        } else {
-            return null;
-        }
+                // Daftra rejects requests with empty email/phone; provide
+                // deterministic fallbacks so the sync cannot silently fail
+                // for users registered via OTP only.
+                $email = $user->email ?: "user-{$user->id}@noemail.semiona.local";
+                $phone = $user->phone ?: '-';
+                $name  = $user->name  ?: "User #{$user->id}";
 
-        $user->setDaftraId($daftraId);
-        Log::info("Daftra: Created client #{$daftraId} for user #{$user->id}");
+                $response = $this->request('post', 'clients', [
+                    'Client' => [
+                        'first_name' => $name,
+                        'email'      => $email,
+                        'phone1'     => $phone,
+                        'type'       => $typeId,
+                        'notes'      => "Synced from Semiona | User #{$user->id}",
+                    ],
+                ]);
 
-        return $daftraId;
+                $daftraId = $response['id']
+                    ?? $response['Client']['id']
+                    ?? null;
+
+                if (!$daftraId) {
+                    return null;
+                }
+
+                $user->setDaftraId($daftraId);
+                Log::info("Daftra: Created client #{$daftraId} for user #{$user->id}");
+
+                return $daftraId;
+            });
     }
 
     /**

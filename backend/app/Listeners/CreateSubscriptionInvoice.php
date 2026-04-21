@@ -46,6 +46,14 @@ class CreateSubscriptionInvoice
         }
 
         // Sync main invoice with Daftra ERP in Background
-        SyncInvoiceToDaftra::dispatch($invoice);
+        // bankAmount = paid_amount - wallet_balance is what actually reached
+        // the payment gateway (after wallet deduction). If the renewal was paid
+        // entirely from the service provider's wallet, bankAmount == 0 and the
+        // job will skip the bank receipt entirely.
+        $paidAmount   = (float) ($event->data['paid_amount'] ?? 0);
+        $walletAmount = (float) ($event->data['wallet_balance'] ?? 0);
+        $bankAmount   = max(0, $paidAmount - $walletAmount);
+
+        SyncInvoiceToDaftra::dispatch($invoice, bankAmount: $bankAmount);
     }
 }

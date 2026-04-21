@@ -10,6 +10,8 @@ class CreditNoteDTO
         public int $clientId,
         public string $currencyCode = 'SAR',
         public ?string $notes = null,
+        public ?int $discount = null,
+        public int $discountType = 2, // 1 = percentage, 2 = fixed amount
         public float $taxRate = 15,
         public ?int $costCenterId = null,
         public ?int $returnAccountId = null
@@ -50,6 +52,11 @@ class CreditNoteDTO
 
         if ($this->taxRate > 0) {
             $creditNote['tax_rate'] = $this->taxRate;
+        }
+
+        if ($this->discount && $this->discount > 0) {
+            $creditNote['discount'] = $this->discount;
+            $creditNote['discount_type'] = $this->discountType;
         }
 
         return [

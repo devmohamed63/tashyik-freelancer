@@ -23,18 +23,34 @@ class SyncInvoiceToDaftra implements ShouldQueue
 
     /**
      * Create a new job instance.
+     *
+     * @param  Invoice  $localInvoice  The local invoice to sync.
+     * @param  float    $bankAmount    Actual amount that reached the bank
+     *                                 (order.total, or paid_amount - wallet for
+     *                                 subscriptions). Used to record the
+     *                                 Daftra payment receipt correctly so that
+     *                                 the bank balance in Daftra matches
+     *                                 reality even with coupons or wallet use.
      */
-    public function __construct(public Invoice $localInvoice)
-    {
+    public function __construct(
+        public Invoice $localInvoice,
+        public float $bankAmount = 0,
+    ) {
     }
 
     /**
      * Execute the job.
+     *
+     * Two-phase idempotency:
+     *  - daftra_id is set after the invoice is created in Daftra.
+     *  - daftra_payment_id is set after the payment receipt is recorded.
+     * If both are set we skip entirely. If only the invoice is set (payment
+     * previously failed), we skip invoice creation but retry the payment.
      */
     public function handle(Daftra $daftra): void
     {
-        // Ignore if already synced (Idempotency guard)
-        if ($this->localInvoice->hasDaftraId()) {
+        // Fully synced already — nothing to do
+        if ($this->localInvoice->hasDaftraId() && $this->localInvoice->daftra_payment_id) {
             return;
         }
 
@@ -105,40 +121,45 @@ class SyncInvoiceToDaftra implements ShouldQueue
             return;
         }
 
-        // Build Invoice DTO
-        $dto = new InvoiceDTO(
-            clientId: $daftraClientId,
-            notes: "طلب مكتمل #{$order->id}",
-            costCenterId: $costCenter,
-            taxRate: (float) ($order->tax_rate ?? config('app.tax_rate', 15)),
-            revenueAccountId: $revenueAccount ?: null,
-        );
+        $daftraInvoiceId = $this->localInvoice->daftra_id;
 
-        // Main service item: unitPrice = subtotal (net before tax)
-        // Daftra will auto-calculate the tax on this net amount
-        // quantity = 1 because subtotal already = (price * quantity) + visit_cost
-        $dto->addItem(
-            item: $order->service?->getTranslation('name', 'ar') ?? 'طلب خدمة',
-            unitPrice: (float) $order->subtotal,
-            quantity: 1
-        );
+        // Skip invoice creation if it was already pushed in a previous attempt
+        if (!$daftraInvoiceId) {
+            $dto = new InvoiceDTO(
+                clientId: $daftraClientId,
+                notes: "طلب مكتمل #{$order->id}",
+                costCenterId: $costCenter,
+                taxRate: (float) ($order->tax_rate ?? config('app.tax_rate', 15)),
+                revenueAccountId: $revenueAccount ?: null,
+            );
 
-        // Apply discount from coupons_total if any
-        if ($order->coupons_total && $order->coupons_total > 0) {
-            $dto->discount = (int) round($order->coupons_total);
-            $dto->discountType = 2; // Fixed amount
-        }
+            // unitPrice = subtotal (net before tax); Daftra applies tax on top.
+            // quantity=1 because subtotal already = (price*qty)+visit_cost
+            $dto->addItem(
+                item: $order->service?->getTranslation('name', 'ar') ?? 'طلب خدمة',
+                unitPrice: (float) $order->subtotal,
+                quantity: 1
+            );
 
-        // Push to Daftra
-        $daftraInvoiceId = $daftra->createInvoice($dto);
+            if ($order->coupons_total && $order->coupons_total > 0) {
+                $dto->discount = (int) round($order->coupons_total);
+                $dto->discountType = 2;
+            }
 
-        if ($daftraInvoiceId) {
+            $daftraInvoiceId = $daftra->createInvoice($dto);
+
+            if (!$daftraInvoiceId) {
+                return;
+            }
+
             $this->localInvoice->setDaftraId($daftraInvoiceId);
             Log::info("Daftra: Invoice #{$daftraInvoiceId} created for Order #{$order->id}");
-
-            // Record payment receipt to the bank account
-            $this->recordPayment($daftra, $daftraInvoiceId, $daftraClientId, $bankAccount);
         }
+
+        // Record payment receipt to the bank account. If this failed in a
+        // previous attempt, daftra_id is set but daftra_payment_id is not,
+        // and we retry ONLY this step.
+        $this->recordPayment($daftra, $daftraInvoiceId, $daftraClientId, $bankAccount);
     }
 
     /**
@@ -176,55 +197,78 @@ class SyncInvoiceToDaftra implements ShouldQueue
 
         $taxRate = (float) config('app.tax_rate', 15);
 
-        // Reverse-calculate net price from paid_amount (which includes tax)
-        // paid_amount = net + (net * tax_rate / 100) = net * (1 + tax_rate/100)
-        // Therefore: net = paid_amount / (1 + tax_rate/100)
-        $grossAmount = (float) $this->localInvoice->amount;
-        $netPrice = round($grossAmount / (1 + $taxRate / 100), 2);
+        $daftraInvoiceId = $this->localInvoice->daftra_id;
 
-        $dto = new InvoiceDTO(
-            clientId: $daftraClientId,
-            notes: "تجديد اشتراك - مقدم خدمة #{$serviceProvider->id}",
-            costCenterId: $costCenter,
-            taxRate: $taxRate,
-            revenueAccountId: $revenueAccount ?: null,
-        );
+        if (!$daftraInvoiceId) {
+            // Reverse-calculate net price from paid_amount (which includes tax):
+            //   paid_amount = net * (1 + tax_rate/100)  →  net = paid / (1+rate)
+            $grossAmount = (float) $this->localInvoice->amount;
+            $netPrice = round($grossAmount / (1 + $taxRate / 100), 2);
 
-        // Try to get plan name from the latest subscription
-        $planName = $serviceProvider->subscription?->plan?->getTranslation('name', 'ar') ?? 'اشتراك';
+            $dto = new InvoiceDTO(
+                clientId: $daftraClientId,
+                notes: "تجديد اشتراك - مقدم خدمة #{$serviceProvider->id}",
+                costCenterId: $costCenter,
+                taxRate: $taxRate,
+                revenueAccountId: $revenueAccount ?: null,
+            );
 
-        $dto->addItem(
-            item: $planName,
-            unitPrice: $netPrice,
-        );
+            $planName = $serviceProvider->subscription?->plan?->getTranslation('name', 'ar') ?? 'اشتراك';
 
-        $daftraInvoiceId = $daftra->createInvoice($dto);
+            $dto->addItem(
+                item: $planName,
+                unitPrice: $netPrice,
+            );
 
-        if ($daftraInvoiceId) {
+            $daftraInvoiceId = $daftra->createInvoice($dto);
+
+            if (!$daftraInvoiceId) {
+                return;
+            }
+
             $this->localInvoice->setDaftraId($daftraInvoiceId);
             Log::info("Daftra: Invoice #{$daftraInvoiceId} created for SP #{$serviceProvider->id} subscription");
-
-            // Record payment receipt to the bank account
-            $this->recordPayment($daftra, $daftraInvoiceId, $daftraClientId, $bankAccount);
         }
+
+        // Record payment receipt to the bank account
+        // bankAmount = paid_amount - wallet_balance (set by CreateSubscriptionInvoice)
+        $this->recordPayment($daftra, $daftraInvoiceId, $daftraClientId, $bankAccount);
     }
 
     /**
-     * Record a payment receipt in Daftra and route to the bank account.
+     * Record a payment receipt in Daftra and route it to the bank account.
+     *
+     * Uses `$this->bankAmount` (passed by the dispatcher) which is the actual
+     * amount that hit the treasury — NOT the gross invoice amount — so that
+     * coupons and wallet deductions don't inflate the Daftra bank balance.
+     *
+     * If bankAmount <= 0 (e.g. fully paid from wallet) we skip the receipt
+     * entirely: no real money entered the bank account.
+     *
+     * On success the returned payment id is persisted so a retry cannot
+     * create a duplicate receipt (two-phase idempotency).
      */
     private function recordPayment(Daftra $daftra, int $daftraInvoiceId, int $daftraClientId, int $bankAccount): void
     {
-        if (!$bankAccount) {
+        if ($this->localInvoice->daftra_payment_id) {
+            return; // already recorded on a previous attempt
+        }
+
+        if (!$bankAccount || $this->bankAmount <= 0) {
             return;
         }
 
         $paymentDTO = new PaymentDTO(
             invoiceId: $daftraInvoiceId,
-            amount: (float) $this->localInvoice->amount,
+            amount: (float) $this->bankAmount,
             clientId: $daftraClientId,
             treasuryId: $bankAccount
         );
 
-        $daftra->createPayment($paymentDTO);
+        $daftraPaymentId = $daftra->createPayment($paymentDTO);
+
+        if ($daftraPaymentId) {
+            $this->localInvoice->update(['daftra_payment_id' => $daftraPaymentId]);
+        }
     }
 }
