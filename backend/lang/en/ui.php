@@ -7,6 +7,7 @@ return [
     'user'                      => 'User',
     'users'                     => 'Users',
     'customers'                 => 'Customers',
+    'guests'                    => 'Guests',
     'main'                      => 'Main',
     'success_message'           => 'Success Message',
     'warning_message'           => 'Warning Message',

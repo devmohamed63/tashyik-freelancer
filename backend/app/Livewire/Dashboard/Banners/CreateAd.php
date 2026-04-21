@@ -29,7 +29,7 @@ class CreateAd extends Component
     protected function rules()
     {
         return [
-            'audience' => ['required', 'string', 'in:customers,service_providers'],
+            'audience' => ['required', 'string', 'in:customers,service_providers,guests'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:255'],
             'image' => ['nullable', 'image', 'mimes:' . config('app.allowed_image_mimes'), 'max:' . config('app.upload_max_size')],
@@ -69,6 +69,10 @@ class CreateAd extends Component
 
                 case 'service_providers':
                     $topic = 'service_provider';
+                    break;
+
+                case 'guests':
+                    $topic = 'guest';
                     break;
             }
 

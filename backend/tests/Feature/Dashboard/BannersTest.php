@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Dashboard;
 
+use App\Livewire\Dashboard\Banners\CreateAd;
 use App\Livewire\Dashboard\BannersTable;
 use App\Models\Banner;
 use App\Models\User;
@@ -173,5 +174,30 @@ class BannersTest extends TestCase
             ->assertDispatched('showModal', ['id' => 'deleteConfirmationModal'])
             ->call('confirmDelete')
             ->assertDispatched('hideModal', ['id' => 'deleteConfirmationModal']);
+    }
+
+    public function test_create_ad_component_accepts_guests_as_audience(): void
+    {
+        $this->user->givePermissionTo(['view banners', 'create banners']);
+
+        Livewire::actingAs($this->user)
+            ->test(CreateAd::class)
+            ->set('audience', 'guests')
+            ->set('title', 'Guest campaign')
+            ->set('description', 'Promotion for guest users')
+            ->call('publish')
+            ->assertHasNoErrors('audience');
+    }
+
+    public function test_create_ad_component_rejects_unknown_audience(): void
+    {
+        $this->user->givePermissionTo(['view banners', 'create banners']);
+
+        Livewire::actingAs($this->user)
+            ->test(CreateAd::class)
+            ->set('audience', 'unknown_audience')
+            ->set('title', 'Invalid campaign')
+            ->call('publish')
+            ->assertHasErrors(['audience' => 'in']);
     }
 }

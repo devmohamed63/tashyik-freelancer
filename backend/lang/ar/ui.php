@@ -9,6 +9,7 @@ return [
     'user'                      => 'مستخدم',
     'users'                     => 'المستخدمين',
     'customers'                 => 'العملاء',
+    'guests'                    => 'الضيوف',
     'main'                      => 'أساسي',
     'success_message'           => 'رسالة نجاح',
     'warning_message'           => 'رسالة تحذير',

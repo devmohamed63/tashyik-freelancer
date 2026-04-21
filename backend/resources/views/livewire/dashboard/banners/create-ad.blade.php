@@ -34,6 +34,15 @@
                         value="service_providers"
                         :title="__('ui.service_providers')"
                         required />
+
+                    <x-dashboard.inputs.checkbox
+                        id="guest"
+                        name="audience"
+                        wire:model="audience"
+                        type="radio"
+                        value="guests"
+                        :title="__('ui.guests')"
+                        required />
                 </div>
 
                 @error('audience')
