@@ -51,6 +51,52 @@ class OrdersTest extends TestCase
             ->assertStatus(201);
     }
 
+    public function test_user_can_make_orders_using_service_slug(): void
+    {
+        $route = route('api.user.orders.store');
+
+        $tax = $this->getTaxes(100);
+
+        $service = Service::factory()->create([
+            'price' => 50 - ($tax / 2),
+            'slug'  => 'ac-cleaning-service',
+        ]);
+
+        $payload = [
+            'address'       => Address::factory()->create(['user_id' => $this->user->id])->id,
+            'service'       => $service->slug,
+            'quantity'      => 2,
+            'confirm_order' => false,
+        ];
+
+        $this->actingAs($this->user)
+            ->postJson($route, $payload)
+            ->assertStatus(200)
+            ->assertSee(['subtotal' => 100 - $tax]);
+    }
+
+    public function test_order_fails_when_service_does_not_exist(): void
+    {
+        $route = route('api.user.orders.store');
+
+        $payload = [
+            'address'       => Address::factory()->create(['user_id' => $this->user->id])->id,
+            'service'       => 'non-existing-slug',
+            'quantity'      => 1,
+            'confirm_order' => false,
+        ];
+
+        $this->actingAs($this->user)
+            ->postJson($route, $payload)
+            ->assertStatus(422)
+            ->assertJsonPath('errors.errors.service.0', __('validation.exists', ['attribute' => 'service']));
+
+        $this->actingAs($this->user)
+            ->postJson($route, [...$payload, 'service' => 999999])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.errors.service.0', __('validation.exists', ['attribute' => 'service']));
+    }
+
     public function test_new_orders_are_displayed_to_user(): void
     {
         $route = route('api.user.orders.index', [

@@ -25,7 +25,25 @@ class OrderController extends ApiController
     {
         $request->validate([
             'address' => ['nullable', 'integer', 'exists:addresses,id'],
-            'service' => ['required', 'string'],
+            // Accepts either a numeric service id (mobile) or a string slug
+            // (web). Existence is enforced in the closure below.
+            'service' => [
+                'required',
+                function (string $attribute, $value, \Closure $fail) {
+                    if (!is_string($value) && !is_numeric($value)) {
+                        $fail(__('validation.required', ['attribute' => $attribute]));
+                        return;
+                    }
+
+                    $exists = is_numeric($value)
+                        ? Service::whereKey($value)->exists()
+                        : Service::where('slug', $value)->exists();
+
+                    if (!$exists) {
+                        $fail(__('validation.exists', ['attribute' => $attribute]));
+                    }
+                },
+            ],
             'description' => ['nullable', 'string', 'max:500'],
             'quantity' => ['required', 'integer', 'min:1'],
             'coupons' => ['nullable', 'array'],

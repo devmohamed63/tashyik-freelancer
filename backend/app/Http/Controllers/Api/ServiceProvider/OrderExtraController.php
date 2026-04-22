@@ -41,7 +41,7 @@ class OrderExtraController extends ApiController
 
         $order = Order::find($request->order);
 
-        $service = Service::find($request->service);
+        $service = $request->resolveService();
 
         $service->load('promotion');
 
@@ -49,7 +49,7 @@ class OrderExtraController extends ApiController
 
         $orderExtra = new OrderExtra();
         $orderExtra->order_id = $order->id;
-        $orderExtra->service_id = $request->service;
+        $orderExtra->service_id = $service->id;
         $orderExtra->status = OrderExtra::PENDING_STATUS;
         $orderExtra->quantity = $request->quantity;
         $orderExtra->price = $price;
