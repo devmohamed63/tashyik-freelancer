@@ -102,7 +102,7 @@ class Daftra
                 // Daftra rejects requests with empty email/phone; provide
                 // deterministic fallbacks so the sync cannot silently fail
                 // for users registered via OTP only.
-                $email = $user->email ?: "user-{$user->id}@noemail.semiona.local";
+                $email = $user->email ?: "user-{$user->id}@noemail.tashyik.com";
                 $phone = $user->phone ?: '-';
                 $name  = $user->name  ?: "User #{$user->id}";
 
@@ -112,7 +112,7 @@ class Daftra
                         'email'      => $email,
                         'phone1'     => $phone,
                         'type'       => $typeId,
-                        'notes'      => "Synced from Semiona | User #{$user->id}",
+                        'notes'      => "Synced from Tashyik | User #{$user->id}",
                     ],
                 ]);
 

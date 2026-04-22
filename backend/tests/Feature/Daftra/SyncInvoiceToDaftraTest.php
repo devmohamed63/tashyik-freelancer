@@ -936,7 +936,7 @@ class SyncInvoiceToDaftraTest extends TestCase
 
             $data = $request->data()['Client'];
             $this->assertSame("User #{$user->id}", $data['first_name']);
-            $this->assertSame("user-{$user->id}@noemail.semiona.local", $data['email']);
+            $this->assertSame("user-{$user->id}@noemail.tashyik.com", $data['email']);
             $this->assertSame('-', $data['phone1']);
 
             return true;

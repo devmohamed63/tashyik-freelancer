@@ -87,7 +87,7 @@ class SyncInvoiceToDaftra implements ShouldQueue
     /**
      * Sync a completed order invoice to Daftra.
      *
-     * Financial breakdown in Semiona:
+     * Financial breakdown in Tashyik:
      * - subtotal = service_price * quantity + visit_cost (صافي قبل الضريبة)
      * - tax = subtotal * tax_rate (ضريبة القيمة المضافة)
      * - coupons_total = discount amount from coupon codes (مقدار الخصم)
@@ -165,7 +165,7 @@ class SyncInvoiceToDaftra implements ShouldQueue
     /**
      * Sync a subscription renewal invoice to Daftra.
      *
-     * Financial breakdown in Semiona:
+     * Financial breakdown in Tashyik:
      * - PlanController: paid_amount = plan.price + tax (المبلغ شامل الضريبة)
      * - CreateSubscriptionInvoice: invoice.amount = paid_amount (شامل الضريبة)
      *
