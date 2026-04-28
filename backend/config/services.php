@@ -78,4 +78,31 @@ return [
         'attach_invoice_pdf_to_email' => env('DAFTRA_ATTACH_INVOICE_PDF_TO_EMAIL', true),
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+        'text_model' => env('GEMINI_TEXT_MODEL', 'gemini-2.5-flash'),
+        'max_output_tokens' => (int) env('GEMINI_MAX_OUTPUT_TOKENS', 32768),
+        'thinking_budget' => env('GEMINI_THINKING_BUDGET'),
+        'text_models' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', env(
+                'GEMINI_TEXT_MODELS',
+                'gemini-2.5-flash,gemini-2.5-flash-lite,gemini-2.0-flash'
+            ))
+        ))),
+        'project_name' => env('GEMINI_PROJECT_NAME'),
+    ],
+
+    'image_generation' => [
+        'provider' => env('IMAGE_PROVIDER', 'openai'),
+        'brand_primary_hex' => env('IMAGE_BRAND_PRIMARY_HEX', '#724193'),
+        'openai' => [
+            'api_key' => env('OPENAI_API_KEY'),
+            'model' => env('OPENAI_IMAGE_MODEL', 'gpt-image-1.5'),
+            'size' => env('OPENAI_IMAGE_SIZE', '1024x1024'),
+            'quality' => env('OPENAI_IMAGE_QUALITY', 'standard'),
+        ],
+    ],
+
 ];

@@ -1,0 +1,64 @@
+@import url("https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+
+@media print {
+    body {
+        margin: 0 !important;
+    }
+}
+
+.main-container {
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.ck-content {
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.ck-content.ck-editor__editable {
+    min-height: 200px;
+}
+
+.editor-container_classic-editor .editor-container__editor {
+    min-width: 795px;
+    max-width: 795px;
+}
+
+.ck-content > blockquote,
+.ck-content > dl,
+.ck-content > dd,
+.ck-content > h1,
+.ck-content > h2,
+.ck-content > h3,
+.ck-content > h4,
+.ck-content > h5,
+.ck-content > h6,
+.ck-content > hr,
+.ck-content > figure,
+.ck-content > p,
+.ck-content > pre {
+    margin: revert;
+}
+
+.ck-content > ol,
+.ck-content > ul {
+    list-style: revert;
+    margin: revert;
+    padding: revert;
+}
+
+.ck-content > table {
+    border-collapse: revert;
+}
+
+.ck-content > h1,
+.ck-content > h2,
+.ck-content > h3,
+.ck-content > h4,
+.ck-content > h5,
+.ck-content > h6 {
+    font-size: revert;
+    font-weight: revert;
+}

@@ -103,6 +103,12 @@ Route::domain(env('DASHBOARD_SUBDOMAIN').'.'.env('BASE_DOMAIN'))->group(function
             Route::resource('/articles', ArticleController::class)
                 ->except(['show', 'destroy']);
 
+            Route::get('/articles/seo-automation', function () {
+                return redirect()->route('dashboard.articles.index', ['tab' => 'seo-automation']);
+            })->name('articles.seo_automation');
+            Route::match(['post', 'put'], '/articles/seo-automation', [ArticleController::class, 'update_seo_automation'])
+                ->name('articles.update_seo_automation');
+
             // Push ads (FCM): list + compose (mirrors banners index/create)
             Route::get('/push-ads', [PushAdsController::class, 'index'])
                 ->name('push-ads.index');

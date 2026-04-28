@@ -75,6 +75,28 @@
                 @enderror
             </div>
 
+            <!-- Linked service (optional) -->
+            <div class="md:col-span-2">
+                <label for="article-service-id" class="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-400 inline-flex items-center">
+                    {{ __('ui.article_linked_service') }}
+                </label>
+                <select
+                    name="service_id"
+                    id="article-service-id"
+                    class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800">
+                    <option value="">{{ __('ui.none') }}</option>
+                    @foreach ($services as $svc)
+                        <option value="{{ $svc->id }}" @selected(old('service_id', $article->service_id) == $svc->id)>
+                            {{ $svc->getTranslation('name', 'ar') }} — {{ $svc->getTranslation('name', 'en') }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('service_id')
+                    <x-dashboard.inputs.error :message="$message" />
+                @enderror
+                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{{ __('ui.article_linked_service_hint') }}</p>
+            </div>
+
             <!-- Excerpt ar -->
             <div>
                 <x-dashboard.label name="excerpt" locale="ar" :required="true" />

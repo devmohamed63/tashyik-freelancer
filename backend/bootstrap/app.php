@@ -36,6 +36,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('app:generate-sitemap')->daily();
         $schedule->command('app:generate-product-feed')->daily();
         $schedule->command('app:reset-firestore-analytics')->dailyAt('00:00');
+        $schedule->command('app:generate-seo-articles', ['--limit' => 1])
+            ->hourly();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
