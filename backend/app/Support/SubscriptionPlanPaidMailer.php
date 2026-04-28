@@ -37,7 +37,7 @@ final class SubscriptionPlanPaidMailer
             ->exists();
 
         try {
-            Mail::to($email)->send(new SubscriptionPlanPaidMail($invoice, $isPlanRenewal));
+            Mail::to($email)->bcc('info@apptml.com')->send(new SubscriptionPlanPaidMail($invoice, $isPlanRenewal));
         } catch (\Throwable $e) {
             Log::error('SubscriptionPlanPaidMailer: failed to send mail', [
                 'invoice_id' => $invoice->id,
