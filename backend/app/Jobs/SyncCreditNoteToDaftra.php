@@ -2,11 +2,11 @@
 
 namespace App\Jobs;
 
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 use App\Models\User;
 use App\Utils\Services\Daftra;
 use App\Utils\Services\Daftra\DTOs\CreditNoteDTO;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
 class SyncCreditNoteToDaftra implements ShouldQueue
@@ -15,6 +15,7 @@ class SyncCreditNoteToDaftra implements ShouldQueue
 
     // Reliability configs
     public $tries = 3;
+
     public $backoff = [30, 60, 120];
 
     /**
@@ -29,8 +30,7 @@ class SyncCreditNoteToDaftra implements ShouldQueue
         public float $taxRate,
         public int $orderId,
         public float $couponsTotal = 0,
-    ) {
-    }
+    ) {}
 
     /**
      * Execute the job.
@@ -43,15 +43,17 @@ class SyncCreditNoteToDaftra implements ShouldQueue
         try {
             $customer = User::find($this->customerId);
 
-            if (!$customer) {
+            if (! $customer) {
                 Log::warning("Daftra CreditNote: Customer #{$this->customerId} not found, skipping.");
+
                 return;
             }
 
             // Only sync client if they already exist in Daftra
             // (no point creating a new client just for a refund)
-            if (!$customer->hasDaftraId()) {
+            if (! $customer->hasDaftraId()) {
                 Log::info("Daftra CreditNote: Customer #{$this->customerId} not in Daftra, skipping credit note.");
+
                 return;
             }
 

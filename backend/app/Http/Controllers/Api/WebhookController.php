@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Events\OrderPaid;
 use App\Events\OrderExtraPaid;
+use App\Events\OrderPaid;
 use App\Events\PlanPaid;
 use App\Utils\Http\Controllers\ApiController;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class WebhookController extends ApiController
 {
@@ -16,30 +16,30 @@ class WebhookController extends ApiController
         $hmacSecret = env('PAYMOB_HMAC');
         $data = $request->all();
 
-        abort_if(!isset($data['obj']), 403);
+        abort_if(! isset($data['obj']), 403);
 
         $order = $data['obj'];
 
         $concatenatedString =
-            $order['amount_cents'] .
-            $order['created_at'] .
-            $order['currency'] .
-            ($order['error_occured'] ? 'true' : 'false') .
-            ($order['has_parent_transaction'] ? 'true' : 'false') .
-            $order['id'] .
-            $order['integration_id'] .
-            ($order['is_3d_secure'] ? 'true' : 'false') .
-            ($order['is_auth'] ? 'true' : 'false') .
-            ($order['is_capture'] ? 'true' : 'false') .
-            ($order['is_refunded'] ? 'true' : 'false') .
-            ($order['is_standalone_payment'] ? 'true' : 'false') .
-            ($order['is_voided'] ? 'true' : 'false') .
-            $order['order']['id'] .
-            $order['owner'] .
-            ($order['pending'] ? 'true' : 'false') .
-            $order['source_data']['pan'] .
-            $order['source_data']['sub_type'] .
-            $order['source_data']['type'] .
+            $order['amount_cents'].
+            $order['created_at'].
+            $order['currency'].
+            ($order['error_occured'] ? 'true' : 'false').
+            ($order['has_parent_transaction'] ? 'true' : 'false').
+            $order['id'].
+            $order['integration_id'].
+            ($order['is_3d_secure'] ? 'true' : 'false').
+            ($order['is_auth'] ? 'true' : 'false').
+            ($order['is_capture'] ? 'true' : 'false').
+            ($order['is_refunded'] ? 'true' : 'false').
+            ($order['is_standalone_payment'] ? 'true' : 'false').
+            ($order['is_voided'] ? 'true' : 'false').
+            $order['order']['id'].
+            $order['owner'].
+            ($order['pending'] ? 'true' : 'false').
+            $order['source_data']['pan'].
+            $order['source_data']['sub_type'].
+            $order['source_data']['type'].
             ($order['success'] ? 'true' : 'false');
 
         $calculatedHmac = hash_hmac('sha512', $concatenatedString, $hmacSecret);
@@ -50,7 +50,7 @@ class WebhookController extends ApiController
     public function paymob(Request $request)
     {
         if ($request->type == 'TRANSACTION' && $request->obj['success']) {
-            abort_if(!$this->verifyPaymobHmac($request), 403, 'Invalid HMAC');
+            abort_if(! $this->verifyPaymobHmac($request), 403, 'Invalid HMAC');
 
             try {
                 $transactionId = $request->obj['id'];
@@ -70,7 +70,10 @@ class WebhookController extends ApiController
                         break;
                 }
             } catch (\Throwable $th) {
-                Log::error("Paymob webhook failed: \n$th \n$request");
+                Log::error("Paymob webhook failed: \n$th \n$request", [
+                    'trace' => $th->getTraceAsString(),
+                ]);
+                throw $th;
             }
 
             return response()->noContent();

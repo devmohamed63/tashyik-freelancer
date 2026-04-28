@@ -4,7 +4,7 @@
         <!-- Main Group -->
         <div>
 
-            @canany(['view dashboard', 'manage settings', 'view pages', 'create pages', 'view banners', 'view articles', 'create articles'])
+            @canany(['view dashboard', 'manage settings', 'view pages', 'create pages', 'view articles', 'create articles'])
 
                 <x-dashboard.nav.label name="main" />
 
@@ -96,18 +96,6 @@
                         <!-- Pages -->
                     @endcanany --}}
 
-                    @can('viewAny', App\Models\Banner::class)
-                        <!-- Banners -->
-                        <x-dashboard.nav.item
-                            name="banners"
-                            :url="route('dashboard.banners.index')">
-                            <!-- bxs:image -->
-                            <!-- Icon from BoxIcons Solid by Atisa - https://creativecommons.org/licenses/by/4.0/ -->
-                            <path fill="currentColor" d="M19.999 4h-16c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h16c1.103 0 2-.897 2-2V6c0-1.103-.897-2-2-2m-13.5 3a1.5 1.5 0 1 1 0 3a1.5 1.5 0 0 1 0-3m5.5 10h-7l4-5l1.5 2l3-4l5.5 7z" />
-                        </x-dashboard.nav.item>
-                        <!-- Banners -->
-                    @endcan
-
                     @canany(['viewAny', 'create'], App\Models\Article::class)
                         <!-- Articles -->
                         <x-dashboard.nav.item-group
@@ -124,6 +112,40 @@
                 </ul>
 
             @endcanany
+
+            @can('viewAny', App\Models\Banner::class)
+                <x-dashboard.nav.label name="nav_push_notifications" />
+
+                <ul class="mb-6 flex flex-col gap-4">
+                    <x-dashboard.nav.item-group
+                        name="push_ads"
+                        :children="[
+                            ['view_push_ads', route('dashboard.push-ads.index'), true],
+                            ['create_push_ad', route('dashboard.push-ads.create'), Gate::allows('create', App\Models\Banner::class)],
+                        ]">
+                        <!-- mdi:send (push notifications) -->
+                        <!-- Icon from Material Design Icons by Pictogrammers - https://github.com/Templarian/MaterialDesign/blob/master/LICENSE -->
+                        <path fill="currentColor" d="M2,21L23,12L2,3V10L17,12L2,14V21Z" />
+                    </x-dashboard.nav.item-group>
+                </ul>
+
+                <x-dashboard.nav.label name="nav_slider_banners" />
+
+                <ul class="mb-6 flex flex-col gap-4">
+                    <x-dashboard.nav.item-group
+                        name="slider_banners"
+                        :children="[
+                            ['view_banners', route('dashboard.banners.index'), true],
+                            ['create_banner', route('dashboard.banners.create'), Gate::allows('create', App\Models\Banner::class)],
+                            ['show_banner', '', false],
+                            ['edit_banner', '', false],
+                        ]">
+                        <!-- bxs:image -->
+                        <!-- Icon from BoxIcons Solid by Atisa - https://creativecommons.org/licenses/by/4.0/ -->
+                        <path fill="currentColor" d="M19.999 4h-16c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h16c1.103 0 2-.897 2-2V6c0-1.103-.897-2-2-2m-13.5 3a1.5 1.5 0 1 1 0 3a1.5 1.5 0 0 1 0-3m5.5 10h-7l4-5l1.5 2l3-4l5.5 7z" />
+                    </x-dashboard.nav.item-group>
+                </ul>
+            @endcan
 
             @canany(['view cities', 'create cities'])
 

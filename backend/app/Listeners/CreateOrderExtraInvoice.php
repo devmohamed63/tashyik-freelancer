@@ -3,11 +3,13 @@
 namespace App\Listeners;
 
 use App\Events\OrderCompleted;
+use App\Jobs\SyncInvoiceToDaftra;
 use App\Models\Invoice;
+use App\Support\ServiceProviderInvoiceMailer;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\DB;
 
-class CreateOrderExtraInvoice
+class CreateOrderExtraInvoice implements ShouldQueue
 {
     /**
      * Create the event listener.
@@ -26,34 +28,64 @@ class CreateOrderExtraInvoice
         $serviceProvider = $order->serviceProvider;
 
         foreach ($order->orderExtras()->paid()->get() as $orderExtra) {
-            // Create order extra invoice
-            if ($orderExtra->price) {
-                $invoice = new Invoice();
-                $invoice->service_provider_id = $serviceProvider->id;
-                $invoice->target_id = $orderExtra->order_id;
-                $invoice->type = Invoice::ADDITIONAL_SERVICES_TYPE;
-                $invoice->action = Invoice::CREDIT_ACTION;
-                $invoice->amount = $orderExtra->price + $orderExtra->tax + $orderExtra->materials;
-                $invoice->save();
+            $baseAmount = (float) ($orderExtra->price + $orderExtra->materials);
+            $mainInvoice = null;
+            $mainInvoiceCreated = false;
+
+            DB::transaction(function () use (
+                $orderExtra,
+                $serviceProvider,
+                $baseAmount,
+                &$mainInvoice,
+                &$mainInvoiceCreated,
+            ): void {
+                // Create order extra invoice once per paid order extra.
+                if ($baseAmount > 0) {
+                    $mainInvoice = Invoice::firstOrCreate(
+                        ['event_uid' => "order_extra:{$orderExtra->id}:type:".Invoice::ADDITIONAL_SERVICES_TYPE],
+                        [
+                            'service_provider_id' => $serviceProvider->id,
+                            'target_id' => $orderExtra->order_id,
+                            'type' => Invoice::ADDITIONAL_SERVICES_TYPE,
+                            'action' => Invoice::CREDIT_ACTION,
+                            'amount' => $orderExtra->price + $orderExtra->tax + $orderExtra->materials,
+                        ],
+                    );
+                    $mainInvoiceCreated = $mainInvoice->wasRecentlyCreated;
+                }
+
+                // Create order extra tax invoice once per paid order extra.
+                if ($orderExtra->tax) {
+                    Invoice::firstOrCreate(
+                        ['event_uid' => "order_extra:{$orderExtra->id}:type:".Invoice::ADDITIONAL_SERVICES_TAX_TYPE],
+                        [
+                            'service_provider_id' => $serviceProvider->id,
+                            'target_id' => $orderExtra->order_id,
+                            'type' => Invoice::ADDITIONAL_SERVICES_TAX_TYPE,
+                            'action' => Invoice::DEBIT_ACTION,
+                            'amount' => $orderExtra->tax,
+                        ],
+                    );
+                }
+
+                if ($mainInvoiceCreated) {
+                    // Credit balance once, in the same idempotent boundary.
+                    $creditTarget = $serviceProvider->institution_id
+                        ? $serviceProvider->institution
+                        : $serviceProvider;
+
+                    $creditTarget->increment('balance', $baseAmount);
+                }
+            });
+
+            if ($mainInvoiceCreated && $mainInvoice) {
+                ServiceProviderInvoiceMailer::send($mainInvoice);
+
+                SyncInvoiceToDaftra::dispatch(
+                    $mainInvoice,
+                    bankAmount: (float) ($orderExtra->total ?? 0),
+                );
             }
-
-            // Create order extra tax invoice
-            if ($orderExtra->tax) {
-                $taxInvoice = new Invoice();
-                $taxInvoice->service_provider_id = $serviceProvider->id;
-                $taxInvoice->target_id = $orderExtra->order_id;
-                $taxInvoice->type = Invoice::ADDITIONAL_SERVICES_TAX_TYPE;
-                $taxInvoice->action = Invoice::DEBIT_ACTION;
-                $taxInvoice->amount = $orderExtra->tax;
-                $taxInvoice->save();
-            }
-
-            // Credit balance to institution if member, otherwise to individual
-            $creditTarget = $serviceProvider->institution_id
-                ? $serviceProvider->institution
-                : $serviceProvider;
-
-            $creditTarget->increment('balance', $orderExtra->price + $orderExtra->materials);
         }
     }
 }

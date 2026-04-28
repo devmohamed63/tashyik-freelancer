@@ -31,8 +31,9 @@ class OrderExtraRequest extends FormRequest
             'service' => [
                 'required',
                 function (string $attribute, $value, Closure $fail) {
-                    if (!is_string($value) && !is_numeric($value)) {
+                    if (! is_string($value) && ! is_numeric($value)) {
                         $fail(__('validation.required', ['attribute' => $attribute]));
+
                         return;
                     }
 
@@ -40,7 +41,7 @@ class OrderExtraRequest extends FormRequest
                         ? Service::whereKey($value)->exists()
                         : Service::where('slug', $value)->exists();
 
-                    if (!$exists) {
+                    if (! $exists) {
                         $fail(__('validation.exists', ['attribute' => $attribute]));
                     }
                 },

@@ -3,13 +3,12 @@
 namespace Tests\Feature\Api\ServiceProvider;
 
 use App\Events\NewOrderExtra;
-use App\Models\User;
 use App\Models\Order;
-use App\Models\Service;
 use App\Models\OrderExtra;
+use App\Models\Service;
+use App\Models\User;
 use App\Utils\Traits\HasTax;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Tests\TestCase;
@@ -53,8 +52,7 @@ class OrderExtrasTest extends TestCase
             ->getJson($route)
             ->assertStatus(200)
             ->assertJson(
-                fn(AssertableJson $json) =>
-                $json->has('data.0')
+                fn (AssertableJson $json) => $json->has('data.0')
                     ->etc()
             );
     }
@@ -78,21 +76,21 @@ class OrderExtrasTest extends TestCase
         Event::fake([NewOrderExtra::class]);
 
         $service = Service::factory()->create(['slug' => 'extra-ac-check']);
-        $order   = Order::factory()->create();
+        $order = Order::factory()->create();
 
         $route = route('api.service_provider.order-extra.store');
 
         $this->actingAs($this->serviceProvider)
             ->postJson($route, [
-                'order'     => $order->id,
-                'service'   => $service->slug,
-                'quantity'  => 1,
+                'order' => $order->id,
+                'service' => $service->slug,
+                'quantity' => 1,
                 'materials' => 0,
             ])
             ->assertStatus(200);
 
         $this->assertDatabaseHas('order_extras', [
-            'order_id'   => $order->id,
+            'order_id' => $order->id,
             'service_id' => $service->id,
         ]);
     }
@@ -102,21 +100,21 @@ class OrderExtrasTest extends TestCase
         Event::fake([NewOrderExtra::class]);
 
         $service = Service::factory()->create();
-        $order   = Order::factory()->create();
+        $order = Order::factory()->create();
 
         $route = route('api.service_provider.order-extra.store');
 
         $this->actingAs($this->serviceProvider)
             ->postJson($route, [
-                'order'     => $order->id,
-                'service'   => $service->id,
-                'quantity'  => 1,
+                'order' => $order->id,
+                'service' => $service->id,
+                'quantity' => 1,
                 'materials' => 0,
             ])
             ->assertStatus(200);
 
         $this->assertDatabaseHas('order_extras', [
-            'order_id'   => $order->id,
+            'order_id' => $order->id,
             'service_id' => $service->id,
         ]);
     }
@@ -127,8 +125,8 @@ class OrderExtrasTest extends TestCase
 
         $this->actingAs($this->serviceProvider)
             ->postJson($route, [
-                'order'    => Order::factory()->create()->id,
-                'service'  => 'non-existing-slug',
+                'order' => Order::factory()->create()->id,
+                'service' => 'non-existing-slug',
                 'quantity' => 1,
             ])
             ->assertStatus(422)
@@ -136,8 +134,8 @@ class OrderExtrasTest extends TestCase
 
         $this->actingAs($this->serviceProvider)
             ->postJson($route, [
-                'order'    => Order::factory()->create()->id,
-                'service'  => 999999,
+                'order' => Order::factory()->create()->id,
+                'service' => 999999,
                 'quantity' => 1,
             ])
             ->assertStatus(422)

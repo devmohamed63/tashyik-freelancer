@@ -3,12 +3,13 @@
 namespace App\Listeners;
 
 use App\Events\OrderCompleted;
-use App\Models\Invoice;
 use App\Jobs\SyncInvoiceToDaftra;
+use App\Models\Invoice;
+use App\Support\ServiceProviderInvoiceMailer;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\DB;
 
-class CreateOrderInvoice
+class CreateOrderInvoice implements ShouldQueue
 {
     /**
      * Create the event listener.
@@ -25,44 +26,66 @@ class CreateOrderInvoice
     {
         $order = $event->order;
         $serviceProvider = $order->serviceProvider;
+        $mainInvoice = null;
+        $mainInvoiceCreated = false;
 
-        // Create order invoice
-        if ($order->subtotal) {
-            $invoice = new Invoice();
-            $invoice->service_provider_id = $serviceProvider->id;
-            $invoice->target_id = $order->id;
-            $invoice->type = Invoice::COMPLETED_ORDER_TYPE;
-            $invoice->action = Invoice::CREDIT_ACTION;
-            $invoice->amount = $order->subtotal + $order->tax;
-            $invoice->save();
+        DB::transaction(function () use (
+            $order,
+            $serviceProvider,
+            &$mainInvoice,
+            &$mainInvoiceCreated,
+        ): void {
+            // Create order invoice once per order
+            if ($order->subtotal) {
+                $mainInvoice = Invoice::firstOrCreate(
+                    ['event_uid' => "order:{$order->id}:type:".Invoice::COMPLETED_ORDER_TYPE],
+                    [
+                        'service_provider_id' => $serviceProvider->id,
+                        'target_id' => $order->id,
+                        'type' => Invoice::COMPLETED_ORDER_TYPE,
+                        'action' => Invoice::CREDIT_ACTION,
+                        'amount' => $order->subtotal + $order->tax,
+                    ],
+                );
+                $mainInvoiceCreated = $mainInvoice->wasRecentlyCreated;
+            }
+
+            if ($order->tax) {
+                // Create order tax invoice once per order
+                Invoice::firstOrCreate(
+                    ['event_uid' => "order:{$order->id}:type:".Invoice::COMPLETED_ORDER_TAX_TYPE],
+                    [
+                        'service_provider_id' => $serviceProvider->id,
+                        'target_id' => $order->id,
+                        'type' => Invoice::COMPLETED_ORDER_TAX_TYPE,
+                        'action' => Invoice::DEBIT_ACTION,
+                        'amount' => $order->tax,
+                    ],
+                );
+            }
+
+            if ($mainInvoiceCreated) {
+                // Credit balance once, in the same idempotent boundary.
+                $creditTarget = $serviceProvider->institution_id
+                    ? $serviceProvider->institution
+                    : $serviceProvider;
+
+                $creditTarget->increment('balance', $order->subtotal);
+            }
+        });
+
+        if ($mainInvoiceCreated && $mainInvoice) {
+            ServiceProviderInvoiceMailer::send($mainInvoice);
         }
-
-        if ($order->tax) {
-            // Create order tax invoice
-            $taxInvoice = new Invoice();
-            $taxInvoice->service_provider_id = $serviceProvider->id;
-            $taxInvoice->target_id = $order->id;
-            $taxInvoice->type = Invoice::COMPLETED_ORDER_TAX_TYPE;
-            $taxInvoice->action = Invoice::DEBIT_ACTION;
-            $taxInvoice->amount = $order->tax;
-            $taxInvoice->save();
-        }
-
-        // Credit balance to institution if member, otherwise to individual
-        $creditTarget = $serviceProvider->institution_id
-            ? $serviceProvider->institution
-            : $serviceProvider;
-
-        $creditTarget->increment('balance', $order->subtotal);
 
         // Sync with Daftra ERP in Background
         // bankAmount = order.total is what actually reached the payment gateway
         // (i.e. after coupons and wallet deductions). This is what we must
         // record as a bank receipt in Daftra — not invoice.amount which is the
         // gross (subtotal + tax).
-        if (isset($invoice)) {
+        if ($mainInvoiceCreated && $mainInvoice) {
             SyncInvoiceToDaftra::dispatch(
-                $invoice,
+                $mainInvoice,
                 bankAmount: (float) ($order->total ?? 0),
             );
         }

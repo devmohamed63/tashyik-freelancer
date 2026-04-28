@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\SyncableWithDaftra;
+use App\Utils\Services\Daftra;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Traits\SyncableWithDaftra;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 
 class Invoice extends Model
 {
@@ -19,12 +22,20 @@ class Invoice extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'view_token',
+        'service_provider_id',
         'type',
         'action',
         'amount',
         'target_id',
+        'event_uid',
         'daftra_id',
+        'daftra_public_view_url',
         'daftra_payment_id',
+        'daftra_invoice_pdf_sent_at',
+        'recorded_in_daftra',
+        'recorded_in_daftra_at',
+        'recorded_in_daftra_by',
     ];
 
     /**
@@ -114,6 +125,31 @@ class Invoice extends Model
      * @var string
      */
     const DEBIT_ACTION = 'debit';
+
+    protected static function booted(): void
+    {
+        static::creating(function (Invoice $invoice): void {
+            if ($invoice->view_token !== null && $invoice->view_token !== '') {
+                return;
+            }
+            $invoice->view_token = self::generateUniqueViewToken();
+        });
+    }
+
+    /**
+     * Secret segment for short public invoice URLs (emails). Not guessable.
+     */
+    public static function generateUniqueViewToken(): string
+    {
+        for ($i = 0; $i < 30; $i++) {
+            $token = Str::lower(Str::random(32));
+            if (! self::query()->where('view_token', $token)->exists()) {
+                return $token;
+            }
+        }
+
+        throw new \RuntimeException('Unable to generate unique invoice view_token.');
+    }
 
     /**
      * Get translated type.
@@ -210,5 +246,103 @@ class Invoice extends Model
     public function serviceProvider(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Owner-console link in Daftra (staff). Requires company login — not for SP primary CTA; use {@see daftraRecipientWebUrl()}.
+     */
+    public function daftraInvoiceViewUrl(): ?string
+    {
+        if (! $this->daftra_id) {
+            return null;
+        }
+
+        return app(Daftra::class)->ownerInvoiceViewUrl((int) $this->daftra_id);
+    }
+
+    /**
+     * Daftra recipient-facing web URL for emails: canonical {@see Daftra::clientInvoiceViewUrl()} when synced;
+     * otherwise optional URL from API stored in {@see $daftra_public_view_url} (rare).
+     */
+    public function daftraRecipientWebUrl(): ?string
+    {
+        if ($this->daftra_id) {
+            return app(Daftra::class)->clientInvoiceViewUrl((int) $this->daftra_id);
+        }
+
+        $u = $this->daftra_public_view_url;
+
+        return (is_string($u) && filter_var($u, FILTER_VALIDATE_URL)) ? $u : null;
+    }
+
+    /**
+     * Primary link for invoice emails: Daftra client view when {@see $daftra_id} is set; optionally Tashyik public page
+     * (see {@see config('services.tashyik.invoice_emails_include_local_public_link')}).
+     */
+    public function invoiceEmailPrimaryUrl(): ?string
+    {
+        $daftra = $this->daftraRecipientWebUrl();
+        if ($daftra !== null) {
+            return $daftra;
+        }
+
+        if ((bool) config('services.tashyik.invoice_emails_include_local_public_link', true)) {
+            return $this->platformWebUrl();
+        }
+
+        return null;
+    }
+
+    /**
+     * Persist {@see daftra_public_view_url} from Daftra GET invoice when still empty (API preview / PDF link — not used for email primary CTA).
+     */
+    public function fillDaftraPublicViewUrlFromApi(Daftra $daftra): bool
+    {
+        if ($this->daftra_public_view_url || ! $this->daftra_id) {
+            return false;
+        }
+
+        $url = $daftra->fetchSalesInvoiceRecipientViewUrl((int) $this->daftra_id);
+        if (! is_string($url) || $url === '') {
+            return false;
+        }
+
+        $this->forceFill(['daftra_public_view_url' => $url])->saveQuietly();
+
+        return true;
+    }
+
+    /**
+     * URL to open this invoice in a normal browser (emails, Daftra notes).
+     *
+     * Default: short URL {@see route('public.invoices.token')} when {@see $view_token} is set;
+     * otherwise a signed legacy URL. Override with TASHYIK_INVOICE_SHOW_URL for a custom host/path.
+     *
+     * @see config('services.tashyik.invoice_show_url')
+     */
+    public function platformWebUrl(): string
+    {
+        $template = config('services.tashyik.invoice_show_url');
+        $id = (string) $this->id;
+
+        if (is_string($template) && $template !== '') {
+            return str_contains($template, '{id}')
+                ? str_replace('{id}', $id, $template)
+                : rtrim($template, '/').'/'.$id;
+        }
+
+        $token = $this->view_token;
+        if (is_string($token) && $token !== '') {
+            return URL::route('public.invoices.token', ['view_token' => $token], absolute: true);
+        }
+
+        $ttlDays = (int) config('services.tashyik.public_invoice_link_ttl_days', 1825);
+
+        return URL::temporarySignedRoute(
+            'public.invoices.show',
+            now()->addDays(max(1, $ttlDays)),
+            ['invoice' => $this->id],
+            absolute: true
+        );
     }
 }

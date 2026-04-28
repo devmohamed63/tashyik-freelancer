@@ -8,7 +8,6 @@ use App\Models\Service;
 use App\Models\User;
 use App\Utils\Traits\HasTax;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Tests\TestCase;
 
@@ -59,13 +58,13 @@ class OrdersTest extends TestCase
 
         $service = Service::factory()->create([
             'price' => 50 - ($tax / 2),
-            'slug'  => 'ac-cleaning-service',
+            'slug' => 'ac-cleaning-service',
         ]);
 
         $payload = [
-            'address'       => Address::factory()->create(['user_id' => $this->user->id])->id,
-            'service'       => $service->slug,
-            'quantity'      => 2,
+            'address' => Address::factory()->create(['user_id' => $this->user->id])->id,
+            'service' => $service->slug,
+            'quantity' => 2,
             'confirm_order' => false,
         ];
 
@@ -80,9 +79,9 @@ class OrdersTest extends TestCase
         $route = route('api.user.orders.store');
 
         $payload = [
-            'address'       => Address::factory()->create(['user_id' => $this->user->id])->id,
-            'service'       => 'non-existing-slug',
-            'quantity'      => 1,
+            'address' => Address::factory()->create(['user_id' => $this->user->id])->id,
+            'service' => 'non-existing-slug',
+            'quantity' => 1,
             'confirm_order' => false,
         ];
 
@@ -100,7 +99,7 @@ class OrdersTest extends TestCase
     public function test_new_orders_are_displayed_to_user(): void
     {
         $route = route('api.user.orders.index', [
-            'status' => 'new'
+            'status' => 'new',
         ]);
 
         Order::factory()->create([
@@ -112,8 +111,7 @@ class OrdersTest extends TestCase
             ->getJson($route)
             ->assertStatus(200)
             ->assertJson(
-                fn(AssertableJson $json) =>
-                $json->has('data.0')
+                fn (AssertableJson $json) => $json->has('data.0')
                     ->etc()
             );
     }
@@ -121,7 +119,7 @@ class OrdersTest extends TestCase
     public function test_in_progress_orders_are_displayed_to_user(): void
     {
         $route = route('api.user.orders.index', [
-            'status' => 'in_progress'
+            'status' => 'in_progress',
         ]);
 
         Order::factory()->create([
@@ -133,8 +131,7 @@ class OrdersTest extends TestCase
             ->getJson($route)
             ->assertStatus(200)
             ->assertJson(
-                fn(AssertableJson $json) =>
-                $json->has('data.0')
+                fn (AssertableJson $json) => $json->has('data.0')
                     ->etc()
             );
     }
@@ -142,7 +139,7 @@ class OrdersTest extends TestCase
     public function test_completed_orders_are_displayed_to_user(): void
     {
         $route = route('api.user.orders.index', [
-            'status' => 'completed'
+            'status' => 'completed',
         ]);
 
         Order::factory()->create([
@@ -155,8 +152,7 @@ class OrdersTest extends TestCase
             ->getJson($route)
             ->assertStatus(200)
             ->assertJson(
-                fn(AssertableJson $json) =>
-                $json->has('data.0')
+                fn (AssertableJson $json) => $json->has('data.0')
                     ->etc()
             );
     }
@@ -171,8 +167,7 @@ class OrdersTest extends TestCase
             ->getJson($route)
             ->assertStatus(200)
             ->assertJson(
-                fn(AssertableJson $json) =>
-                $json->has('id')
+                fn (AssertableJson $json) => $json->has('id')
                     ->etc()
             );
     }

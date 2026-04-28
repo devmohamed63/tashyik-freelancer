@@ -21,7 +21,7 @@ return [
     // Pages
     'login' => [
         'title' => 'Sign In',
-        'description' => 'Enter your email and password to sign in!',
+        'description' => 'Enter your phone number and password to sign in!',
         'forgot_password' => 'Forgot password?',
         'button' => 'Sign In',
         'dont_have_account' => "Don't have an account?",
@@ -30,7 +30,7 @@ return [
         'title' => 'Sign Up',
         'description' => 'Enter your email and password to sign up!',
         'button' => 'Sign Up',
-        'already_have_account' => "Already have an account?",
+        'already_have_account' => 'Already have an account?',
     ],
     'forgot_passwrod' => [
         'title' => 'Forgot password',
@@ -52,6 +52,6 @@ return [
         'description' => 'Thanks for signing up! Before getting started, could you verify your email address by clicking on the link we just emailed to you? If you didn\'t receive the email, we will gladly send you another.',
         'button' => 'Resend Verification Email',
     ],
-    'logout' => 'Log Out'
+    'logout' => 'Log Out',
 
 ];

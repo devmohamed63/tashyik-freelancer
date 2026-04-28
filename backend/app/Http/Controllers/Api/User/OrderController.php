@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers\Api\User;
 
-use App\Models\Order;
-use App\Models\Coupon;
-use App\Models\Service;
 use App\Events\OrderPaid;
-use App\Utils\Traits\HasTax;
-use App\Utils\Services\Paymob;
-use App\Utils\Http\Controllers\ApiController;
 use App\Http\Resources\Customer\OrderResource;
+use App\Jobs\SyncCreditNoteToDaftra;
+use App\Models\Coupon;
+use App\Models\Order;
+use App\Models\Service;
+use App\Utils\Http\Controllers\ApiController;
+use App\Utils\Services\Paymob;
+use App\Utils\Traits\HasTax;
+use Carbon\CarbonInterval;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Http\Request;
-use Carbon\CarbonInterval;
-use App\Jobs\SyncCreditNoteToDaftra;
 
 class OrderController extends ApiController
 {
@@ -30,8 +30,9 @@ class OrderController extends ApiController
             'service' => [
                 'required',
                 function (string $attribute, $value, \Closure $fail) {
-                    if (!is_string($value) && !is_numeric($value)) {
+                    if (! is_string($value) && ! is_numeric($value)) {
                         $fail(__('validation.required', ['attribute' => $attribute]));
+
                         return;
                     }
 
@@ -39,7 +40,7 @@ class OrderController extends ApiController
                         ? Service::whereKey($value)->exists()
                         : Service::where('slug', $value)->exists();
 
-                    if (!$exists) {
+                    if (! $exists) {
                         $fail(__('validation.exists', ['attribute' => $attribute]));
                     }
                 },
@@ -103,7 +104,7 @@ class OrderController extends ApiController
                 return [
                     'code' => $code,
                     'is_valid' => $isValid,
-                    'amount' => ($value ?? 0) . ' ' . __('ui.currency')
+                    'amount' => ($value ?? 0).' '.__('ui.currency'),
                 ];
             }, array_unique(array_values($request->coupons)));
         }
@@ -127,7 +128,7 @@ class OrderController extends ApiController
             'wallet_balance' => $walletBalance['deducted_amount'],
             ...compact('total'),
             // Check if user has used the welcome coupon
-            'used_welcome_coupon' => $usedWelcomeCoupon
+            'used_welcome_coupon' => $usedWelcomeCoupon,
         ];
 
         if ($total == 0 && $request->confirm_order) {
@@ -137,7 +138,7 @@ class OrderController extends ApiController
         }
 
         if ($total > 0) {
-            $paymob = new Paymob();
+            $paymob = new Paymob;
             $paymob->setReference($paymobData);
             $paymentLink = $paymob->getPaymentLink($total);
         }
@@ -162,7 +163,7 @@ class OrderController extends ApiController
     public function index(Request $request)
     {
         $request->validate([
-            'status' => ['required', 'in:new,in_progress,completed']
+            'status' => ['required', 'in:new,in_progress,completed'],
         ]);
 
         $customer = Auth::user();
@@ -246,7 +247,7 @@ class OrderController extends ApiController
 
         $key = "cancel-orders:$user->id";
 
-        $executed = RateLimiter::attempt($key, 1, function () use ($order, $user, $key) {
+        $executed = RateLimiter::attempt($key, 1, function () use ($order, $user) {
             // Calculate the paid amount and the balance deducted from the wallet.
             $amount = $order->total + $order->wallet_balance;
 
@@ -265,9 +266,9 @@ class OrderController extends ApiController
             }
 
             $order->delete();
-        },  now()->addMinutes(30));
+        }, now()->addMinutes(30));
 
-        if (!$executed) {
+        if (! $executed) {
             $seconds = RateLimiter::availableIn($key);
 
             $availableIn = CarbonInterval::seconds($seconds)
@@ -275,7 +276,7 @@ class OrderController extends ApiController
                 ->forHumans(['parts' => 1]);
 
             abort(403, __('ui.many_cancel_attempts', [
-                'available_in' => $availableIn
+                'available_in' => $availableIn,
             ]));
         }
 

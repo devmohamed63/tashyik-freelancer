@@ -15,8 +15,7 @@ class CreditNoteDTO
         public float $taxRate = 15,
         public ?int $costCenterId = null,
         public ?int $returnAccountId = null
-    ) {
-    }
+    ) {}
 
     public function addItem(string $item, float $unitPrice, int $quantity = 1, string $description = ''): self
     {

@@ -4,50 +4,58 @@
         <!-- Modal loader -->
         <x-dashboard.loaders.centered wire:loading.class.remove="hidden" />
 
-        <!-- Modal title -->
-        <x-dashboard.modals.title :value="__('ui.create_ad')" />
+        @if ($embedInModal)
+            <!-- Modal title -->
+            <x-dashboard.modals.title :value="__('ui.create_ad')" />
+        @endif
 
         @if ($error)
             <x-dashboard.alerts.error :title="$error" />
         @endif
 
         <form class="space-y-5" wire:submit="publish" x-data="{ loading: false }">
-            <!-- Audience -->
+            <!-- Audience (one or more) -->
             <div class="flex flex-col gap-2">
-                <x-dashboard.label name="audience" :required="true" />
+                <span class="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-400 inline-flex items-center">
+                    {{ __('ui.target_audiences') }}<span class="text-error-500">*</span>
+                </span>
 
-                <div class="inline-flex gap-4 items-center w-full">
+                <div class="flex flex-wrap gap-4 items-center">
                     <x-dashboard.inputs.checkbox
-                        id="customer"
-                        name="audience"
-                        wire:model="audience"
-                        type="radio"
+                        id="audience_customers"
+                        name="audiences[]"
+                        wire:model="audiences"
+                        type="checkbox"
                         value="customers"
-                        :title="__('ui.customers')"
-                        required />
+                        :title="__('ui.customers')" />
 
                     <x-dashboard.inputs.checkbox
-                        id="service_provider"
-                        name="audience"
-                        wire:model="audience"
-                        type="radio"
+                        id="audience_service_providers"
+                        name="audiences[]"
+                        wire:model="audiences"
+                        type="checkbox"
                         value="service_providers"
-                        :title="__('ui.service_providers')"
-                        required />
+                        :title="__('ui.service_providers')" />
 
                     <x-dashboard.inputs.checkbox
-                        id="guest"
-                        name="audience"
-                        wire:model="audience"
-                        type="radio"
+                        id="audience_guests"
+                        name="audiences[]"
+                        wire:model="audiences"
+                        type="checkbox"
                         value="guests"
-                        :title="__('ui.guests')"
-                        required />
+                        :title="$this->guestsAudienceLabel()" />
                 </div>
 
-                @error('audience')
+                @error('audiences')
                     <x-dashboard.inputs.error :message="$message" />
                 @enderror
+                @foreach ($errors->keys() as $errorKey)
+                    @if (str_starts_with($errorKey, 'audiences.'))
+                        @error($errorKey)
+                            <x-dashboard.inputs.error :message="$message" />
+                        @enderror
+                    @endif
+                @endforeach
             </div>
 
             <!-- Title -->

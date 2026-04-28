@@ -40,7 +40,7 @@ class BannerController extends Controller
 
         $banner->addMediaFromRequest('image')->toMediaCollection('image');
 
-        return redirect()->back()->with(['status' => __('ui.created_successfully')]);
+        return redirect()->route('dashboard.banners.index')->with(['status' => __('ui.created_successfully')]);
     }
 
     /**
@@ -68,7 +68,7 @@ class BannerController extends Controller
             $banner->addMediaFromRequest('image')->toMediaCollection('image');
         }
 
-        return redirect()->back()->with(['status' => __('ui.updated_successfully')]);
+        return redirect()->route('dashboard.banners.index')->with(['status' => __('ui.updated_successfully')]);
     }
 
     /**

@@ -46,6 +46,22 @@ return [
         'key' => env('GOOGLE_MAPS_API_KEY'),
     ],
 
+    /*
+    | Optional: force invoice links (emails / Daftra) to this URL instead of the built-in public page.
+    | Use {id} for the local invoice id, e.g. https://example.com/custom/{id}
+    |
+    | If empty: short link public/i/{view_token} on the dashboard host (HTML in any browser).
+    */
+    'tashyik' => [
+        'invoice_show_url' => env('TASHYIK_INVOICE_SHOW_URL'),
+        'public_invoice_link_ttl_days' => env('TASHYIK_PUBLIC_INVOICE_LINK_TTL_DAYS', 1825),
+        /**
+         * When false, invoice emails do not link to this app’s public invoice HTML (no “hosted” copy in the link sense).
+         * Primary CTA uses Daftra public preview URL from the API when available; otherwise only staff / wait messaging.
+         */
+        'invoice_emails_include_local_public_link' => env('TASHYIK_INVOICE_EMAILS_INCLUDE_LOCAL_PUBLIC_LINK', true),
+    ],
+
     'daftra' => [
         'api_key' => env('DAFTRA_API_KEY'),
         'subdomain' => env('DAFTRA_SUBDOMAIN', 'wadhacompany'),
@@ -53,6 +69,13 @@ return [
         'bank_account_id' => env('DAFTRA_BANK_ACCOUNT_ID'),
         'revenue_account_id' => env('DAFTRA_REVENUE_ACCOUNT_ID'),
         'return_account_id' => env('DAFTRA_RETURN_ACCOUNT_ID'),
+        'sp_payout_account_id' => env('DAFTRA_SP_PAYOUT_ACCOUNT_ID', 51),
+        'invoice_pdf_enabled' => env('DAFTRA_INVOICE_PDF_EMAIL_ENABLED', true),
+        'invoice_pdf_bcc' => env('DAFTRA_INVOICE_PDF_BCC_EMAIL'),
+        /** After sync, GET invoice JSON to store invoice_html_url / invoice_pdf_url for emails (no owner login). */
+        'fetch_public_invoice_url' => env('DAFTRA_FETCH_PUBLIC_INVOICE_URL', true),
+        /** Download invoice_pdf_url from Daftra and attach PDF to the Daftra invoice email when possible. */
+        'attach_invoice_pdf_to_email' => env('DAFTRA_ATTACH_INVOICE_PDF_TO_EMAIL', true),
     ],
 
 ];

@@ -6,10 +6,10 @@ use App\Models\Banner;
 use App\Utils\Livewire\DataTable;
 use App\Utils\Livewire\Table\Button;
 use App\Utils\Livewire\Table\Column;
-use App\Utils\Livewire\Table\Modal;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\On;
 use Livewire\WithPagination;
 
 class BannersTable extends DataTable
@@ -22,11 +22,11 @@ class BannersTable extends DataTable
 
     public bool $tableHasStatus = true;
 
-    public array|null $searchableColumns = [
+    public ?array $searchableColumns = [
         'name',
     ];
 
-    public string|null $statusFilter = null;
+    public ?string $statusFilter = null;
 
     public function mount()
     {
@@ -57,7 +57,7 @@ class BannersTable extends DataTable
         return $query;
     }
 
-    protected function columns(): Collection|null
+    protected function columns(): ?Collection
     {
         return new Collection([
 
@@ -82,37 +82,32 @@ class BannersTable extends DataTable
 
             Column::name('show', __('ui.show'))
                 ->action()
-                ->url(fn($banner) => route('dashboard.banners.show', ['banner' => $banner->id]))
+                ->url(fn ($banner) => route('dashboard.banners.show', ['banner' => $banner->id]))
                 ->view('components.dashboard.tables.buttons.show'),
 
             Column::name('edit', __('ui.edit'))
                 ->action()
-                ->url(fn($banner) => route('dashboard.banners.edit', ['banner' => $banner->id]))
+                ->url(fn ($banner) => route('dashboard.banners.edit', ['banner' => $banner->id]))
                 ->view('components.dashboard.tables.buttons.edit')
-                ->authorize(fn($banner) => Gate::allows('update', $banner))
+                ->authorize(fn ($banner) => Gate::allows('update', $banner))
                 ->hidden(Gate::denies('updateAny', Banner::class)),
 
             Column::name('delete', __('ui.delete'))
                 ->action()
                 ->wireAction('delete')
                 ->view('components.dashboard.tables.buttons.delete')
-                ->authorize(fn($banner) => Gate::allows('delete', $banner))
+                ->authorize(fn ($banner) => Gate::allows('delete', $banner))
                 ->hidden(Gate::denies('deleteAny', Banner::class)),
 
         ]);
     }
 
-    protected function buttons(): Collection|null
+    protected function buttons(): ?Collection
     {
         return new Collection([
 
             Button::name(__('ui.create_banner'))
                 ->url(route('dashboard.banners.create'))
-                ->view('components.dashboard.tables.buttons.add')
-                ->hidden(Gate::denies('create', Banner::class)),
-
-            Button::name(__('ui.create_ad'))
-                ->wireAction('create_ad')
                 ->view('components.dashboard.tables.buttons.add')
                 ->hidden(Gate::denies('create', Banner::class)),
 
@@ -124,26 +119,17 @@ class BannersTable extends DataTable
         ]);
     }
 
-    protected function dropdowns(): Collection|null
+    protected function dropdowns(): ?Collection
     {
         return new Collection([]);
     }
 
-    protected function modals(): Collection|null
+    protected function modals(): ?Collection
     {
-        return new Collection([
-
-            Modal::id('createAdModal')
-                ->view('dashboard.banners.create-ad'),
-
-        ]);
+        return new Collection([]);
     }
 
-    public function create_ad()
-    {
-        $this->dispatch('showModal', ['id' => 'createAdModal']);
-    }
-
+    #[On('refreshTable')]
     public function render()
     {
         return view('livewire.dashboard.general-table', [

@@ -2,15 +2,17 @@
 
 namespace App\Jobs;
 
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\OrderExtra;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Utils\Services\Daftra;
 use App\Utils\Services\Daftra\DTOs\InvoiceDTO;
 use App\Utils\Services\Daftra\DTOs\PaymentDTO;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
 
 class SyncInvoiceToDaftra implements ShouldQueue
@@ -19,24 +21,24 @@ class SyncInvoiceToDaftra implements ShouldQueue
 
     // Reliability configs
     public $tries = 3;
+
     public $backoff = [30, 60, 120]; // Exponential backoff
 
     /**
      * Create a new job instance.
      *
      * @param  Invoice  $localInvoice  The local invoice to sync.
-     * @param  float    $bankAmount    Actual amount that reached the bank
-     *                                 (order.total, or paid_amount - wallet for
-     *                                 subscriptions). Used to record the
-     *                                 Daftra payment receipt correctly so that
-     *                                 the bank balance in Daftra matches
-     *                                 reality even with coupons or wallet use.
+     * @param  float  $bankAmount  Actual amount that reached the bank
+     *                             (order.total, or paid_amount - wallet for
+     *                             subscriptions). Used to record the
+     *                             Daftra payment receipt correctly so that
+     *                             the bank balance in Daftra matches
+     *                             reality even with coupons or wallet use.
      */
     public function __construct(
         public Invoice $localInvoice,
         public float $bankAmount = 0,
-    ) {
-    }
+    ) {}
 
     /**
      * Execute the job.
@@ -49,8 +51,12 @@ class SyncInvoiceToDaftra implements ShouldQueue
      */
     public function handle(Daftra $daftra): void
     {
-        // Fully synced already — nothing to do
+        $this->localInvoice = $this->localInvoice->fresh();
+
+        // Fully synced already — nothing to do (still queue PDF email if not sent yet)
         if ($this->localInvoice->hasDaftraId() && $this->localInvoice->daftra_payment_id) {
+            Bus::dispatchSync(new SendDaftraInvoicePdfMailJob($this->localInvoice->id));
+
             return;
         }
 
@@ -58,9 +64,10 @@ class SyncInvoiceToDaftra implements ShouldQueue
         $syncableTypes = [
             Invoice::COMPLETED_ORDER_TYPE,
             Invoice::RENEW_SUBSCRIPTION_TYPE,
+            Invoice::ADDITIONAL_SERVICES_TYPE,
         ];
 
-        if (!in_array($this->localInvoice->type, $syncableTypes)) {
+        if (! in_array($this->localInvoice->type, $syncableTypes)) {
             return;
         }
 
@@ -73,6 +80,8 @@ class SyncInvoiceToDaftra implements ShouldQueue
                 $this->syncOrderInvoice($daftra, $costCenterId, $bankAccountId, $revenueAccountId);
             } elseif ($this->localInvoice->type === Invoice::RENEW_SUBSCRIPTION_TYPE) {
                 $this->syncSubscriptionInvoice($daftra, $costCenterId, $bankAccountId, $revenueAccountId);
+            } elseif ($this->localInvoice->type === Invoice::ADDITIONAL_SERVICES_TYPE) {
+                $this->syncAdditionalServicesInvoice($daftra, $costCenterId, $bankAccountId, $revenueAccountId);
             }
         } catch (\Throwable $e) {
             Log::error("Daftra Sync Failed for Invoice #{$this->localInvoice->id}", [
@@ -82,6 +91,86 @@ class SyncInvoiceToDaftra implements ShouldQueue
 
             throw $e; // Re-throw to trigger retry
         }
+
+        Bus::dispatchSync(new SendDaftraInvoicePdfMailJob($this->localInvoice->fresh()->id));
+    }
+
+    /**
+     * Sync a paid order extra invoice.
+     *
+     * Tax is embedded on the main invoice in Daftra.
+     * Local `additional-services-tax` rows remain local-only and are not synced.
+     */
+    private function syncAdditionalServicesInvoice(Daftra $daftra, int $costCenter, int $bankAccount, int $revenueAccount): void
+    {
+        $extraId = $this->resolveOrderExtraIdFromEventUid();
+        if (! $extraId) {
+            Log::warning(
+                "Daftra: Skipping legacy additional-services invoice #{$this->localInvoice->id} due to missing order_extra event reference."
+            );
+
+            return;
+        }
+
+        $orderExtra = OrderExtra::query()
+            ->with(['order.customer', 'service'])
+            ->find($extraId);
+
+        if (! $orderExtra || ! $orderExtra->order || ! $orderExtra->order->customer) {
+            Log::warning("Daftra: Paid order extra #{$extraId} missing order/customer, skipping.");
+
+            return;
+        }
+
+        $daftraClientId = $daftra->syncClient($orderExtra->order->customer);
+        if (! $daftraClientId) {
+            Log::warning("Daftra: Could not sync client for extra #{$extraId}");
+
+            return;
+        }
+
+        $daftraInvoiceId = $this->localInvoice->daftra_id;
+
+        if (! $daftraInvoiceId) {
+            $dto = new InvoiceDTO(
+                clientId: $daftraClientId,
+                notes: "إضافة على الطلب #{$orderExtra->order_id}".$this->daftraInvoiceNoteSuffix($daftra, $daftraInvoiceId),
+                costCenterId: $costCenter,
+                taxRate: (float) ($orderExtra->tax_rate ?? $orderExtra->order->tax_rate ?? config('app.tax_rate', 15)),
+                revenueAccountId: $revenueAccount ?: null,
+            );
+
+            $itemName = $orderExtra->service?->getTranslation('name', 'ar') ?? 'خدمة إضافية';
+            $dto->addItem(
+                item: $itemName,
+                unitPrice: (float) ($orderExtra->price + $orderExtra->materials),
+                quantity: 1,
+            );
+
+            $daftraInvoiceId = $daftra->createInvoice($dto);
+            if (! $daftraInvoiceId) {
+                return;
+            }
+
+            $this->localInvoice->setDaftraId($daftraInvoiceId);
+        }
+
+        $this->recordPayment($daftra, $daftraInvoiceId, $daftraClientId, $bankAccount);
+        $this->enrichDaftraPublicViewUrl($daftra, $daftraInvoiceId);
+    }
+
+    private function resolveOrderExtraIdFromEventUid(): ?int
+    {
+        $uid = (string) ($this->localInvoice->event_uid ?? '');
+        if ($uid === '') {
+            return null;
+        }
+
+        if (preg_match('/^order_extra:(\d+):type:additional-services$/', $uid, $matches) === 1) {
+            return (int) $matches[1];
+        }
+
+        return null;
     }
 
     /**
@@ -104,30 +193,33 @@ class SyncInvoiceToDaftra implements ShouldQueue
     {
         $order = Order::with(['service', 'customer'])->find($this->localInvoice->target_id);
 
-        if (!$order) {
+        if (! $order) {
             Log::warning("Daftra: Order #{$this->localInvoice->target_id} not found, skipping.");
+
             return;
         }
 
-        if (!$order->customer) {
+        if (! $order->customer) {
             Log::warning("Daftra: Customer for Order #{$order->id} not found, skipping.");
+
             return;
         }
 
         // Sync customer first
         $daftraClientId = $daftra->syncClient($order->customer);
-        if (!$daftraClientId) {
+        if (! $daftraClientId) {
             Log::warning("Daftra: Could not sync client for User #{$order->customer->id}");
+
             return;
         }
 
         $daftraInvoiceId = $this->localInvoice->daftra_id;
 
         // Skip invoice creation if it was already pushed in a previous attempt
-        if (!$daftraInvoiceId) {
+        if (! $daftraInvoiceId) {
             $dto = new InvoiceDTO(
                 clientId: $daftraClientId,
-                notes: "طلب مكتمل #{$order->id}",
+                notes: "طلب مكتمل #{$order->id}".$this->daftraInvoiceNoteSuffix($daftra, $daftraInvoiceId),
                 costCenterId: $costCenter,
                 taxRate: (float) ($order->tax_rate ?? config('app.tax_rate', 15)),
                 revenueAccountId: $revenueAccount ?: null,
@@ -148,7 +240,7 @@ class SyncInvoiceToDaftra implements ShouldQueue
 
             $daftraInvoiceId = $daftra->createInvoice($dto);
 
-            if (!$daftraInvoiceId) {
+            if (! $daftraInvoiceId) {
                 return;
             }
 
@@ -160,6 +252,7 @@ class SyncInvoiceToDaftra implements ShouldQueue
         // previous attempt, daftra_id is set but daftra_payment_id is not,
         // and we retry ONLY this step.
         $this->recordPayment($daftra, $daftraInvoiceId, $daftraClientId, $bankAccount);
+        $this->enrichDaftraPublicViewUrl($daftra, $daftraInvoiceId);
     }
 
     /**
@@ -184,14 +277,16 @@ class SyncInvoiceToDaftra implements ShouldQueue
         // (safer than target_id which is not set for subscription invoices)
         $serviceProvider = User::find($this->localInvoice->service_provider_id);
 
-        if (!$serviceProvider) {
+        if (! $serviceProvider) {
             Log::warning("Daftra: Service provider #{$this->localInvoice->service_provider_id} not found, skipping.");
+
             return;
         }
 
         $daftraClientId = $daftra->syncClient($serviceProvider);
-        if (!$daftraClientId) {
+        if (! $daftraClientId) {
             Log::warning("Daftra: Could not sync client for User #{$serviceProvider->id}");
+
             return;
         }
 
@@ -199,15 +294,20 @@ class SyncInvoiceToDaftra implements ShouldQueue
 
         $daftraInvoiceId = $this->localInvoice->daftra_id;
 
-        if (!$daftraInvoiceId) {
+        if (! $daftraInvoiceId) {
             // Reverse-calculate net price from paid_amount (which includes tax):
             //   paid_amount = net * (1 + tax_rate/100)  →  net = paid / (1+rate)
             $grossAmount = (float) $this->localInvoice->amount;
+            if ($grossAmount <= 0) {
+                Log::warning("Daftra: Skipping subscription invoice #{$this->localInvoice->id}: amount is zero (no line item to send).");
+
+                return;
+            }
             $netPrice = round($grossAmount / (1 + $taxRate / 100), 2);
 
             $dto = new InvoiceDTO(
                 clientId: $daftraClientId,
-                notes: "تجديد اشتراك - مقدم خدمة #{$serviceProvider->id}",
+                notes: "تجديد اشتراك - مقدم خدمة #{$serviceProvider->id}".$this->daftraInvoiceNoteSuffix($daftra, $daftraInvoiceId),
                 costCenterId: $costCenter,
                 taxRate: $taxRate,
                 revenueAccountId: $revenueAccount ?: null,
@@ -222,7 +322,9 @@ class SyncInvoiceToDaftra implements ShouldQueue
 
             $daftraInvoiceId = $daftra->createInvoice($dto);
 
-            if (!$daftraInvoiceId) {
+            if (! $daftraInvoiceId) {
+                Log::warning("Daftra: createInvoice returned null for subscription local invoice #{$this->localInvoice->id} (check API key, subdomain, and laravel.log for Daftra API error).");
+
                 return;
             }
 
@@ -233,6 +335,21 @@ class SyncInvoiceToDaftra implements ShouldQueue
         // Record payment receipt to the bank account
         // bankAmount = paid_amount - wallet_balance (set by CreateSubscriptionInvoice)
         $this->recordPayment($daftra, $daftraInvoiceId, $daftraClientId, $bankAccount);
+        $this->enrichDaftraPublicViewUrl($daftra, $daftraInvoiceId);
+    }
+
+    /**
+     * Link text for Daftra sales invoice notes (deep link when invoice id already exists, else index + local ref).
+     */
+    private function daftraInvoiceNoteSuffix(Daftra $daftra, ?int $daftraInvoiceId): string
+    {
+        $localId = $this->localInvoice->id;
+
+        if ($daftraInvoiceId) {
+            return ' — عرض الفاتورة في دفترة: '.$daftra->ownerInvoiceViewUrl((int) $daftraInvoiceId);
+        }
+
+        return ' — فواتير دفترة: '.$daftra->ownerInvoicesIndexUrl().' — مرجع المنصة: #'.$localId;
     }
 
     /**
@@ -254,7 +371,7 @@ class SyncInvoiceToDaftra implements ShouldQueue
             return; // already recorded on a previous attempt
         }
 
-        if (!$bankAccount || $this->bankAmount <= 0) {
+        if (! $bankAccount || $this->bankAmount <= 0) {
             return;
         }
 
@@ -270,5 +387,16 @@ class SyncInvoiceToDaftra implements ShouldQueue
         if ($daftraPaymentId) {
             $this->localInvoice->update(['daftra_payment_id' => $daftraPaymentId]);
         }
+    }
+
+    private function enrichDaftraPublicViewUrl(Daftra $daftra, int $daftraInvoiceId): void
+    {
+        $this->localInvoice = $this->localInvoice->fresh();
+        if ((int) $this->localInvoice->daftra_id !== $daftraInvoiceId) {
+            return;
+        }
+
+        $this->localInvoice->fillDaftraPublicViewUrlFromApi($daftra);
+        $this->localInvoice = $this->localInvoice->fresh();
     }
 }

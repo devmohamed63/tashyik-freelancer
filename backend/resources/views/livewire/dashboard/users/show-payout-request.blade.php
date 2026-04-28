@@ -41,6 +41,7 @@
                             <th scope="col" class="px-6 py-3">{{ __('validation.attributes.type') }}</th>
                             <th scope="col" class="px-6 py-3">{{ __('ui.action') }}</th>
                             <th scope="col" class="px-6 py-3">{{ __('ui.amount') }}</th>
+                            <th scope="col" class="px-6 py-3">Daftra</th>
                             <th scope="col" class="px-6 py-3">{{ __('ui.date') }}</th>
                         </tr>
                     </thead>
@@ -58,6 +59,23 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     {{ number_format($invoice?->amount, config('app.decimal_places')) . ' ' . __('ui.currency') }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if ($invoice->type === App\Models\Invoice::BANK_TRANSFER_TYPE)
+                                        @if ($invoice->recorded_in_daftra)
+                                            <span class="text-xs font-semibold">Recorded</span>
+                                        @else
+                                            <button
+                                                type="button"
+                                                class="text-xs font-semibold underline"
+                                                wire:click="markBankTransferRecorded({{ $invoice->id }})"
+                                            >
+                                                Mark as recorded
+                                            </button>
+                                        @endif
+                                    @else
+                                        <span class="text-xs text-gray-500">-</span>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 text-xs">
                                     {{ $invoice?->created_at?->isoFormat(config('app.time_format')) }}
@@ -77,6 +95,7 @@
                             <th scope="col" class="px-6 py-3">{{ __('validation.attributes.type') }}</th>
                             <th scope="col" class="px-6 py-3">{{ __('ui.action') }}</th>
                             <th scope="col" class="px-6 py-3">{{ __('ui.amount') }}</th>
+                            <th scope="col" class="px-6 py-3">Daftra</th>
                             <th scope="col" class="px-6 py-3">{{ __('ui.date') }}</th>
                         </tr>
                     </tfoot>

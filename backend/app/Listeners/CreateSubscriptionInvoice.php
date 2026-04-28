@@ -3,13 +3,15 @@
 namespace App\Listeners;
 
 use App\Events\PlanPaid;
-use App\Models\Invoice;
-use App\Utils\Traits\HasTax;
 use App\Jobs\SyncInvoiceToDaftra;
+use App\Models\Invoice;
+use App\Support\SubscriptionPlanPaidMailer;
+use App\Utils\Traits\HasTax;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
-class CreateSubscriptionInvoice
+class CreateSubscriptionInvoice implements ShouldQueue
 {
     use HasTax;
 
@@ -26,23 +28,54 @@ class CreateSubscriptionInvoice
      */
     public function handle(PlanPaid $event): void
     {
-        $invoice = new Invoice();
-        $invoice->service_provider_id = $event->data['service_provider_id'];
-        $invoice->type = Invoice::RENEW_SUBSCRIPTION_TYPE;
-        $invoice->action = Invoice::DEBIT_ACTION;
-        $invoice->amount = $event->data['paid_amount'];
-        $invoice->save();
+        $serviceProviderId = (int) $event->data['service_provider_id'];
+        $eventRef = $event->data['transaction_id']
+            ?? $event->data['paymob_transaction_id']
+            ?? $event->data['id']
+            ?? md5(json_encode($event->data));
 
-        $tax = $this->getTaxes($event->data['paid_amount']);
+        // المبلغ الإجمالي المدفوع (شامل الضريبة) — بدونه لا فاتورة صالحة ولا Daftra
+        $paidGross = (float) ($event->data['paid_amount'] ?? 0);
+        if ($paidGross <= 0) {
+            Log::warning('CreateSubscriptionInvoice: skipped — paid_amount missing or zero (no invoice, no Daftra)', [
+                'service_provider_id' => $serviceProviderId,
+                'event_ref' => $eventRef,
+            ]);
 
-        // Create tax invoice
-        if ($tax) {
-            $taxInvoice = new Invoice();
-            $taxInvoice->service_provider_id = $event->data['service_provider_id'];
-            $taxInvoice->type = Invoice::RENEW_SUBSCRIPTION_TAX_TYPE;
-            $taxInvoice->action = Invoice::DEBIT_ACTION;
-            $taxInvoice->amount = $tax;
-            $taxInvoice->save();
+            return;
+        }
+
+        $tax = $this->getTaxes($paidGross);
+
+        $invoice = DB::transaction(function () use ($serviceProviderId, $eventRef, $tax, $paidGross): Invoice {
+            $mainInvoice = Invoice::firstOrCreate(
+                ['event_uid' => "plan_paid:{$eventRef}:type:".Invoice::RENEW_SUBSCRIPTION_TYPE],
+                [
+                    'service_provider_id' => $serviceProviderId,
+                    'type' => Invoice::RENEW_SUBSCRIPTION_TYPE,
+                    'action' => Invoice::DEBIT_ACTION,
+                    'amount' => $paidGross,
+                ],
+            );
+
+            // Create tax invoice once per payment event.
+            if ($tax) {
+                Invoice::firstOrCreate(
+                    ['event_uid' => "plan_paid:{$eventRef}:type:".Invoice::RENEW_SUBSCRIPTION_TAX_TYPE],
+                    [
+                        'service_provider_id' => $serviceProviderId,
+                        'type' => Invoice::RENEW_SUBSCRIPTION_TAX_TYPE,
+                        'action' => Invoice::DEBIT_ACTION,
+                        'amount' => $tax,
+                    ],
+                );
+            }
+
+            return $mainInvoice;
+        });
+
+        if ($invoice->wasRecentlyCreated) {
+            SubscriptionPlanPaidMailer::send($invoice);
         }
 
         // Sync main invoice with Daftra ERP in Background
@@ -50,10 +83,11 @@ class CreateSubscriptionInvoice
         // the payment gateway (after wallet deduction). If the renewal was paid
         // entirely from the service provider's wallet, bankAmount == 0 and the
         // job will skip the bank receipt entirely.
-        $paidAmount   = (float) ($event->data['paid_amount'] ?? 0);
         $walletAmount = (float) ($event->data['wallet_balance'] ?? 0);
-        $bankAmount   = max(0, $paidAmount - $walletAmount);
+        $bankAmount = max(0, $paidGross - $walletAmount);
 
-        SyncInvoiceToDaftra::dispatch($invoice, bankAmount: $bankAmount);
+        if ($invoice->wasRecentlyCreated) {
+            SyncInvoiceToDaftra::dispatch($invoice, bankAmount: $bankAmount);
+        }
     }
 }

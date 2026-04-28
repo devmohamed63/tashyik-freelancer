@@ -271,6 +271,7 @@ return [
         'subcategory'                       => 'Subcategory',
         'subcategories'                     => 'Subcategories',
         'audience'                          => 'Audience',
+        'audiences'                         => 'Audiences',
         'generate_from'                     => 'Generate from',
         'warranty_days'                     => 'Warranty days',
         'warranty_months'                   => 'Warranty months',

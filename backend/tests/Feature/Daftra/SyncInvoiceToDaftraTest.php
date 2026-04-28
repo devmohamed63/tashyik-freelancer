@@ -2,29 +2,35 @@
 
 namespace Tests\Feature\Daftra;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Order;
-use App\Models\Invoice;
-use App\Models\Service;
-use App\Models\Category;
-use App\Models\Subscription;
-use App\Models\Plan;
+use App\Jobs\SendDaftraInvoicePdfMailJob;
+use App\Jobs\SyncCreditNoteToDaftra;
 use App\Jobs\SyncInvoiceToDaftra;
+use App\Models\Category;
+use App\Models\Invoice;
+use App\Models\Order;
+use App\Models\OrderExtra;
+use App\Models\Plan;
+use App\Models\Service;
+use App\Models\Subscription;
+use App\Models\User;
 use App\Utils\Services\Daftra;
+use App\Utils\Services\Daftra\DTOs\CreditNoteDTO;
 use App\Utils\Services\Daftra\DTOs\InvoiceDTO;
 use App\Utils\Services\Daftra\DTOs\PaymentDTO;
-use App\Utils\Services\Daftra\DTOs\CreditNoteDTO;
-use App\Jobs\SyncCreditNoteToDaftra;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
+use Tests\TestCase;
 
 class SyncInvoiceToDaftraTest extends TestCase
 {
     private User $customer;
+
     private User $serviceProvider;
+
     private Service $service;
+
     private Category $category;
 
     protected function setUp(): void
@@ -39,8 +45,11 @@ class SyncInvoiceToDaftraTest extends TestCase
             'services.daftra.bank_account_id' => 2,
             'services.daftra.revenue_account_id' => 28,
             'services.daftra.return_account_id' => 368,
+            'services.daftra.fetch_public_invoice_url' => false,
             'app.tax_rate' => 15,
         ]);
+
+        Bus::fake([SendDaftraInvoicePdfMailJob::class]);
 
         // Create base models
         $this->customer = User::factory()->create([
@@ -88,6 +97,7 @@ class SyncInvoiceToDaftraTest extends TestCase
         $job->handle(app(Daftra::class));
 
         Http::assertNothingSent();
+        Bus::assertDispatched(SendDaftraInvoicePdfMailJob::class, fn (SendDaftraInvoicePdfMailJob $j) => $j->invoiceId === $invoice->id);
     }
 
     // ─────────────────────────────────────────────────────────
@@ -100,12 +110,155 @@ class SyncInvoiceToDaftraTest extends TestCase
 
         $invoice = Invoice::factory()->create([
             'service_provider_id' => $this->serviceProvider->id,
-            'type' => Invoice::ADDITIONAL_SERVICES_TYPE, // Not synced
-            'action' => Invoice::CREDIT_ACTION,
+            'type' => Invoice::ADDITIONAL_SERVICES_TAX_TYPE, // Tax rows remain local-only
+            'action' => Invoice::DEBIT_ACTION,
             'amount' => 100,
         ]);
 
         $job = new SyncInvoiceToDaftra($invoice);
+        $job->handle(app(Daftra::class));
+
+        Http::assertNothingSent();
+    }
+
+    public function test_additional_services_invoice_is_synced_with_embedded_tax(): void
+    {
+        $order = Order::factory()->create([
+            'customer_id' => $this->customer->id,
+            'service_provider_id' => $this->serviceProvider->id,
+            'service_id' => $this->service->id,
+            'category_id' => $this->category->id,
+            'tax_rate' => 15,
+            'status' => Order::COMPLETED_STATUS,
+        ]);
+
+        $orderExtra = OrderExtra::factory()->create([
+            'order_id' => $order->id,
+            'service_id' => $this->service->id,
+            'status' => OrderExtra::PAID_STATUS,
+            'price' => 100,
+            'materials' => 25,
+            'tax_rate' => 15,
+            'tax' => 18.75,
+            'wallet_balance' => 20,
+            'total' => 123.75,
+        ]);
+
+        $invoice = Invoice::factory()->create([
+            'service_provider_id' => $this->serviceProvider->id,
+            'target_id' => $order->id,
+            'type' => Invoice::ADDITIONAL_SERVICES_TYPE,
+            'action' => Invoice::CREDIT_ACTION,
+            'amount' => 143.75,
+            'event_uid' => "order_extra:{$orderExtra->id}:type:additional-services",
+        ]);
+
+        Http::fake([
+            '*/api2/clients' => Http::response(['Client' => ['id' => 100]], 200),
+            '*/api2/invoices' => Http::response(['Invoice' => ['id' => 220]], 200),
+            '*/api2/client_payments' => Http::response(['ClientPayment' => ['id' => 320]], 200),
+        ]);
+
+        $job = new SyncInvoiceToDaftra($invoice, bankAmount: (float) $orderExtra->total);
+        $job->handle(app(Daftra::class));
+
+        Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), '/invoices')) {
+                return false;
+            }
+            $data = $request->data();
+
+            $this->assertEquals(125, $data['InvoiceItem'][0]['unit_price']);
+            $this->assertEquals(15, $data['Invoice']['tax_rate']);
+            $this->assertEquals(28, $data['InvoiceItem'][0]['income_account_id']);
+
+            return true;
+        });
+
+        Http::assertSent(function ($request) use ($orderExtra) {
+            if (! str_contains($request->url(), '/client_payments')) {
+                return false;
+            }
+            $data = $request->data();
+            $this->assertEquals((float) $orderExtra->total, (float) $data['ClientPayment']['amount']);
+
+            return true;
+        });
+    }
+
+    public function test_sync_persists_daftra_public_view_url_when_api_returns_preview(): void
+    {
+        config(['services.daftra.fetch_public_invoice_url' => true]);
+
+        $order = Order::factory()->create([
+            'customer_id' => $this->customer->id,
+            'service_provider_id' => $this->serviceProvider->id,
+            'service_id' => $this->service->id,
+            'category_id' => $this->category->id,
+            'tax_rate' => 15,
+            'status' => Order::COMPLETED_STATUS,
+        ]);
+
+        $orderExtra = OrderExtra::factory()->create([
+            'order_id' => $order->id,
+            'service_id' => $this->service->id,
+            'status' => OrderExtra::PAID_STATUS,
+            'price' => 100,
+            'materials' => 25,
+            'tax_rate' => 15,
+            'tax' => 18.75,
+            'wallet_balance' => 0,
+            'total' => 143.75,
+        ]);
+
+        $invoice = Invoice::factory()->create([
+            'service_provider_id' => $this->serviceProvider->id,
+            'target_id' => $order->id,
+            'type' => Invoice::ADDITIONAL_SERVICES_TYPE,
+            'action' => Invoice::CREDIT_ACTION,
+            'amount' => 143.75,
+            'event_uid' => "order_extra:{$orderExtra->id}:type:additional-services",
+        ]);
+
+        $preview = 'https://testcompany.daftra.com/invoices/preview/220?hash=testhash';
+
+        Http::fake([
+            '*/api2/invoices/*.json' => Http::response([
+                'Invoice' => [
+                    'id' => 220,
+                    'invoice_html_url' => $preview,
+                ],
+            ], 200),
+            '*/api2/clients' => Http::response(['Client' => ['id' => 100]], 200),
+            '*/api2/invoices' => Http::response(['Invoice' => ['id' => 220]], 200),
+            '*/api2/client_payments' => Http::response(['ClientPayment' => ['id' => 320]], 200),
+        ]);
+
+        $job = new SyncInvoiceToDaftra($invoice, bankAmount: (float) $orderExtra->total);
+        $job->handle(app(Daftra::class));
+
+        $invoice->refresh();
+        $this->assertSame($preview, $invoice->daftra_public_view_url);
+    }
+
+    public function test_legacy_additional_services_invoice_is_skipped_safely(): void
+    {
+        Http::fake();
+
+        $invoice = Invoice::factory()->create([
+            'service_provider_id' => $this->serviceProvider->id,
+            'target_id' => 123,
+            'type' => Invoice::ADDITIONAL_SERVICES_TYPE,
+            'action' => Invoice::CREDIT_ACTION,
+            'amount' => 150,
+            'event_uid' => 'legacy:invoice:999:type:additional-services',
+        ]);
+
+        Log::shouldReceive('warning')
+            ->once()
+            ->withArgs(fn ($message) => str_contains($message, 'Skipping legacy additional-services invoice'));
+
+        $job = new SyncInvoiceToDaftra($invoice, bankAmount: 150);
         $job->handle(app(Daftra::class));
 
         Http::assertNothingSent();
@@ -162,7 +315,9 @@ class SyncInvoiceToDaftraTest extends TestCase
 
         // Verify: Invoice was sent with correct data
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/invoices')) return false;
+            if (! str_contains($request->url(), '/invoices')) {
+                return false;
+            }
 
             $data = $request->data();
 
@@ -189,7 +344,9 @@ class SyncInvoiceToDaftraTest extends TestCase
         // (order.total = 487.50), NOT the gross invoice.amount (517.50).
         // This is the fix that prevents phantom money in the Daftra bank.
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/client_payments')) return false;
+            if (! str_contains($request->url(), '/client_payments')) {
+                return false;
+            }
 
             $data = $request->data();
 
@@ -247,7 +404,9 @@ class SyncInvoiceToDaftraTest extends TestCase
         $job->handle(app(Daftra::class));
 
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/invoices')) return false;
+            if (! str_contains($request->url(), '/invoices')) {
+                return false;
+            }
 
             $data = $request->data();
 
@@ -302,7 +461,9 @@ class SyncInvoiceToDaftraTest extends TestCase
         $job->handle(app(Daftra::class));
 
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/invoices')) return false;
+            if (! str_contains($request->url(), '/invoices')) {
+                return false;
+            }
 
             $data = $request->data();
 
@@ -320,7 +481,9 @@ class SyncInvoiceToDaftraTest extends TestCase
 
         // Payment should be the full amount (115)
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/client_payments')) return false;
+            if (! str_contains($request->url(), '/client_payments')) {
+                return false;
+            }
 
             $data = $request->data();
             $this->assertEquals(115, $data['ClientPayment']['amount']);
@@ -386,7 +549,7 @@ class SyncInvoiceToDaftraTest extends TestCase
     {
         Log::shouldReceive('warning')
             ->once()
-            ->withArgs(fn($msg) => str_contains($msg, 'not found'));
+            ->withArgs(fn ($msg) => str_contains($msg, 'not found'));
 
         $invoice = Invoice::factory()->create([
             'service_provider_id' => $this->serviceProvider->id,
@@ -500,8 +663,8 @@ class SyncInvoiceToDaftraTest extends TestCase
             'status' => Order::COMPLETED_STATUS,
         ]);
 
-        // Fire the event manually
-        event(new \App\Events\OrderCompleted($order));
+        // Call the listener directly (it is queued now via ShouldQueue).
+        (new \App\Listeners\CreateOrderInvoice)->handle(new \App\Events\OrderCompleted($order));
 
         Queue::assertPushed(SyncInvoiceToDaftra::class);
     }
@@ -544,7 +707,9 @@ class SyncInvoiceToDaftraTest extends TestCase
         $job->handle(app(Daftra::class));
 
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/invoices')) return false;
+            if (! str_contains($request->url(), '/invoices')) {
+                return false;
+            }
 
             $data = $request->data();
 
@@ -611,7 +776,9 @@ class SyncInvoiceToDaftraTest extends TestCase
         $job->handle(app(Daftra::class));
 
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/credit_notes')) return false;
+            if (! str_contains($request->url(), '/credit_notes')) {
+                return false;
+            }
 
             $data = $request->data();
 
@@ -691,7 +858,9 @@ class SyncInvoiceToDaftraTest extends TestCase
         $job->handle(app(Daftra::class));
 
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/client_payments')) return false;
+            if (! str_contains($request->url(), '/client_payments')) {
+                return false;
+            }
 
             $data = $request->data();
 
@@ -741,7 +910,7 @@ class SyncInvoiceToDaftraTest extends TestCase
         $job->handle(app(Daftra::class));
 
         // Invoice should still be created in Daftra
-        Http::assertSent(fn($req) => str_contains($req->url(), '/invoices'));
+        Http::assertSent(fn ($req) => str_contains($req->url(), '/invoices'));
 
         // But NO payment should be recorded (no real money hit the bank)
         Http::assertNotSent(function ($request) {
@@ -810,7 +979,9 @@ class SyncInvoiceToDaftraTest extends TestCase
         $job->handle(app(Daftra::class));
 
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/credit_notes')) return false;
+            if (! str_contains($request->url(), '/credit_notes')) {
+                return false;
+            }
 
             $data = $request->data();
 
@@ -842,7 +1013,9 @@ class SyncInvoiceToDaftraTest extends TestCase
         $job->handle(app(Daftra::class));
 
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/credit_notes')) return false;
+            if (! str_contains($request->url(), '/credit_notes')) {
+                return false;
+            }
 
             $data = $request->data();
             $this->assertArrayNotHasKey('discount', $data['CreditNote']);
@@ -894,12 +1067,15 @@ class SyncInvoiceToDaftraTest extends TestCase
         $job->handle(app(Daftra::class));
 
         // Must NOT call /invoices again
-        Http::assertNotSent(fn($req) => str_contains($req->url(), '/invoices'));
+        Http::assertNotSent(fn ($req) => str_contains($req->url(), '/invoices'));
 
         // Must call /client_payments exactly once
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/client_payments')) return false;
+            if (! str_contains($request->url(), '/client_payments')) {
+                return false;
+            }
             $this->assertEquals(230, $request->data()['ClientPayment']['amount']);
+
             return true;
         });
 
@@ -917,8 +1093,8 @@ class SyncInvoiceToDaftraTest extends TestCase
         // Edge case: users registered via OTP may have empty email/phone.
         // Daftra rejects empty strings so we provide deterministic fallbacks.
         $user = User::factory()->create([
-            'type'  => User::USER_ACCOUNT_TYPE,
-            'name'  => '',
+            'type' => User::USER_ACCOUNT_TYPE,
+            'name' => '',
             'email' => '',
             'phone' => '',
         ]);
@@ -932,7 +1108,9 @@ class SyncInvoiceToDaftraTest extends TestCase
         $this->assertEquals(777, $daftraId);
 
         Http::assertSent(function ($request) use ($user) {
-            if (!str_contains($request->url(), '/clients')) return false;
+            if (! str_contains($request->url(), '/clients')) {
+                return false;
+            }
 
             $data = $request->data()['Client'];
             $this->assertSame("User #{$user->id}", $data['first_name']);
@@ -965,7 +1143,7 @@ class SyncInvoiceToDaftraTest extends TestCase
     public function test_throws_in_production_when_api_key_is_missing(): void
     {
         config(['services.daftra.api_key' => null]);
-        $this->app->detectEnvironment(fn() => 'production');
+        $this->app->detectEnvironment(fn () => 'production');
 
         $user = User::factory()->create([
             'type' => User::USER_ACCOUNT_TYPE,
@@ -975,7 +1153,7 @@ class SyncInvoiceToDaftraTest extends TestCase
         $this->expectExceptionMessage('DAFTRA_API_KEY is missing');
 
         // Build a fresh Daftra instance so it picks up the nulled config
-        (new Daftra())->syncClient($user);
+        (new Daftra)->syncClient($user);
     }
 
     public function test_returns_null_silently_in_non_production_when_api_key_is_missing(): void
@@ -986,7 +1164,7 @@ class SyncInvoiceToDaftraTest extends TestCase
             'type' => User::USER_ACCOUNT_TYPE,
         ]);
 
-        $daftraId = (new Daftra())->syncClient($user);
+        $daftraId = (new Daftra)->syncClient($user);
 
         $this->assertNull($daftraId);
     }

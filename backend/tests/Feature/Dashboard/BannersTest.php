@@ -4,6 +4,7 @@ namespace Tests\Feature\Dashboard;
 
 use App\Livewire\Dashboard\Banners\CreateAd;
 use App\Livewire\Dashboard\BannersTable;
+use App\Models\AdBroadcast;
 use App\Models\Banner;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -49,28 +50,66 @@ class BannersTest extends TestCase
         $this->storeRoute = route('dashboard.banners.store');
 
         $this->showRoute = route('dashboard.banners.show', [
-            'banner' => $this->modelToEdit->id
+            'banner' => $this->modelToEdit->id,
         ]);
 
         $this->editRoute = route('dashboard.banners.edit', [
-            'banner' => $this->modelToEdit->id
+            'banner' => $this->modelToEdit->id,
         ]);
 
         $this->updateRoute = route('dashboard.banners.update', [
-            'banner' => $this->modelToEdit->id
+            'banner' => $this->modelToEdit->id,
         ]);
     }
 
     public function test_sidebar_link_is_displayed()
     {
-        $this->user->givePermissionTo('view banners');
+        $this->user->givePermissionTo(['view banners', 'create banners']);
 
         $response = $this->actingAs($this->user)
             ->get($this->indexRoute);
 
         $response->assertStatus(200)
-            ->assertSee(__('ui.banners'))
-            ->assertSee($this->indexRoute);
+            ->assertSee(__('ui.nav_slider_banners'))
+            ->assertSee(__('ui.nav_push_notifications'))
+            ->assertSee(__('ui.push_ads'))
+            ->assertSee(__('ui.view_push_ads'))
+            ->assertSee(__('ui.create_push_ad'))
+            ->assertSee($this->indexRoute)
+            ->assertSee(route('dashboard.push-ads.index'))
+            ->assertSee(route('dashboard.push-ads.create'));
+    }
+
+    public function test_push_ads_index_page_is_displayed_for_authorized_users(): void
+    {
+        $this->user->givePermissionTo('view banners');
+
+        $this->actingAs($this->user)
+            ->get(route('dashboard.push-ads.index'))
+            ->assertStatus(200)
+            ->assertSee(__('ui.view_push_ads'))
+            ->assertSee(__('validation.attributes.title'));
+    }
+
+    public function test_push_ads_create_page_is_displayed_for_authorized_users(): void
+    {
+        $this->user->givePermissionTo(['view banners', 'create banners']);
+
+        $this->actingAs($this->user)
+            ->get(route('dashboard.push-ads.create'))
+            ->assertStatus(200)
+            ->assertSee(__('ui.create_push_ad'))
+            ->assertSee(__('ui.target_audiences'))
+            ->assertSee(__('ui.publish'), false);
+    }
+
+    public function test_push_ads_create_page_returns_403_without_create_permission(): void
+    {
+        $this->user->givePermissionTo('view banners');
+
+        $this->actingAs($this->user)
+            ->get(route('dashboard.push-ads.create'))
+            ->assertStatus(403);
     }
 
     public function test_authenticated_user_with_right_permissions_can_create_banners(): void
@@ -90,11 +129,13 @@ class BannersTest extends TestCase
                     'ar' => 'Test banner',
                     'en' => 'Test banner',
                 ],
-                'image' => $file
+                'image' => $file,
             ]);
 
-        $response->assertRedirect($this->createRoute)
+        $response->assertRedirect($this->indexRoute)
             ->assertSessionHas('status');
+
+        $this->assertSame(2, Banner::query()->count());
     }
 
     public function test_unauthenticated_user_cannot_create_banners(): void
@@ -129,7 +170,7 @@ class BannersTest extends TestCase
                 ],
             ]);
 
-        $response->assertRedirect($this->editRoute)
+        $response->assertRedirect($this->indexRoute)
             ->assertSessionHas('status');
     }
 
@@ -182,11 +223,31 @@ class BannersTest extends TestCase
 
         Livewire::actingAs($this->user)
             ->test(CreateAd::class)
-            ->set('audience', 'guests')
+            ->set('audiences', ['guests'])
             ->set('title', 'Guest campaign')
             ->set('description', 'Promotion for guest users')
             ->call('publish')
-            ->assertHasNoErrors('audience');
+            ->assertHasNoErrors('audiences');
+
+        $this->assertDatabaseHas('ad_broadcasts', [
+            'audience' => 'guests',
+            'title' => 'Guest campaign',
+            'user_id' => $this->user->id,
+        ]);
+
+        $this->assertSame(1, AdBroadcast::query()->count());
+    }
+
+    public function test_create_ad_renders_guests_audience_label_in_arabic(): void
+    {
+        $this->user->givePermissionTo(['view banners']);
+
+        app()->setLocale('ar');
+
+        Livewire::actingAs($this->user)
+            ->test(CreateAd::class)
+            ->assertSee('الضيوف', false)
+            ->assertDontSee('ui.guests');
     }
 
     public function test_create_ad_component_rejects_unknown_audience(): void
@@ -195,9 +256,71 @@ class BannersTest extends TestCase
 
         Livewire::actingAs($this->user)
             ->test(CreateAd::class)
-            ->set('audience', 'unknown_audience')
+            ->set('audiences', ['unknown_audience'])
             ->set('title', 'Invalid campaign')
             ->call('publish')
-            ->assertHasErrors(['audience' => 'in']);
+            ->assertHasErrors(['audiences.0' => 'in']);
+    }
+
+    public function test_create_ad_can_publish_twice_to_same_audience(): void
+    {
+        $this->user->givePermissionTo(['view banners', 'create banners']);
+
+        $component = Livewire::actingAs($this->user)
+            ->test(CreateAd::class)
+            ->set('audiences', ['guests'])
+            ->set('title', 'Repeat push')
+            ->set('description', '');
+
+        $component->call('publish')->assertHasNoErrors();
+
+        $component
+            ->set('audiences', ['guests'])
+            ->set('title', 'Repeat push')
+            ->set('description', '')
+            ->call('publish')
+            ->assertHasNoErrors();
+
+        $this->assertSame(2, AdBroadcast::query()->where('audience', 'guests')->where('title', 'Repeat push')->count());
+    }
+
+    public function test_fill_create_ad_from_broadcast_prefills_form(): void
+    {
+        $this->user->givePermissionTo(['view banners', 'create banners']);
+
+        $broadcast = AdBroadcast::query()->create([
+            'audience' => 'service_providers',
+            'title' => 'Stored title',
+            'description' => 'Stored body',
+            'image_path' => 'ads/example.png',
+            'user_id' => $this->user->id,
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(CreateAd::class)
+            ->call('fillCreateAdFromBroadcast', $broadcast->id)
+            ->assertSet('audiences', ['service_providers'])
+            ->assertSet('title', 'Stored title')
+            ->assertSet('description', 'Stored body')
+            ->assertSet('resendStoragePath', 'ads/example.png');
+    }
+
+    public function test_create_ad_accepts_multiple_audiences_in_one_broadcast(): void
+    {
+        $this->user->givePermissionTo(['view banners', 'create banners']);
+
+        Livewire::actingAs($this->user)
+            ->test(CreateAd::class)
+            ->set('audiences', ['customers', 'guests'])
+            ->set('title', 'Multi audience')
+            ->set('description', '')
+            ->call('publish')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('ad_broadcasts', [
+            'audience' => 'customers,guests',
+            'title' => 'Multi audience',
+            'user_id' => $this->user->id,
+        ]);
     }
 }

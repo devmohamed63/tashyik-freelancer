@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers\Api\ServiceProvider;
 
-use App\Models\Order;
-use App\Models\Service;
-use App\Models\OrderExtra;
 use App\Events\NewOrderExtra;
 use App\Http\Requests\OrderExtraRequest;
 use App\Http\Resources\OrderExtraResource;
+use App\Models\Order;
+use App\Models\OrderExtra;
 use App\Utils\Http\Controllers\ApiController;
 use App\Utils\Traits\HasTax;
 use Illuminate\Http\Request;
@@ -29,7 +28,7 @@ class OrderExtraController extends ApiController
                 'id',
                 'service_id',
                 'status',
-                'created_at'
+                'created_at',
             ]);
 
         return OrderExtraResource::collection($orderExtras);
@@ -47,7 +46,7 @@ class OrderExtraController extends ApiController
 
         $price = $service->getPrice(false)['after_discount'];
 
-        $orderExtra = new OrderExtra();
+        $orderExtra = new OrderExtra;
         $orderExtra->order_id = $order->id;
         $orderExtra->service_id = $service->id;
         $orderExtra->status = OrderExtra::PENDING_STATUS;

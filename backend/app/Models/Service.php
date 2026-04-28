@@ -2,19 +2,19 @@
 
 namespace App\Models;
 
-use Carbon\CarbonInterval;
+use App\Traits\SyncableWithDaftra;
 use App\Utils\Traits\Models\HasAutoTranslations;
 use App\Utils\Traits\Models\HasDraggableOrder;
 use App\Utils\Traits\Models\ResolvesByIdOrSlug;
-use App\Traits\SyncableWithDaftra;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Database\Eloquent\Model;
+use Carbon\CarbonInterval;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -27,11 +27,11 @@ class Service extends Model implements HasMedia
     // The `daftra_id` column and SyncableWithDaftra trait are kept for a
     // future phase where each Service will be pushed to Daftra as a Product
     // (via Daftra::createProduct) so invoice items can reference it by id.
-    use HasFactory,
-        HasTranslations,
-        HasAutoTranslations,
-        InteractsWithMedia,
+    use HasAutoTranslations,
         HasDraggableOrder,
+        HasFactory,
+        HasTranslations,
+        InteractsWithMedia,
         ResolvesByIdOrSlug,
         SyncableWithDaftra;
 
@@ -73,7 +73,9 @@ class Service extends Model implements HasMedia
     {
         return Attribute::make(
             get: function () {
-                if (!$this->warranty_days) return;
+                if (! $this->warranty_days) {
+                    return;
+                }
 
                 $duration = CarbonInterval::days($this->warranty_days)->cascade()->forHumans();
 
@@ -91,11 +93,15 @@ class Service extends Model implements HasMedia
             get: function () {
                 $user = Auth::guard('sanctum')?->user();
 
-                if (!$user) return true;
+                if (! $user) {
+                    return true;
+                }
 
                 $parent = $this->category?->parent;
 
-                if (!$parent) return null;
+                if (! $parent) {
+                    return null;
+                }
 
                 return $parent?->cities->contains('id', $user->city_id);
             },
@@ -158,7 +164,7 @@ class Service extends Model implements HasMedia
             ->format('webp');
     }
 
-    public function getImageUrl(string $conversionName = ''): string|null
+    public function getImageUrl(string $conversionName = ''): ?string
     {
         return $this->getMedia('image')
             ->first()
@@ -170,16 +176,17 @@ class Service extends Model implements HasMedia
         $price = (float) $this->price;
 
         // No visit cost
-        if ($price > 0) return 0;
+        if ($price > 0) {
+            return 0;
+        }
 
-        return (float) config('app.visit_cost');;
+        return (float) config('app.visit_cost');
     }
 
     /**
      * Get product price after discount
      *
-     * @param bool $formated get formated response
-     *
+     * @param  bool  $formated  get formated response
      * @return array [original, has_discount, after_discount, discount_percintage, currency]
      */
     public function getPrice($formated = true): array
@@ -215,10 +222,10 @@ class Service extends Model implements HasMedia
             'has_discount' => (bool) isset($promotion),
             'after_discount' => $priceAfterDiscount > 0 ? number_format($this->price - $discountValue, config('app.decimal_places')) : 0,
             'discount_percintage' => (int) $discountPercintage,
-            'currency' => __('ui.currency')
+            'currency' => __('ui.currency'),
         ];
 
-        if (!$formated) {
+        if (! $formated) {
             $price['original'] = $this->price;
             $price['after_discount'] = $priceAfterDiscount > 0 ? ($this->price - $discountValue) : 0;
         }
@@ -228,8 +235,6 @@ class Service extends Model implements HasMedia
 
     /**
      * Get fake rating for service
-     *
-     * @return string
      */
     public function getRating(): string
     {
@@ -258,7 +263,7 @@ class Service extends Model implements HasMedia
         });
 
         static::saving(function ($service) {
-            if (!empty($service->slug)) {
+            if (! empty($service->slug)) {
                 $service->slug = trim(preg_replace('/\s+/', '-', $service->slug), '-');
             }
         });
@@ -269,7 +274,7 @@ class Service extends Model implements HasMedia
         $slug = Str::slug($name);
 
         if (empty($slug)) {
-            $slug = 'srv-' . time();
+            $slug = 'srv-'.time();
         }
 
         $originalSlug = $slug;

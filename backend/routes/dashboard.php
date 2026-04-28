@@ -3,6 +3,7 @@
 use App\Http\Controllers\Dashboard\AnalyticsController;
 use App\Http\Controllers\Dashboard\ArticleController;
 use App\Http\Controllers\Dashboard\BannerController;
+use App\Http\Controllers\Dashboard\PushAdsController;
 use App\Http\Controllers\Dashboard\CategoryController;
 use App\Http\Controllers\Dashboard\ChangeEmailController;
 use App\Http\Controllers\Dashboard\ChangePasswordController;
@@ -23,9 +24,20 @@ use App\Http\Controllers\Dashboard\SettingsController;
 use App\Http\Controllers\Dashboard\SubscriptionController;
 use App\Http\Controllers\Dashboard\TechnicianMapController;
 use App\Http\Controllers\Dashboard\UserController;
+use App\Http\Controllers\PublicInvoiceByTokenController;
+use App\Http\Controllers\PublicInvoiceController;
 use Illuminate\Support\Facades\Route;
 
-Route::domain(env('DASHBOARD_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(function () {
+Route::domain(env('DASHBOARD_SUBDOMAIN').'.'.env('BASE_DOMAIN'))->group(function () {
+    /** Short public link for emails (secret token, no query string). */
+    Route::get('public/i/{view_token}', PublicInvoiceByTokenController::class)
+        ->name('public.invoices.token');
+
+    /** Legacy signed URL (still valid for old links). */
+    Route::get('public/invoices/{invoice}', PublicInvoiceController::class)
+        ->middleware('signed')
+        ->name('public.invoices.show');
+
     Route::middleware(['auth'])->group(function () {
 
         Route::name('dashboard.')->group(function () {
@@ -48,10 +60,10 @@ Route::domain(env('DASHBOARD_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(func
 
             Route::get('/technician-map/api', [TechnicianMapController::class, 'api'])
                 ->name('technician-map.api');
-                
+
             Route::get('/technician-map/city-insights', [TechnicianMapController::class, 'cityInsights'])
                 ->name('technician-map.city-insights');
-                
+
             Route::get('/technician-map/heatmap-data', [TechnicianMapController::class, 'heatmapData'])
                 ->name('technician-map.heatmap-data');
 
@@ -91,7 +103,13 @@ Route::domain(env('DASHBOARD_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(func
             Route::resource('/articles', ArticleController::class)
                 ->except(['show', 'destroy']);
 
-            // Banner routes
+            // Push ads (FCM): list + compose (mirrors banners index/create)
+            Route::get('/push-ads', [PushAdsController::class, 'index'])
+                ->name('push-ads.index');
+
+            Route::get('/push-ads/create', [PushAdsController::class, 'create'])
+                ->name('push-ads.create');
+
             Route::resource('/banners', BannerController::class)
                 ->except(['destroy']);
 

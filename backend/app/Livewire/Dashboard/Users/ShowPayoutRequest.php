@@ -3,9 +3,11 @@
 namespace App\Livewire\Dashboard\Users;
 
 use App\Events\NewBankTransfer;
+use App\Models\Notification;
 use App\Models\PayoutRequest;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -14,7 +16,7 @@ use Livewire\WithPagination;
 
 class ShowPayoutRequest extends Component
 {
-    use WithPagination, WithoutUrlPagination;
+    use WithoutUrlPagination, WithPagination;
 
     public User|Collection|null $serviceProvider = null;
 
@@ -43,15 +45,67 @@ class ShowPayoutRequest extends Component
 
     public function zeroThebalance()
     {
-        $amount = $this->serviceProvider?->balance;
+        if (! $this->serviceProvider) {
+            return;
+        }
 
-        $this->serviceProvider?->update(['balance' => 0]);
+        $sp = $this->serviceProvider;
+        $amount = (float) $sp->balance;
+        $payoutRequestId = $sp->payoutRequest?->id;
 
-        $this->serviceProvider?->payoutRequest->delete();
+        DB::transaction(function () use ($sp): void {
+            $sp->refresh();
+            $sp->update(['balance' => 0]);
+            $sp->payoutRequest?->delete();
+        });
 
-        NewBankTransfer::dispatch($this->serviceProvider, $amount);
+        $sp->refresh();
+        NewBankTransfer::dispatch($sp, $amount, $payoutRequestId);
 
         $this->dispatch('refreshTable');
+    }
+
+    public function markBankTransferRecorded(int $invoiceId): void
+    {
+        if (! $this->serviceProvider) {
+            return;
+        }
+
+        $invoice = $this->serviceProvider->invoices()
+            ->where('id', $invoiceId)
+            ->where('type', \App\Models\Invoice::BANK_TRANSFER_TYPE)
+            ->first();
+
+        if (! $invoice || $invoice->recorded_in_daftra) {
+            return;
+        }
+
+        $invoice->update([
+            'recorded_in_daftra' => true,
+            'recorded_in_daftra_at' => now(),
+            'recorded_in_daftra_by' => auth()->id(),
+        ]);
+
+        $pendingNotification = Notification::query()
+            ->where('type', 'bank-transfer-daftra-pending')
+            ->orderByDesc('id')
+            ->get()
+            ->first(function (Notification $notification) use ($invoice) {
+                $payload = json_decode((string) $notification->data, true);
+
+                return (int) ($payload['invoice_id'] ?? 0) === (int) $invoice->id;
+            });
+
+        if ($pendingNotification) {
+            $payload = json_decode((string) $pendingNotification->data, true) ?: [];
+            $payload['recorded_in_daftra'] = true;
+            $payload['recorded_in_daftra_at'] = now()->toDateTimeString();
+            $payload['recorded_in_daftra_by'] = auth()->id();
+
+            $pendingNotification->update([
+                'data' => json_encode($payload),
+            ]);
+        }
     }
 
     public function render()
@@ -66,8 +120,9 @@ class ShowPayoutRequest extends Component
                     'type',
                     'action',
                     'amount',
+                    'recorded_in_daftra',
                     'created_at',
-                ])
+                ]),
         ]);
     }
 }

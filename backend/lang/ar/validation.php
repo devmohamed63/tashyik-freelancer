@@ -277,6 +277,7 @@ return [
         'subcategory'                       => 'القسم الفرعي',
         'subcategories'                     => 'الاقسام الفرعية',
         'audience'                          => 'الجمهور',
+        'audiences'                         => 'الجماهير',
         'generate_from'                     => 'توليد من',
         'warranty_days'                     => 'أيام الضمان',
         'warranty_months'                   => 'شهور الضمان',
