@@ -79,6 +79,14 @@
                             <path fill="none" d="M0 0h36v36H0z" />
                         </x-dashboard.nav.item-group>
                         <!-- Settings -->
+
+                        {{-- System Tools --}}
+                        {{-- <x-dashboard.nav.item
+                            name="system_tools"
+                            :url="route('dashboard.system-tools')">
+                            <path fill="currentColor" d="M21.71 20.29L20.29 21.71l-2.83-2.83A9.93 9.93 0 0 1 12 21a10 10 0 1 1 10-10c0 2.05-.62 3.95-1.67 5.54zM12 4a8 8 0 1 0 0 16a8 8 0 0 0 0-16m-1 4h2v5h-2zm0 6h2v2h-2z" />
+                        </x-dashboard.nav.item> --}}
+                        {{-- System Tools --}}
                     @endcan
 
                     {{-- @canany(['viewAny', 'create'], App\Models\Page::class)

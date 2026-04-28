@@ -410,4 +410,18 @@ return [
     ],
     'select_badge' => 'اختر شارة (إختياري)',
     'no_badge' => 'بدون شارة',
+
+    // System Tools
+    'system_tools' => 'أدوات النظام',
+    'generate_sitemap' => 'توليد خريطة الموقع',
+    'generate_sitemap_description' => 'إعادة توليد ملفات خريطة الموقع XML لمحركات البحث (Google, Bing, إلخ)',
+    'sitemap_generated_successfully' => 'تم توليد خريطة الموقع بنجاح',
+    'last_generated' => 'آخر توليد',
+    'clear_cache' => 'مسح الكاش',
+    'clear_cache_description' => 'مسح جميع ذاكرة التخزين المؤقت لتطبيق التغييرات الجديدة فوراً.',
+    'clear_cache_includes' => 'سيتم مسح الكاش التالي',
+    'cache_cleared_successfully' => 'تم مسح جميع الكاش بنجاح',
+    'sitemap_urls' => 'روابط خريطة الموقع',
+    'copy_link' => 'نسخ الرابط',
+    'copied' => 'تم النسخ!',
 ];

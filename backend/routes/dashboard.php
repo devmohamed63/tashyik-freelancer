@@ -23,6 +23,7 @@ use App\Http\Controllers\Dashboard\ServiceController;
 use App\Http\Controllers\Dashboard\SettingsController;
 use App\Http\Controllers\Dashboard\SubscriptionController;
 use App\Http\Controllers\Dashboard\TechnicianMapController;
+use App\Http\Controllers\Dashboard\SystemToolsController;
 use App\Http\Controllers\Dashboard\UserController;
 use App\Http\Controllers\PublicInvoiceByTokenController;
 use App\Http\Controllers\PublicInvoiceController;
@@ -205,6 +206,16 @@ Route::domain(env('DASHBOARD_SUBDOMAIN').'.'.env('BASE_DOMAIN'))->group(function
 
             Route::put('/change-email', [ChangeEmailController::class, 'update'])
                 ->name('change_email.update');
+
+            // System tools routes
+            Route::get('/system-tools', [SystemToolsController::class, 'index'])
+                ->name('system-tools');
+
+            Route::post('/system-tools/generate-sitemap', [SystemToolsController::class, 'generateSitemap'])
+                ->name('system-tools.generate-sitemap');
+
+            Route::post('/system-tools/clear-cache', [SystemToolsController::class, 'clearCache'])
+                ->name('system-tools.clear-cache');
         });
     });
 });

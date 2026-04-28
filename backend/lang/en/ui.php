@@ -399,4 +399,18 @@ return [
     ],
     'select_badge' => 'Select Badge (Optional)',
     'no_badge' => 'No Badge',
+
+    // System Tools
+    'system_tools' => 'System Tools',
+    'generate_sitemap' => 'Generate Sitemap',
+    'generate_sitemap_description' => 'Regenerate the sitemap XML files for search engines (Google, Bing, etc.)',
+    'sitemap_generated_successfully' => 'Sitemap generated successfully',
+    'last_generated' => 'Last generated',
+    'clear_cache' => 'Clear Cache',
+    'clear_cache_description' => 'Clear all application caches to apply recent changes immediately.',
+    'clear_cache_includes' => 'This will clear the following caches',
+    'cache_cleared_successfully' => 'All caches cleared successfully',
+    'sitemap_urls' => 'Sitemap URLs',
+    'copy_link' => 'Copy link',
+    'copied' => 'Copied!',
 ];
