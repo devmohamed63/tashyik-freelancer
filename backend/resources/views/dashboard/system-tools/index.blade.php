@@ -37,7 +37,7 @@
 
             <div class="flex flex-wrap gap-3 mb-4">
                 @php
-                    $sitemapFiles = ['index.xml', 'categories.xml', 'services.xml'];
+                    $sitemapFiles = ['index.xml', 'categories.xml', 'services.xml', 'articles.xml'];
                     $sitemapBaseUrl = rtrim(env('FRONTEND_URL'), '/') . '/sitemaps';
                 @endphp
                 @foreach($sitemapFiles as $file)

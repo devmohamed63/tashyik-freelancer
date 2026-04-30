@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Utils\Traits\GenerateArticlesSitemap;
 use App\Utils\Traits\GenerateCategoriesSitemap;
 use App\Utils\Traits\GenerateServciesSitemap;
 use Illuminate\Console\Command;
@@ -11,7 +12,8 @@ use Spatie\Sitemap\SitemapIndex;
 class GenerateSitemaps extends Command
 {
     use GenerateCategoriesSitemap,
-        GenerateServciesSitemap;
+        GenerateServciesSitemap,
+        GenerateArticlesSitemap;
 
     /**
      * The name and signature of the console command.
@@ -60,6 +62,9 @@ class GenerateSitemaps extends Command
 
         $this->generateServicesSitemap();
 
+        $this->generateArticlesSitemap();
+
         $this->sitemapsIndex->writeToFile(public_path("sitemaps/index.xml"));
     }
 }
+

@@ -16,6 +16,7 @@ class SitemapController extends Controller
             'index.xml',
             'categories.xml',
             'services.xml',
+            'articles.xml',
         ])) {
             return abort(404);
         }

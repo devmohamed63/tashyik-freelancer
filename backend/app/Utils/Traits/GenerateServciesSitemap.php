@@ -13,17 +13,17 @@ trait GenerateServciesSitemap
 
     private function addServiceUrlsToSitemap()
     {
-        $serviceIds = Service::pluck('id');
+        $services = Service::get(['id', 'slug']);
 
-        foreach ($serviceIds as $id) {
-            $route = route('services.show', ['service' => $id]);
+        foreach ($services as $service) {
+            $route = route('services.show', ['service' => $service->slug]);
 
             $url = Url::create($route);
 
             $url->addAlternate($route, 'x-default');
 
             foreach ($this->locales as $locale) {
-                $alternateRoute = route('services.show', ['locale' => $locale, 'service' => $id]);
+                $alternateRoute = route('services.show', ['locale' => $locale, 'service' => $service->slug]);
 
                 $url->addAlternate($alternateRoute, $locale);
             }

@@ -13,8 +13,8 @@ Route::domain('www.' . env('BASE_DOMAIN'))->group(function () {
         // Category route
         Route::get('/categories/{cateogry}', fn() => '200')->name('categories.show');
 
-        // Subcategory route
-        Route::get('/categories/sub/{cateogry}', fn() => '200')->name('subcategories.show');
+        // Article route
+        Route::get('/articles/{article}', fn() => '200')->name('articles.show');
 
         // Service route
         Route::get('/services/{service}', fn() => '200')->name('services.show');

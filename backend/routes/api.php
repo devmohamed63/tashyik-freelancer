@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Auth\RegisteredUserController;
 use \App\Http\Controllers\Api\Auth\ProfileController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\CityController;
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\GeneralController;
@@ -216,6 +217,18 @@ Route::domain(env('API_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(function (
         Route::apiResource('/contact-requests', ContactController::class)
             ->only('store');
 
+        // Chat support routes (guest + authenticated user)
+        Route::prefix('chat')->name('chat.')->group(function () {
+            Route::post('/start', [ChatController::class, 'start'])->name('start');
+            Route::get('/conversations/{conversation}/messages', [ChatController::class, 'messages'])->name('messages.index');
+            Route::post('/conversations/{conversation}/messages', [ChatController::class, 'sendMessage'])->name('messages.store');
+
+            // Human support reply (internal use through authenticated staff token)
+            Route::post('/conversations/{conversation}/human-reply', [ChatController::class, 'humanReply'])
+                ->middleware('auth:sanctum')
+                ->name('messages.human_reply');
+        });
+
         // Page routes
         Route::apiResource('/pages', PageController::class)
             ->only(['index', 'show']);
@@ -244,3 +257,9 @@ Route::domain(env('API_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(function (
         });
     });
 });
+
+// Fallback sitemap route for local development (no subdomain required)
+if (app()->environment('local')) {
+    Route::get('/sitemaps/{sitemap}', SitemapController::class)
+        ->name('sitemaps.show.local');
+}

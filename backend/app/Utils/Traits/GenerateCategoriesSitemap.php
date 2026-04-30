@@ -13,38 +13,17 @@ trait GenerateCategoriesSitemap
 
     private function addCategoryUrlsToSitemap()
     {
-        $categoryIds = Category::isParent()->pluck('id');
+        $categories = Category::isParent()->get(['id', 'slug']);
 
-        foreach ($categoryIds as $id) {
-            $route = route('categories.show', ['cateogry' => $id]);
-
-            $url = Url::create($route);
-
-            $url->addAlternate($route, 'x-default');
-
-            foreach ($this->locales as $locale) {
-                $alternateRoute = route('categories.show', ['locale' => $locale, 'cateogry' => $id]);
-
-                $url->addAlternate($alternateRoute, $locale);
-            }
-
-            $this->categoriesSitemap->add($url);
-        }
-    }
-
-    private function addSubcategoryUrlsToSitemap()
-    {
-        $subcategoryIds = Category::isChild()->pluck('id');
-
-        foreach ($subcategoryIds as $id) {
-            $route = route('subcategories.show', ['cateogry' => $id]);
+        foreach ($categories as $category) {
+            $route = route('categories.show', ['cateogry' => $category->slug]);
 
             $url = Url::create($route);
 
             $url->addAlternate($route, 'x-default');
 
             foreach ($this->locales as $locale) {
-                $alternateRoute = route('subcategories.show', ['locale' => $locale, 'cateogry' => $id]);
+                $alternateRoute = route('categories.show', ['locale' => $locale, 'cateogry' => $category->slug]);
 
                 $url->addAlternate($alternateRoute, $locale);
             }
@@ -58,8 +37,6 @@ trait GenerateCategoriesSitemap
         $this->categoriesSitemap = Sitemap::create();
 
         $this->addCategoryUrlsToSitemap();
-
-        $this->addSubcategoryUrlsToSitemap();
 
         $this->categoriesSitemap->writeToFile(public_path("sitemaps/categories.xml"));
 

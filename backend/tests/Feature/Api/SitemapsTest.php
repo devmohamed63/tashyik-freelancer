@@ -46,4 +46,13 @@ class SitemapsTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_articles_sitemap_is_displayed(): void
+    {
+        $route = route('api.sitemaps.show', ['sitemap' => 'articles.xml']);
+
+        $response = $this->get($route);
+
+        $response->assertStatus(200);
+    }
 }
