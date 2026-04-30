@@ -94,6 +94,15 @@ return [
         'project_name' => env('GEMINI_PROJECT_NAME'),
     ],
 
+    'pinecone' => [
+        'api_key' => env('PINECONE_API_KEY'),
+        'index_name' => env('PINECONE_INDEX_NAME'),
+        'index_host' => env('PINECONE_INDEX_HOST'),
+        'namespace' => env('PINECONE_NAMESPACE', 'default'),
+        'api_version' => env('PINECONE_API_VERSION', '2025-10'),
+        'record_text_key' => env('PINECONE_RECORD_TEXT_KEY', 'text'),
+    ],
+
     'image_generation' => [
         'provider' => env('IMAGE_PROVIDER', 'openai'),
         'brand_primary_hex' => env('IMAGE_BRAND_PRIMARY_HEX', '#724193'),

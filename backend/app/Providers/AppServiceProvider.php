@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use App\Models\Review;
+use App\Models\Order;
+use App\Observers\ServiceProviderObserver;
+use App\Observers\ServiceProviderOrderObserver;
+use App\Observers\ServiceProviderReviewObserver;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        User::observe(ServiceProviderObserver::class);
+        Review::observe(ServiceProviderReviewObserver::class);
+        Order::observe(ServiceProviderOrderObserver::class);
+
         Mail::alwaysFrom(
             (string) config('mail.from.address'),
             (string) config('mail.from.name'),

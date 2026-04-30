@@ -1,0 +1,262 @@
+{
+  "info": {
+    "name": "AI Service Provider Chatbot",
+    "_postman_id": "f4f9f2de-4d83-42e1-aaf9-8f3f7f4d7a20",
+    "description": "Test collection for AI chatbot guest/user flows.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Guest - First Message (No guest_token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"هلا، عندي مشكلة كهرباء في البيت وأبي فني ممتاز\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/chatbot/guest/message",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "chatbot",
+            "guest",
+            "message"
+          ]
+        },
+        "description": "Starts a guest AI chat. Response returns guest_token and conversation_uuid. Send conversation_uuid on every follow-up (with guest_token) so the same thread and history are used."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "var json = pm.response.json();",
+              "if (json.guest_token) {",
+              "    pm.collectionVariables.set(\"guestToken\", json.guest_token);",
+              "}",
+              "if (json.conversation_uuid) {",
+              "    pm.collectionVariables.set(\"conversationUuid\", json.conversation_uuid);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Guest - Continue Message (With guest_token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"guest_token\": \"{{guestToken}}\",\n  \"conversation_uuid\": \"{{conversationUuid}}\",\n  \"message\": \"أبغى تسجيل دخول، اسمي محمد وإيميلي mohamed@example.com ورقمي 0551234567 وكلمة المرور Abc@12345\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/chatbot/guest/message",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "chatbot",
+            "guest",
+            "message"
+          ]
+        },
+        "description": "Continue guest session with guest_token + conversation_uuid from the first response."
+      }
+    },
+    {
+      "name": "Guest - City Selection Step",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"guest_token\": \"{{guestToken}}\",\n  \"conversation_uuid\": \"{{conversationUuid}}\",\n  \"message\": \"المدينة رقم 27\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/chatbot/guest/message",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "chatbot",
+            "guest",
+            "message"
+          ]
+        },
+        "description": "Use this after bot returns requires_city_selection=true and city_options."
+      }
+    },
+    {
+      "name": "User - List conversations (history threads)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/chatbot/user/conversations?per_page=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "chatbot",
+            "user",
+            "conversations"
+          ],
+          "query": [
+            {
+              "key": "per_page",
+              "value": "20"
+            }
+          ]
+        },
+        "description": "Paginated list of AI chatbot threads for the logged-in user (Laravel pagination: data, links, meta). Optional query: per_page (1–50)."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var json = pm.response.json();",
+              "if (json && json.data && json.data.length && json.data[0].uuid) {",
+              "    pm.collectionVariables.set(\"conversationUuid\", json.data[0].uuid);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "User - Messages for a conversation",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/chatbot/user/conversations/{{conversationUuid}}/messages?per_page=50",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "chatbot",
+            "user",
+            "conversations",
+            "{{conversationUuid}}",
+            "messages"
+          ],
+          "query": [
+            {
+              "key": "per_page",
+              "value": "50"
+            }
+          ]
+        },
+        "description": "Messages for one thread (oldest first). Path segment is conversation UUID. Optional: per_page (1–100). Response wraps Laravel pagination under \"messages\"."
+      }
+    },
+    {
+      "name": "User - Authenticated Message",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var json = pm.response.json();",
+              "if (json && json.conversation_uuid) {",
+              "    pm.collectionVariables.set(\"conversationUuid\", json.conversation_uuid);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"conversation_uuid\": \"{{conversationUuid}}\",\n  \"message\": \"أحتاج فني سباكة قريب في أبها وتقييمه عالي\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/chatbot/user/message",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "chatbot",
+            "user",
+            "message"
+          ]
+        },
+        "description": "Authenticated user AI chatbot. Optional: set conversationUuid after creating a thread (first response includes conversation_uuid); omit on first message in a new session."
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.tashyik.com"
+    },
+    {
+      "key": "authToken",
+      "value": ""
+    },
+    {
+      "key": "guestToken",
+      "value": ""
+    },
+    {
+      "key": "conversationUuid",
+      "value": ""
+    }
+  ]
+}

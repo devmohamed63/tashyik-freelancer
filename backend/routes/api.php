@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\RequestPayout;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\ServiceProviderChatbotController;
 use App\Http\Controllers\Api\SitemapController;
 
 use App\Http\Controllers\Api\WalletController;
@@ -227,6 +228,23 @@ Route::domain(env('API_SUBDOMAIN') . '.' . env('BASE_DOMAIN'))->group(function (
             Route::post('/conversations/{conversation}/human-reply', [ChatController::class, 'humanReply'])
                 ->middleware('auth:sanctum')
                 ->name('messages.human_reply');
+        });
+
+        // AI service-provider chatbot routes
+        Route::prefix('chatbot')->name('chatbot.')->group(function () {
+            Route::post('/guest/message', [ServiceProviderChatbotController::class, 'guestMessage'])
+                ->name('guest.message');
+
+            Route::middleware('auth:sanctum')->group(function () {
+                Route::get('/user/conversations', [ServiceProviderChatbotController::class, 'userConversations'])
+                    ->name('user.conversations.index');
+
+                Route::get('/user/conversations/{conversation}/messages', [ServiceProviderChatbotController::class, 'userConversationMessages'])
+                    ->name('user.conversations.messages');
+
+                Route::post('/user/message', [ServiceProviderChatbotController::class, 'userMessage'])
+                    ->name('user.message');
+            });
         });
 
         // Page routes
