@@ -16,14 +16,16 @@ trait GenerateServciesSitemap
         $services = Service::get(['id', 'slug']);
 
         foreach ($services as $service) {
+            // Default locale (no prefix)
             $route = route('services.show', ['service' => $service->slug]);
 
             $url = Url::create($route);
 
             $url->addAlternate($route, 'x-default');
+            $url->addAlternate($route, $this->defaultLocale);
 
             foreach ($this->locales as $locale) {
-                $alternateRoute = route('services.show', ['locale' => $locale, 'service' => $service->slug]);
+                $alternateRoute = route('services.show.localized', ['locale' => $locale, 'service' => $service->slug]);
 
                 $url->addAlternate($alternateRoute, $locale);
             }

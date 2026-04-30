@@ -14,6 +14,7 @@ class SitemapController extends Controller
     {
         if (!in_array($request->sitemap, [
             'index.xml',
+            'pages.xml',
             'categories.xml',
             'services.xml',
             'articles.xml',

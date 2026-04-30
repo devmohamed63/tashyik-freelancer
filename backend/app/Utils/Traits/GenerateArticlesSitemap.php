@@ -16,14 +16,16 @@ trait GenerateArticlesSitemap
         $articles = Article::published()->get(['id', 'slug']);
 
         foreach ($articles as $article) {
+            // Default locale (no prefix)
             $route = route('articles.show', ['article' => $article->slug]);
 
             $url = Url::create($route);
 
             $url->addAlternate($route, 'x-default');
+            $url->addAlternate($route, $this->defaultLocale);
 
             foreach ($this->locales as $locale) {
-                $alternateRoute = route('articles.show', [
+                $alternateRoute = route('articles.show.localized', [
                     'locale' => $locale,
                     'article' => $article->slug,
                 ]);

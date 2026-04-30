@@ -146,7 +146,7 @@ export default defineNuxtConfig({
         dir: 'ltr',
       },
     ],
-    strategy: 'prefix',
+    strategy: 'prefix_except_default',
     defaultLocale: 'ar',
     lazy: false,
     langDir: 'locales',

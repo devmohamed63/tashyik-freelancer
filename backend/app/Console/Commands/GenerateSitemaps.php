@@ -5,13 +5,15 @@ namespace App\Console\Commands;
 use App\Utils\Traits\GenerateArticlesSitemap;
 use App\Utils\Traits\GenerateCategoriesSitemap;
 use App\Utils\Traits\GenerateServciesSitemap;
+use App\Utils\Traits\GenerateStaticPagesSitemap;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\URL;
 use Spatie\Sitemap\SitemapIndex;
 
 class GenerateSitemaps extends Command
 {
-    use GenerateCategoriesSitemap,
+    use GenerateStaticPagesSitemap,
+        GenerateCategoriesSitemap,
         GenerateServciesSitemap,
         GenerateArticlesSitemap;
 
@@ -57,6 +59,8 @@ class GenerateSitemaps extends Command
         ]);
 
         $this->sitemapsIndex = SitemapIndex::create();
+
+        $this->generateStaticPagesSitemap();
 
         $this->generateCategoriesSitemap();
 

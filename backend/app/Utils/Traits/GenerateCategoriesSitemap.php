@@ -16,14 +16,16 @@ trait GenerateCategoriesSitemap
         $categories = Category::isParent()->get(['id', 'slug']);
 
         foreach ($categories as $category) {
+            // Default locale (no prefix)
             $route = route('categories.show', ['cateogry' => $category->slug]);
 
             $url = Url::create($route);
 
             $url->addAlternate($route, 'x-default');
+            $url->addAlternate($route, $this->defaultLocale);
 
             foreach ($this->locales as $locale) {
-                $alternateRoute = route('categories.show', ['locale' => $locale, 'cateogry' => $category->slug]);
+                $alternateRoute = route('categories.show.localized', ['locale' => $locale, 'cateogry' => $category->slug]);
 
                 $url->addAlternate($alternateRoute, $locale);
             }
