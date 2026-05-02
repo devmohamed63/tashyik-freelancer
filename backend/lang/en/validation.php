@@ -255,6 +255,7 @@ return [
         'residence_image'                   => 'Residence image',
         'bank_name'                         => 'Bank name',
         'iban'                              => 'IBAN',
+        'file'                              => 'File',
         'categories'                        => 'Categories',
         'commercial_registration_number'    => 'Commercial registration number',
         'commercial_registration_image'     => 'Commercial registration image',

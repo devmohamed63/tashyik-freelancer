@@ -19,8 +19,9 @@ class PineconeService
 
     public function upsertRecord(array $record): void
     {
+        $schemaVersion = $record['_schema_version'] ?? 'sp_sync_v3';
         $record = $this->sanitizeRecord($record);
-        $record['_schema_version'] = 'sp_sync_v3';
+        $record['_schema_version'] = $schemaVersion;
         $namespace = rawurlencode($this->namespace());
         $url = rtrim($this->host(), '/').'/records/namespaces/'.$namespace.'/upsert';
         $ndjson = json_encode($record, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n";

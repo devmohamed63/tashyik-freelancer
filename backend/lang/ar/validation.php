@@ -258,6 +258,7 @@ return [
         'residence_image'                   => 'صورة الإقامة',
         'bank_name'                         => 'إسم البنك',
         'iban'                              => 'IBAN',
+        'file'                              => 'الملف',
         'categories'                        => 'الاقسام',
         'commercial_registration_number'    => 'رقم السجل التجاري',
         'commercial_registration_image'     => 'صورة السجل التجاري',

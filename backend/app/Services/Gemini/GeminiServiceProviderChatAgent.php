@@ -4,11 +4,14 @@ namespace App\Services\Gemini;
 
 use App\Models\AiChatConversation;
 use App\Models\City;
+use App\Models\Service;
 use App\Models\User;
 use App\Services\Pinecone\PineconeService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 use RuntimeException;
 use Throwable;
 
@@ -18,13 +21,16 @@ class GeminiServiceProviderChatAgent
      * @return array{
      *   normal_answer:bool,
      *   message:string,
+     *   services:array<int, array<string,mixed>>,
+     *   service_ids:array<int, int>,
      *   service_providers:array<int, array<string,mixed>>,
      *   service_provider_ids:array<int, int>,
      *   intent:string,
      *   ready_to_login:bool,
      *   login_data:array{username:string,email:string,phone:string,password:string,city_id:int|null},
      *   requires_city_selection:bool,
-     *   city_options:array<int, array{id:int,name:string}>
+     *   city_options:array<int, array{id:int,name:string}>,
+     *   registration_step: 'username'|'email'|'phone'|'password'|'city'|'ready'|'complete'|null
      * }
      */
     public function reply(AiChatConversation $chat, string $userMessage, bool $isGuest): array
@@ -47,7 +53,11 @@ class GeminiServiceProviderChatAgent
         $analysis = $this->analyzeIntent($history, $userMessage, $isGuest, $loginFlowSummary);
         $intent = (string) ($analysis['intent'] ?? 'general_help');
 
-        if ($isGuest && $intent !== 'recommend_provider' && $this->hasIncompleteGuestLoginFlow($chat)) {
+        if ($intent === 'recommend_service' && $this->shouldTreatRecommendServiceAsGeneralHelp($userMessage)) {
+            $intent = 'general_help';
+        }
+
+        if ($isGuest && $intent !== 'recommend_service' && $this->hasIncompleteGuestLoginFlow($chat)) {
             if ($intent === 'general_help' && ! $this->userMessageLooksLikeMaintenanceTopic($userMessage)) {
                 $intent = 'login_help';
             }
@@ -61,6 +71,9 @@ class GeminiServiceProviderChatAgent
             return $this->handleGeneralHelpMission($history, $userMessage);
         }
 
+        /*
+         * ─── Service provider recommendation (Pinecone + Gemini) — disabled in favor of catalog services ───
+         *
         $recommendationPlan = $this->buildRecommendationPlanMission($history, $userMessage);
         $pineconeResults = $this->searchFromPinecone($recommendationPlan);
         $hits = $pineconeResults['hits'];
@@ -71,6 +84,8 @@ class GeminiServiceProviderChatAgent
                 'normal_answer' => true,
                 'intent' => 'recommend_provider',
                 'message' => 'للآن ما ظهر عندي مرشحين بالبحث الحالي. عطِني المدينة ونوع الخدمة بوضوح أكثر وأرشّح لك فنيين يناسبونك.',
+                'services' => [],
+                'service_ids' => [],
                 'service_providers' => [],
                 'service_provider_ids' => [],
                 'ready_to_login' => false,
@@ -110,6 +125,8 @@ class GeminiServiceProviderChatAgent
                 'normal_answer' => true,
                 'intent' => 'recommend_provider',
                 'message' => $finalMessage,
+                'services' => [],
+                'service_ids' => [],
                 'service_providers' => [],
                 'service_provider_ids' => [],
                 'ready_to_login' => false,
@@ -152,12 +169,110 @@ class GeminiServiceProviderChatAgent
             'normal_answer' => false,
             'intent' => 'recommend_provider',
             'message' => $message,
+            'services' => [],
+            'service_ids' => [],
             'service_providers' => $ordered,
             'service_provider_ids' => $providerIds,
             'ready_to_login' => false,
             'login_data' => ['username' => '', 'email' => '', 'phone' => '', 'password' => '', 'city_id' => null],
             'requires_city_selection' => false,
             'city_options' => [],
+        ];
+        */
+
+        $recommendationPlan = $this->buildServiceCatalogPlanMission($history, $userMessage);
+        $pineconeResults = $this->searchServicesFromPinecone($recommendationPlan);
+        $hits = $pineconeResults['hits'];
+        $candidateChunks = $pineconeResults['candidate_chunks'];
+
+        if ($hits === []) {
+            return [
+                'normal_answer' => true,
+                'intent' => 'recommend_service',
+                'message' => 'للآن ما ظهر عندي خدمات مناسبة بالبحث الحالي. عطِني نوع المشكلة أو اسم الخدمة بوضوح أكثر وأرشّح لك من الكتالوج.',
+                'services' => [],
+                'service_ids' => [],
+                'service_providers' => [],
+                'service_provider_ids' => [],
+                'ready_to_login' => false,
+                'login_data' => ['username' => '', 'email' => '', 'phone' => '', 'password' => '', 'city_id' => null],
+                'requires_city_selection' => false,
+                'city_options' => [],
+                'registration_step' => null,
+            ];
+        }
+
+        $pickLimit = (int) ($recommendationPlan['limit'] ?? 5);
+
+        $decision = $this->selectServicesWithGemini(
+            (string) ($recommendationPlan['search_query'] ?? $userMessage),
+            $candidateChunks,
+            $pickLimit
+        );
+
+        $serviceIds = $decision['service_ids'];
+        $message = $decision['message'];
+
+        if ($serviceIds === [] && $candidateChunks !== []) {
+            $serviceIds = $this->uniqueServiceIdsFromCandidates($candidateChunks, $pickLimit);
+            $message = $this->defaultServiceRecommendMessage();
+        }
+
+        if ($serviceIds !== []) {
+            $message = $this->sanitizeServiceRecommendMessage($message);
+        }
+
+        if ($serviceIds === []) {
+            $finalMessage = $this->sanitizeServiceRecommendMessage($message);
+            if ($finalMessage === '') {
+                $finalMessage = 'عطني نوع الخدمة أو المشكلة بشكل أوضح عشان أرشّح لك خيارات مناسبة من خدماتنا.';
+            }
+
+            return [
+                'normal_answer' => true,
+                'intent' => 'recommend_service',
+                'message' => $finalMessage,
+                'services' => [],
+                'service_ids' => [],
+                'service_providers' => [],
+                'service_provider_ids' => [],
+                'ready_to_login' => false,
+                'login_data' => ['username' => '', 'email' => '', 'phone' => '', 'password' => '', 'city_id' => null],
+                'requires_city_selection' => false,
+                'city_options' => [],
+                'registration_step' => null,
+            ];
+        }
+
+        $services = Service::query()
+            ->with(['category.parent', 'highlights', 'promotion', 'media'])
+            ->whereIn('id', $serviceIds)
+            ->get()
+            ->keyBy('id');
+
+        $orderedServices = [];
+        foreach ($serviceIds as $serviceId) {
+            $service = $services->get($serviceId);
+            if (! $service) {
+                continue;
+            }
+
+            $orderedServices[] = $this->formatServiceForChatResponse($service);
+        }
+
+        return [
+            'normal_answer' => false,
+            'intent' => 'recommend_service',
+            'message' => $message,
+            'services' => $orderedServices,
+            'service_ids' => $serviceIds,
+            'service_providers' => [],
+            'service_provider_ids' => [],
+            'ready_to_login' => false,
+            'login_data' => ['username' => '', 'email' => '', 'phone' => '', 'password' => '', 'city_id' => null],
+            'requires_city_selection' => false,
+            'city_options' => [],
+            'registration_step' => null,
         ];
     }
 
@@ -194,7 +309,10 @@ class GeminiServiceProviderChatAgent
 القواعد:
 - تدعم الصيانة والكهرباء والسباكة والنجارة وجميع الأعمال الفنية.
 {$guestRule}
-- intent لازم يكون واحد من: "login_help", "general_help", "recommend_provider".
+- intent لازم يكون واحد من: "login_help", "general_help", "recommend_service".
+- مهم جدًا: فرّق بين سؤال تشخيص/رأي/سبب/نصيحة عامة وبين طلب خدمة من الكتالوج.
+  - استخدم **general_help** إذا المستخدم يصف عطلًا أو عرضًا ويسأل عن السبب، التفسير، الرأي، هل هذا طبيعي، ماذا يعني، أو نصائح أولية بدون طلب صريح لعرض خدمات أو حجز. أمثلة: «الحنفية تنقط، تفتكر مشكلتها إيه؟»، «ليش المكيف بيطلع ريحة؟»، «هل التسريب خطر؟»، «وش أسباب نقص الضغط؟».
+  - استخدم **recommend_service** فقط إذا واضح أنه يبي **ترشيح/عرض/اختيار خدمة من التطبيق** أو **سعر أو باقة أو حجز أو صيانة دورية** أو قال صراحةً «ارشح لي»، «وش عندكم خدمات»، «ابغى أطلب»، «كم سعر»، «أبغى باقة»، إلخ.
 - لا ترجع تفاصيل تنفيذ، فقط تصنيف واضح.
 
 شكل JSON المطلوب:
@@ -207,8 +325,11 @@ PROMPT;
         $json = $this->callGeminiJson($prompt);
         if (is_array($json)) {
             $intent = (string) ($json['intent'] ?? 'general_help');
-            if (! in_array($intent, ['login_help', 'general_help', 'recommend_provider'], true)) {
+            if (! in_array($intent, ['login_help', 'general_help', 'recommend_service', 'recommend_provider'], true)) {
                 $intent = 'general_help';
+            }
+            if ($intent === 'recommend_provider') {
+                $intent = 'recommend_service';
             }
 
             return ['intent' => $intent];
@@ -236,15 +357,26 @@ PROMPT;
             'phone' => (string) ($flow['phone'] ?? ''),
             'password_saved' => $password !== '',
             'city_id' => $flow['city_id'] ?? null,
+            'registration_step' => (string) ($flow['registration_step'] ?? ''),
             'ready_to_login' => (bool) ($flow['ready_to_login'] ?? false),
+            'registration_succeeded' => (bool) ($chat->user_id),
+            'last_registration_error' => (string) ($flow['last_registration_error'] ?? ''),
         ], JSON_UNESCAPED_UNICODE);
     }
 
     private function hasIncompleteGuestLoginFlow(AiChatConversation $chat): bool
     {
+        if ($chat->user_id) {
+            return false;
+        }
+
         $meta = is_array($chat->meta) ? $chat->meta : [];
         $flow = is_array($meta['login_flow'] ?? null) ? $meta['login_flow'] : [];
         if ($flow === []) {
+            return false;
+        }
+
+        if ((string) ($flow['registration_step'] ?? '') === 'complete') {
             return false;
         }
 
@@ -268,7 +400,71 @@ PROMPT;
         $needles = [
             'فني', 'صيانة', 'تكييف', 'مكيف', 'سباكة', 'سباك', 'كهرباء', 'كهربائي', 'نجار', 'نجارة',
             'عطل', 'إصلاح', 'اصلاح', 'ترشيح', 'أرشح', 'ارشح', 'تسريب', 'سخان', 'دينمو', 'ثلاجة',
-            'غسالة', 'أعمال فنية', 'اعمال فنية',
+            'غسالة', 'أعمال فنية', 'اعمال فنية', 'حنفية', 'حنفيه', 'خلاط', 'بالوعة',
+        ];
+
+        foreach ($needles as $needle) {
+            if (str_contains($haystack, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * When the model labels maintenance Q&A as catalog search, steer back to general help.
+     */
+    private function shouldTreatRecommendServiceAsGeneralHelp(string $userMessage): bool
+    {
+        if ($this->userMessageExplicitlySeeksCatalogOrBooking($userMessage)) {
+            return false;
+        }
+
+        return $this->userMessageLooksLikeDiagnosticQuestion($userMessage);
+    }
+
+    private function userMessageLooksLikeDiagnosticQuestion(string $userMessage): bool
+    {
+        $haystack = mb_strtolower($userMessage);
+
+        $needles = [
+            'تفتكر', 'تفكر', 'تتوقع', 'توقع',
+            'رايك', 'رأيك', 'برأيك', 'براييك',
+            'مشكلتها', 'مشكلته', 'مشكلتهم',
+            'وش المشكلة', 'شنو المشكلة', 'إيش المشكلة', 'ايش المشكلة', 'ايه المشكلة', 'إيه المشكلة',
+            'المشكلة وش', 'المشكلة ايه', 'المشكلة إيه', 'وش مشكلت', 'إيش مشكلت', 'ايش مشكلت',
+            'وش السبب', 'شنو السبب', 'إيش السبب', 'ايش السبب', 'ما السبب', 'ما سبب', 'ليه السبب', 'ليش السبب',
+            'تنصحني', 'تنصحيني', 'نصيحة',
+            'تشخيص', 'طبيعي؟', 'طبيعي ؟', 'خطير؟', 'خطير ؟',
+            'ممكن يكون', 'يمكن يكون', 'وش يعني', 'إيش يعني', 'ايش يعني', 'يعني ايه', 'يعني إيه',
+            'هل ده', 'هل هذا', 'هل هذي', 'هل هي',
+        ];
+
+        foreach ($needles as $needle) {
+            if (str_contains($haystack, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function userMessageExplicitlySeeksCatalogOrBooking(string $userMessage): bool
+    {
+        $haystack = mb_strtolower($userMessage);
+
+        $needles = [
+            'ارشح', 'أرشح', 'رشحلي', 'رشح لي', 'ترشيح', 'ترشح', 'اقترح', 'اقترحلي', 'اقترح لي',
+            'سعر', 'أسعار', 'تكلفة', 'بكم', 'ب كم', 'كم سعر', 'كم التكلفة',
+            'باقة', 'باقات', 'باكيج',
+            'حجز', 'احجز', 'أحجز', 'ابغى احجز', 'أبغى احجز', 'ابغي احجز',
+            'كتالوج',
+            'خدماتكم', 'خدمات عندكم', 'عندكم خدمات', 'وش عندكم', 'شنو عندكم', 'إيش عندكم', 'ايش عندكم',
+            'ابغى فني', 'أبغى فني', 'ابغي فني', 'احتاج فني', 'أحتاج فني', 'محتاج فني', 'ابغى سباك', 'أبغى سباك',
+            'ابغى كهرب', 'أبغى كهرب', 'اطلب', 'أطلب', 'ابغى اطلب', 'أبغى اطلب',
+            'وريني خدمات', 'ورّيني خدمات', 'اعرض خدمات', 'أعرض خدمات', 'عرض لي خدمات',
+            'صيانة دورية', 'عقد صيانة',
         ];
 
         foreach ($needles as $needle) {
@@ -353,6 +549,83 @@ PROMPT;
     }
 
     /**
+     * بحث Pinecone في سجلات كتالوج الخدمات (type = service).
+     *
+     * @param  array<string,mixed>  $analysis
+     * @return array{hits:array<int,mixed>, candidate_chunks:array<int,array<string,mixed>>}
+     */
+    private function searchServicesFromPinecone(array $analysis): array
+    {
+        /** @var PineconeService $pinecone */
+        $pinecone = app(PineconeService::class);
+        $filters = is_array($analysis['filters'] ?? null) ? $analysis['filters'] : [];
+        $textField = (string) config('services.pinecone.record_text_key', 'text');
+
+        $filter = ['type' => ['$eq' => 'service']];
+
+        $categoryIds = is_array($filters['category_ids'] ?? null) ? $filters['category_ids'] : [];
+        $categoryIds = array_values(array_filter(array_map(static fn ($value) => (int) $value, $categoryIds), static fn ($value) => $value > 0));
+        if ($categoryIds !== []) {
+            $filter['category_ids'] = ['$in' => array_map('strval', $categoryIds)];
+        }
+
+        $extra = [
+            'fields' => [
+                'service_id',
+                'service_name',
+                'slug',
+                'category_name',
+                'parent_category_name',
+                'price',
+                'badge',
+                'completed_orders_count',
+                'highlights',
+                $textField,
+            ],
+            'filter' => $filter,
+        ];
+
+        $query = (string) ($analysis['search_query'] ?? '');
+        $topK = max(8, min(40, (int) ($analysis['limit'] ?? 5) * 4));
+        $response = $pinecone->searchRecords($query !== '' ? $query : 'خدمات صيانة منزلية', $topK, $extra);
+        $hits = is_array($response['result']['hits'] ?? null) ? $response['result']['hits'] : [];
+
+        $candidateChunks = [];
+        foreach ($hits as $hit) {
+            $fields = is_array($hit['fields'] ?? null) ? $hit['fields'] : [];
+            $rawId = $fields['service_id'] ?? null;
+            if ($rawId === null || $rawId === '') {
+                $idFromHit = $hit['_id'] ?? null;
+                if (is_string($idFromHit) && str_starts_with($idFromHit, 'svc_')) {
+                    $rawId = substr($idFromHit, 4);
+                }
+            }
+            $serviceId = (int) $rawId;
+            if ($serviceId <= 0) {
+                continue;
+            }
+
+            $highlightsField = $fields['highlights'] ?? [];
+            $highlightsText = is_array($highlightsField) ? implode(', ', $highlightsField) : (string) $highlightsField;
+
+            $candidateChunks[] = [
+                'service_id' => $serviceId,
+                'service_name' => (string) ($fields['service_name'] ?? ''),
+                'slug' => (string) ($fields['slug'] ?? ''),
+                'category_name' => (string) ($fields['category_name'] ?? ''),
+                'parent_category_name' => (string) ($fields['parent_category_name'] ?? ''),
+                'price' => $fields['price'] ?? null,
+                'badge' => (string) ($fields['badge'] ?? ''),
+                'completed_orders_count' => $fields['completed_orders_count'] ?? null,
+                'highlights' => $highlightsText,
+                'text' => (string) ($fields[$textField] ?? ''),
+            ];
+        }
+
+        return ['hits' => $hits, 'candidate_chunks' => $candidateChunks];
+    }
+
+    /**
      * @param  array<int,array<string,mixed>>  $candidateChunks
      * @return array{message:string, service_provider_ids:array<int,int>}
      */
@@ -404,6 +677,55 @@ PROMPT;
     }
 
     /**
+     * @param  array<int,array<string,mixed>>  $candidateChunks
+     * @return array{message:string, service_ids:array<int,int>}
+     */
+    private function selectServicesWithGemini(string $query, array $candidateChunks, int $limit): array
+    {
+        $candidateText = collect($candidateChunks)->take(24)->map(function (array $c): string {
+            return "service_id={$c['service_id']}\nname={$c['service_name']}\nslug={$c['slug']}\ncategory={$c['category_name']}\nparent_category={$c['parent_category_name']}\nprice={$c['price']}\nbadge={$c['badge']}\ncompleted_orders={$c['completed_orders_count']}\nhighlights={$c['highlights']}\ntext={$c['text']}";
+        })->implode("\n\n");
+
+        $prompt = <<<PROMPT
+أنت مستشار خدمات في منصة صيانة منزلية بالسعودية: دورك يعرّف العميل على خدمات من الكتالوج (باقات/زيارات/أعمال محددة) ويساعده يختار الأنسب، بأسلوب مبيعات لبق بدون مبالغة.
+لازم يكون الرد بالعربي السعودي.
+أعد JSON فقط.
+
+طلب المستخدم:
+{$query}
+
+مرشحو الخدمات من البحث:
+{$candidateText}
+
+شكل JSON:
+{
+  "message": "رد قصير مفيد",
+  "service_ids": [1,2,3]
+}
+
+القواعد:
+- service_ids لازم من القائمة فقط.
+- ممنوع تقول «ما عندنا خدمة» أو رفض طالما فيه مرشح في القائمة.
+- ممنوع إرجاع service_ids فارغة إذا القائمة فيها عنصر واحد على الأقل.
+- ركّز على فائدة الخدمة للمشكلة اللي وصفها العميل.
+PROMPT;
+
+        $json = $this->callGeminiJson($prompt);
+        if (! is_array($json)) {
+            return ['message' => '', 'service_ids' => []];
+        }
+
+        $ids = is_array($json['service_ids'] ?? null) ? $json['service_ids'] : [];
+        $ids = array_values(array_unique(array_filter(array_map(static fn ($value) => (int) $value, $ids), static fn ($value) => $value > 0)));
+        $ids = array_slice($ids, 0, max(1, $limit));
+
+        return [
+            'message' => (string) ($json['message'] ?? ''),
+            'service_ids' => $ids,
+        ];
+    }
+
+    /**
      * @param  array<int, array<string,mixed>>  $candidateChunks
      * @return array<int, int>
      */
@@ -414,6 +736,30 @@ PROMPT;
         $ids = [];
         foreach ($candidateChunks as $chunk) {
             $id = (int) ($chunk['provider_id'] ?? 0);
+            if ($id <= 0 || isset($seen[$id])) {
+                continue;
+            }
+            $seen[$id] = true;
+            $ids[] = $id;
+            if (count($ids) >= $limit) {
+                break;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @param  array<int, array<string,mixed>>  $candidateChunks
+     * @return array<int, int>
+     */
+    private function uniqueServiceIdsFromCandidates(array $candidateChunks, int $limit): array
+    {
+        $limit = max(1, min(10, $limit));
+        $seen = [];
+        $ids = [];
+        foreach ($candidateChunks as $chunk) {
+            $id = (int) ($chunk['service_id'] ?? 0);
             if ($id <= 0 || isset($seen[$id])) {
                 continue;
             }
@@ -460,6 +806,62 @@ PROMPT;
         }
 
         return $trimmed;
+    }
+
+    private function defaultServiceRecommendMessage(): string
+    {
+        return 'هذي أبرز الخيارات من خدماتنا المتاحة حسب بحثك؛ قارن بينهم واختار اللي يناسب احتياجك.';
+    }
+
+    private function sanitizeServiceRecommendMessage(string $message): string
+    {
+        $trimmed = trim($message);
+        if ($trimmed === '') {
+            return '';
+        }
+
+        $needles = [
+            'ما لقينا', 'ما لقيت', 'لم نجد', 'ما في خدمة', 'مافي خدمة', 'لا توجد خدمة',
+            'ما عندنا خدمة', 'غير متوفر', 'لا نملك',
+        ];
+
+        $lower = mb_strtolower($trimmed);
+        foreach ($needles as $needle) {
+            if (mb_strpos($lower, mb_strtolower($needle)) !== false) {
+                return $this->defaultServiceRecommendMessage();
+            }
+        }
+
+        return $trimmed;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formatServiceForChatResponse(Service $service): array
+    {
+        $service->loadMissing(['category.parent', 'highlights', 'promotion', 'media']);
+
+        $desc = trim(strip_tags((string) $service->getTranslation('description', 'ar')));
+
+        return [
+            'id' => (int) $service->id,
+            'slug' => (string) $service->slug,
+            'name' => (string) $service->getTranslation('name', 'ar'),
+            'description' => Str::limit($desc, 400),
+            'category' => $service->category?->getTranslation('name', 'ar'),
+            'parent_category' => $service->category?->parent?->getTranslation('name', 'ar'),
+            'price' => $service->getPrice(),
+            'rating' => $service->getRating(),
+            'badge' => $service->badge ? __("ui.badges.{$service->badge}") : null,
+            'warranty_duration' => $service->warranty_duration,
+            'image' => $service->getImageUrl('sm'),
+            'highlights' => $service->highlights
+                ->map(fn ($h) => (string) $h->getTranslation('title', 'ar'))
+                ->filter()
+                ->values()
+                ->all(),
+        ];
     }
 
     /**
@@ -542,12 +944,15 @@ PROMPT;
             'normal_answer' => true,
             'intent' => 'general_help',
             'message' => $message,
+            'services' => [],
+            'service_ids' => [],
             'service_providers' => [],
             'service_provider_ids' => [],
             'ready_to_login' => false,
             'login_data' => ['username' => '', 'email' => '', 'phone' => '', 'password' => '', 'city_id' => null],
             'requires_city_selection' => false,
             'city_options' => [],
+            'registration_step' => null,
         ];
     }
 
@@ -603,6 +1008,60 @@ PROMPT;
     }
 
     /**
+     * خطة بحث لكتالوج الخدمات (معلومات المنتج/الباقة وليس مقدم الخدمة).
+     *
+     * @param  array<int, array{role?: string, content?: string}>  $history
+     * @return array<string,mixed>
+     */
+    private function buildServiceCatalogPlanMission(array $history, string $userMessage): array
+    {
+        $historyText = collect($history)->map(fn ($m) => ($m['role'] ?? 'unknown').': '.($m['content'] ?? ''))->implode("\n");
+        $prompt = <<<PROMPT
+أنت مساعد ترشيح خدمات منزلية من كتالوج التطبيق في السعودية.
+هذه خطوة تنفيذ خطة البحث بعد تحليل النية (recommend_service).
+أعد JSON فقط.
+
+سجل المحادثة:
+{$historyText}
+
+رسالة المستخدم:
+{$userMessage}
+
+استخرج خطة بحث للخدمات (وليس لفنيين):
+{
+  "search_query": "صياغة بحث مختصرة بالعربي عن نوع الخدمة أو المشكلة",
+  "filters": {
+    "city_id": null,
+    "category_ids": [],
+    "status": "active"
+  },
+  "limit": 5
+}
+
+مهم:
+- ركّز على اسم الخدمة، الفئة، وصف المشكلة، نوع الصيانة.
+- category_ids أرقام فئات إن استنتجتها من السجل وإلا [].
+- city_id غالبًا null لأن الكتالوج لا يقيّد بالمدينة؛ اتركه null إلا إذا السياق واضح جدًا.
+- status للتوافق: active.
+PROMPT;
+
+        $json = $this->callGeminiJson($prompt);
+        if (! is_array($json)) {
+            return [
+                'search_query' => $userMessage,
+                'filters' => ['city_id' => null, 'category_ids' => [], 'status' => 'active'],
+                'limit' => 5,
+            ];
+        }
+
+        return [
+            'search_query' => (string) ($json['search_query'] ?? $userMessage),
+            'filters' => is_array($json['filters'] ?? null) ? $json['filters'] : ['city_id' => null, 'category_ids' => [], 'status' => 'active'],
+            'limit' => max(1, min(10, (int) ($json['limit'] ?? 5))),
+        ];
+    }
+
+    /**
      * @param  array<int, array{role?: string, content?: string}>  $history
      * @return array{
      *   normal_answer:bool,
@@ -613,11 +1072,60 @@ PROMPT;
      *   ready_to_login:bool,
      *   login_data:array{username:string,email:string,phone:string,password:string,city_id:int|null},
      *   requires_city_selection:bool,
-     *   city_options:array<int, array{id:int,name:string}>
+     *   city_options:array<int, array{id:int,name:string}>,
+     *   registration_step: 'username'|'email'|'phone'|'password'|'city'|'ready'|'complete'|null
      * }
      */
     private function handleLoginHelpMission(AiChatConversation $chat, array $history, string $userMessage, bool $isGuest): array
     {
+        $chat->refresh();
+
+        if ($chat->user_id) {
+            return [
+                'normal_answer' => true,
+                'intent' => 'login_help',
+                'message' => 'حسابك مفعّل ومربوط بهذه المحادثة. يمكنك تسجيل الدخول من التطبيق بالبريد أو الجوال وكلمة المرور.',
+                'services' => [],
+                'service_ids' => [],
+                'service_providers' => [],
+                'service_provider_ids' => [],
+                'ready_to_login' => true,
+                'login_data' => [
+                    'username' => '',
+                    'email' => '',
+                    'phone' => '',
+                    'password' => '',
+                    'city_id' => null,
+                ],
+                'requires_city_selection' => false,
+                'city_options' => [],
+                'registration_step' => 'complete',
+            ];
+        }
+
+        if (! $isGuest) {
+            return [
+                'normal_answer' => true,
+                'intent' => 'login_help',
+                'message' => 'أنت مسجّل دخول بالفعل. لتحديث بيانات الحساب استخدم إعدادات الملف الشخصي في التطبيق.',
+                'services' => [],
+                'service_ids' => [],
+                'service_providers' => [],
+                'service_provider_ids' => [],
+                'ready_to_login' => true,
+                'login_data' => [
+                    'username' => '',
+                    'email' => '',
+                    'phone' => '',
+                    'password' => '',
+                    'city_id' => null,
+                ],
+                'requires_city_selection' => false,
+                'city_options' => [],
+                'registration_step' => null,
+            ];
+        }
+
         $historyText = collect($history)->map(fn ($m) => ($m['role'] ?? 'unknown').': '.($m['content'] ?? ''))->implode("\n");
         $currentMeta = is_array($chat->meta ?? null) ? $chat->meta : [];
         $currentLogin = is_array($currentMeta['login_flow'] ?? null) ? $currentMeta['login_flow'] : [];
@@ -625,32 +1133,34 @@ PROMPT;
         $userHistoryText = $this->flattenUserHistory($history);
 
         $prompt = <<<PROMPT
-أنت مساعد تسجيل دخول لتطبيق صيانة.
-هذه خطوة تنفيذ login_help بعد تحليل النية.
-أعد JSON فقط.
+أنت مستخرج بيانات تسجيل (JSON فقط). لا تكتب حوارًا للمستخدم — النظام يبني الرسالة.
+مهمتك الوحيدة: قراءة سجل المحادثة واستخراج حقول التسجيل بدقة.
 
-سجل المحادثة (راجع كل رسائل user لاستخراج البيانات):
+سجل المحادثة:
 {$historyText}
 
 آخر رسالة من المستخدم:
 {$userMessage}
 
-ملخص بيانات مدمجة مسبقًا من النظام (قد يكون ناقصًا؛ أكمل من السجل):
+ملخص من النظام (مرجع فقط):
 {$priorSummary}
 
-المهمة:
-- املأ كائن login_data كاملًا من سجل المحادثة بالكامل، وليس من آخر رسالة فقط.
-- أي حقل ظهر في السابق (اسم مستخدم، إيميل، جوال سعودي، كلمة مرور، رقم مدينة) لازم يظهر في login_data إذا كان واضحًا من السجل.
-- إذا الحقل غير مذكور في السجل اتركه فارغًا أو city_id = null.
-- لا تخترع بيانات. لا تعدّ ردود المساعد (ai) حقائق عن المستخدم إلا إذا أعاد نقل كلام المستخدم.
-- assistant_message: رد عملي قصير بالعربي السعودي؛ لا تقل إنك «تنفّذ تسجيل الدخول» أو «جاري الدخول» إلا إذا النظام أكد اكتمال البيانات (سيتم التحقق لاحقًا).
+قواعد إلزامية:
+- املأ login_data من **كل** رسائل user في السجل، وليس من آخر رسالة فقط.
+- لا تخترع قيمًا. لا تعتبر ردود ai حقائق إلا إذا نقلت نصّ المستخدم حرفيًا.
+- إن لم يُذكر حقل بوضوح اتركه فارغًا أو city_id = null.
+- الهاتف بصيغة سعودية (05xxxxxxxx أو +9665xxxxxxxx أو 9665xxxxxxxx).
+- city_id فقط إذا ذُكر رقم مدينة صريح من القائمة أو يُستنتج بثقة من السياق.
 
-الحقول:
-- username, email, phone (سعودي فقط), password, city_id (رقم مدينة من التطبيق إن وُجد في السجل)
+الترتيب الذي يطلبه النظام للمستخدم (للمعلومية فقط — أنت لا ترد على المستخدم):
+1) اسم / اسم مستخدم
+2) بريد إلكتروني
+3) جوال سعودي
+4) كلمة مرور
+5) مدينة (id)
 
-أعد JSON:
+أعد JSON بهذا الشكل فقط (بدون مفاتيح إضافية):
 {
-  "assistant_message": "رد عربي سعودي",
   "login_data": {
     "username": "",
     "email": "",
@@ -682,53 +1192,334 @@ PROMPT;
             $cityId = 0;
         }
 
-        $ready = $isGuest && $username !== '' && $email !== '' && $phone !== '' && $password !== '' && $cityId > 0;
-        $requiresCitySelection = ! $ready && $cityId <= 0;
-        $cityOptions = $requiresCitySelection ? $this->getCityOptions() : [];
+        $phoneDb = $this->phoneDigitsForRegistrationDb($phone);
+        $step = $this->determineGuestRegistrationStep($username, $email, $phoneDb, $password, $cityId);
 
-        $currentMeta['login_flow'] = [
+        $prevFailedField = (string) ($currentLogin['last_registration_field'] ?? '');
+        if ($prevFailedField !== '' && $step !== 'ready' && $step !== $prevFailedField) {
+            unset($currentLogin['last_registration_error'], $currentLogin['last_registration_field']);
+        }
+
+        $flow = [
             'username' => $username,
             'email' => $email,
             'phone' => $phone,
             'password' => $password,
             'city_id' => $cityId > 0 ? $cityId : null,
-            'ready_to_login' => $ready,
+            'registration_step' => $step,
+            'ready_to_login' => false,
         ];
+        if (isset($currentLogin['last_registration_error'])) {
+            $flow['last_registration_error'] = $currentLogin['last_registration_error'];
+        }
+        if (isset($currentLogin['last_registration_field'])) {
+            $flow['last_registration_field'] = $currentLogin['last_registration_field'];
+        }
+
+        if ($step === 'ready') {
+            /** @var ServiceProviderChatGuestRegistrar $registrar */
+            $registrar = app(ServiceProviderChatGuestRegistrar::class);
+
+            try {
+                $result = $registrar->register($username, $email, $password, $phoneDb, $cityId);
+            } catch (Throwable $e) {
+                Log::error('Service provider chat guest registration failed', ['e' => $e->getMessage()]);
+                $flow['registration_step'] = 'password';
+                $flow['last_registration_error'] = 'حصل خطأ تقني أثناء إنشاء الحساب. حاول مرة ثانية بعد قليل.';
+                $flow['last_registration_field'] = 'password';
+                $currentMeta['login_flow'] = $flow;
+                $chat->meta = $currentMeta;
+                $chat->save();
+
+                return $this->guestLoginHelpPayload($flow, $userMessage);
+            }
+
+            if ($result['ok'] === true) {
+                $flow['registration_step'] = 'complete';
+                $flow['ready_to_login'] = true;
+                $flow['password'] = '';
+                unset($flow['last_registration_error'], $flow['last_registration_field']);
+                $currentMeta['login_flow'] = $flow;
+                $chat->meta = $currentMeta;
+                $chat->user_id = $result['user']->id;
+                $chat->save();
+
+                return [
+                    'normal_answer' => true,
+                    'intent' => 'login_help',
+                    'message' => 'تم إنشاء حسابك بنجاح من السيرفر ✅ يمكنك الآن تسجيل الدخول من التطبيق باستخدام بريدك وكلمة المرور.',
+                    'services' => [],
+                    'service_ids' => [],
+                    'service_providers' => [],
+                    'service_provider_ids' => [],
+                    'ready_to_login' => true,
+                    'login_data' => [
+                        'username' => $username,
+                        'email' => $email,
+                        'phone' => $phone,
+                        'password' => '',
+                        'city_id' => $cityId,
+                    ],
+                    'requires_city_selection' => false,
+                    'city_options' => [],
+                    'registration_step' => 'complete',
+                ];
+            }
+
+            $failedField = (string) ($result['failed_field'] ?? '');
+            if ($failedField === 'email') {
+                $email = '';
+                $flow['email'] = '';
+            } elseif ($failedField === 'phone') {
+                $phone = '';
+                $flow['phone'] = '';
+                $phoneDb = '';
+            } elseif ($failedField === 'password') {
+                $password = '';
+                $flow['password'] = '';
+            }
+
+            $flow['last_registration_error'] = (string) ($result['message'] ?? 'تعذر إتمام التسجيل.');
+            $flow['last_registration_field'] = $failedField !== '' ? $failedField : null;
+            $flow['ready_to_login'] = false;
+            $flow['registration_step'] = $this->determineGuestRegistrationStep(
+                $flow['username'],
+                $flow['email'],
+                $this->phoneDigitsForRegistrationDb((string) $flow['phone']),
+                (string) $flow['password'],
+                (int) ($flow['city_id'] ?? 0)
+            );
+        }
+
+        $currentMeta['login_flow'] = $flow;
         $chat->meta = $currentMeta;
         $chat->save();
 
-        $message = is_array($json) ? (string) ($json['assistant_message'] ?? '') : '';
-        if (! $ready && (
-            str_contains($message, 'اكتملت بياناتك')
-            || str_contains($message, 'جاري تسجيل الدخول')
-            || str_contains($message, 'جاري الدخول')
-            || str_contains($message, 'ما أحتاج شي')
-        )) {
-            $message = '';
-        }
-        if (trim($message) === '') {
-            $message = $ready
-                ? 'تمام، كذا بيانات الدخول مكتملة. تقدر تسجل دخولك الآن.'
-                : 'أكيد، أرسل بياناتك كاملة (الاسم، الإيميل، رقم الجوال السعودي، كلمة المرور، والمدينة) عشان أجهز تسجيل الدخول.';
-        }
+        return $this->guestLoginHelpPayload($flow, $userMessage);
+    }
+
+    /**
+     * @param  array<string, mixed>  $flow
+     * @return array<string, mixed>
+     */
+    private function guestLoginHelpPayload(array $flow, string $userMessage = ''): array
+    {
+        $step = (string) ($flow['registration_step'] ?? 'username');
+        $lastErr = isset($flow['last_registration_error']) ? (string) $flow['last_registration_error'] : '';
+        $requiresCity = ($step === 'city');
+        $cityOptions = $requiresCity ? $this->getCityOptions() : [];
+
+        $message = $this->buildGuestRegistrationStepMessage(
+            $step,
+            $lastErr !== '' ? $lastErr : null,
+            $cityOptions,
+            $userMessage,
+            $flow
+        );
+
+        $cid = (int) ($flow['city_id'] ?? 0);
+        $phoneDisplay = (string) ($flow['phone'] ?? '');
 
         return [
             'normal_answer' => true,
             'intent' => 'login_help',
             'message' => $message,
+            'services' => [],
+            'service_ids' => [],
             'service_providers' => [],
             'service_provider_ids' => [],
-            'ready_to_login' => $ready,
+            'ready_to_login' => (bool) ($flow['ready_to_login'] ?? false),
             'login_data' => [
-                'username' => $username,
-                'email' => $email,
-                'phone' => $phone,
-                'password' => $password,
-                'city_id' => $cityId > 0 ? $cityId : null,
+                'username' => (string) ($flow['username'] ?? ''),
+                'email' => (string) ($flow['email'] ?? ''),
+                'phone' => $phoneDisplay,
+                'password' => '',
+                'city_id' => $cid > 0 ? $cid : null,
             ],
-            'requires_city_selection' => $requiresCitySelection,
+            'requires_city_selection' => $requiresCity,
             'city_options' => $cityOptions,
+            'registration_step' => $step,
         ];
+    }
+
+    private function determineGuestRegistrationStep(string $username, string $email, string $phoneDb, string $password, int $cityId): string
+    {
+        if (trim($username) === '') {
+            return 'username';
+        }
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return 'email';
+        }
+        if ($phoneDb === '' || strlen($phoneDb) !== 10 || ! preg_match('/^\d{10}$/', $phoneDb)) {
+            return 'phone';
+        }
+        if (trim($password) === '' || ! $this->passwordMeetsRegistrationDefaults($password)) {
+            return 'password';
+        }
+        if ($cityId <= 0 || ! City::query()->whereKey($cityId)->exists()) {
+            return 'city';
+        }
+
+        return 'ready';
+    }
+
+    private function passwordMeetsRegistrationDefaults(string $password): bool
+    {
+        return ! Validator::make(
+            ['password' => $password],
+            ['password' => ['required', Password::defaults()]]
+        )->fails();
+    }
+
+    private function phoneDigitsForRegistrationDb(string $normalizedSaudiPhone): string
+    {
+        $raw = trim($normalizedSaudiPhone);
+        if ($raw === '') {
+            return '';
+        }
+
+        if (preg_match('/^\+966(5\d{8})$/', $raw, $m) === 1) {
+            return '0'.$m[1];
+        }
+
+        if (preg_match('/^05\d{8}$/', $raw) === 1) {
+            return $raw;
+        }
+
+        if (preg_match('/^(5\d{8})$/', $raw, $m) === 1) {
+            return '0'.$m[1];
+        }
+
+        return '';
+    }
+
+    /**
+     * @param  array<string, mixed>  $flow
+     * @param  array<int, array{id:int,name:string}>  $cityOptions
+     */
+    private function buildGuestRegistrationStepMessage(
+        string $step,
+        ?string $serverError,
+        array $cityOptions,
+        string $userMessage,
+        array $flow,
+    ): string {
+        $parts = [];
+        if ($serverError !== null && trim($serverError) !== '') {
+            $parts[] = trim($serverError);
+        }
+
+        $contextual = $this->registrationStepContextualHint($step, $userMessage, $flow);
+        if ($contextual !== '') {
+            $parts[] = $contextual;
+        }
+
+        $parts[] = match ($step) {
+            'username' => "📝 الخطوة ١ من ٥: ما اسمك الكامل؟\n(أرسل الاسم فقط في هذه الرسالة.)",
+            'email' => "📧 الخطوة ٢ من ٥: ما بريدك الإلكتروني؟\n(أرسل البريد فقط.)",
+            'phone' => "📱 الخطوة ٣ من ٥: ما رقم جوالك السعودي؟\nمثال: 05xxxxxxxx أو +9665xxxxxxxx",
+            'password' => "🔐 الخطوة ٤ من ٥: اختر كلمة مرور قوية لحسابك.\n(أرسل كلمة المرور فقط؛ لن نعرضها مرة أخرى في المحادثة.)",
+            'city' => $this->formatCityStepPrompt($cityOptions),
+            'ready' => 'جاري التحقق من البيانات مع السيرفر…',
+            default => 'أكمل خطوة التسجيل التالية، رجاءً.',
+        };
+
+        return implode("\n\n", array_filter($parts, fn (string $p) => trim($p) !== ''));
+    }
+
+    /**
+     * @param  array<string, mixed>  $flow
+     */
+    private function registrationStepContextualHint(string $step, string $userMessage, array $flow): string
+    {
+        $trimmed = trim($userMessage);
+        $kind = $trimmed === '' ? 'empty' : $this->classifyRegistrationInput($trimmed);
+
+        $phoneSaved = trim((string) ($flow['phone'] ?? '')) !== '';
+        $emailSaved = filter_var((string) ($flow['email'] ?? ''), FILTER_VALIDATE_EMAIL) !== false;
+        $nameSaved = trim((string) ($flow['username'] ?? '')) !== '';
+        $passwordSaved = trim((string) ($flow['password'] ?? '')) !== '';
+        $citySaved = (int) ($flow['city_id'] ?? 0) > 0;
+
+        return match ($step) {
+            'username' => match (true) {
+                $kind === 'email' => '👋 يبدو إنك أرسلت بريد إلكتروني. **الخطوة الحالية** هي الاسم الكامل فقط؛ البريد هناخده في خطوة لاحقة.',
+                $kind === 'phone' => '👋 يبدو إنك أرسلت رقم جوال. **دلوقتي** محتاجين **اسمك الكامل** فقط؛ الجوال يجي بعد الاسم والبريد.',
+                $kind === 'password_like' => '👋 يبدو إنك أرسلت كلمة مرور. **أول خطوة** هي الاسم الكامل فقط؛ كلمة المرور في خطوة لاحقة.',
+                default => '',
+            },
+            'email' => match (true) {
+                $kind === 'phone' => $phoneSaved
+                    ? '👋 لاحظت إنك أرسلت رقم جوال. الرقم **مسجّل عندنا**، لكن **الخطوة الحالية (٢)** تحتاج **البريد الإلكتروني فقط** — زي: name@example.com'
+                    : '👋 يبدو إنك أرسلت رقم جوال. **احنا محتاجين الإيميل في الخطوة دي**؛ أرسل بريدك بصيغة واضحة.',
+                $kind === 'password_like' => '👋 يبدو إنك أرسلت كلمة مرور. **الخطوة الحالية** للبريد الإلكتروني فقط.',
+                $kind === 'other' && $phoneSaved && $trimmed !== '' => '👋 عندنا رقم جوالك مسبقًا ✅ **المطلوب الآن:** بريدك الإلكتروني فقط.',
+                $kind === 'empty' && $phoneSaved => '👋 عندنا رقم جوالك مسبقًا ✅ **الخطوة التالية:** أرسل **البريد الإلكتروني**.',
+                default => '',
+            },
+            'phone' => match (true) {
+                $kind === 'email' => '👋 هذا شكل **بريد إلكتروني**. **الخطوة الحالية (٣)** تحتاج **رقم جوال سعودي** (مثل 05xxxxxxxx أو +9665xxxxxxxx).',
+                $kind === 'password_like' => '👋 يبدو إنك أرسلت كلمة مرور. **الخطوة الحالية** لرقم الجوال فقط.',
+                ($kind === 'other' || $kind === 'empty') && $emailSaved && ! $phoneSaved && $trimmed !== '' => '👋 عندنا بريدك ✅ **المطلوب الآن:** رقم الجوال السعودي بصيغة صحيحة.',
+                ($kind === 'empty') && $emailSaved => '👋 عندنا بريدك ✅ **أرسل رقم جوالك السعودي** عشان نكمّل.',
+                default => '',
+            },
+            'password' => match (true) {
+                $kind === 'email' => '👋 هذا بريد إلكتروني؛ **الخطوة الحالية** لكلمة المرور فقط.',
+                $kind === 'phone' => '👋 يبدو رقم جوال؛ **الخطوة الحالية** لكلمة المرور فقط.',
+                ($kind === 'other' || $kind === 'empty') && $phoneSaved && $emailSaved && $trimmed !== '' => '👋 البريد والجوال عندنا ✅ **المطلوب:** كلمة مرور قوية لهذا الحساب.',
+                default => '',
+            },
+            'city' => match (true) {
+                $kind === 'email' || $kind === 'phone' => '👋 **الخطوة الحالية** اختيار **المدينة** من القائمة (رقم id أو اسم).',
+                ($kind === 'other' || $kind === 'empty') && $nameSaved && $emailSaved && $phoneSaved && $passwordSaved && ! $citySaved => '👋 بياناتك الأساسية جاهزة ✅ **باقي:** اختيار المدينة من القائمة.',
+                default => '',
+            },
+            default => '',
+        };
+    }
+
+    /**
+     * @return 'email'|'phone'|'password_like'|'other'
+     */
+    private function classifyRegistrationInput(string $message): string
+    {
+        $t = trim($message);
+        if ($t === '') {
+            return 'other';
+        }
+
+        if (filter_var($t, FILTER_VALIDATE_EMAIL) !== false) {
+            return 'email';
+        }
+
+        if ($this->extractSaudiPhoneFromText($t) !== '' || $this->normalizeSaudiPhone($t) !== '') {
+            return 'phone';
+        }
+
+        if (
+            preg_match('/\s/u', $t) === 0
+            && mb_strlen($t) >= 8
+            && preg_match('/[a-zA-Z\x{0600}-\x{06FF}]/u', $t)
+            && preg_match('/\d/u', $t)
+        ) {
+            return 'password_like';
+        }
+
+        return 'other';
+    }
+
+    /**
+     * @param  array<int, array{id:int,name:string}>  $cityOptions
+     */
+    private function formatCityStepPrompt(array $cityOptions): string
+    {
+        $lines = collect($cityOptions)
+            ->take(40)
+            ->map(fn (array $c) => '• id '.$c['id'].' — '.$c['name'])
+            ->implode("\n");
+
+        return "📍 الخطوة ٥ من ٥: اختر مدينتك.\nأرسل **رقم id** من القائمة أو **اسم المدينة** بالعربي:\n\n".$lines;
     }
 
     private function normalizeSaudiPhone(string $phone): string

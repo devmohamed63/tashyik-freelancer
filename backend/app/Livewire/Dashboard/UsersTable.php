@@ -61,6 +61,13 @@ class UsersTable extends DataTable
         $this->dispatch('showModal', ['id' => 'showResultModal']);
     }
 
+    public function openImportModal(): void
+    {
+        Gate::authorize('create', User::class);
+
+        $this->dispatch('showModal', ['id' => 'importCustomersModal']);
+    }
+
     protected function columns(): Collection|null
     {
         return new Collection([
@@ -129,6 +136,11 @@ class UsersTable extends DataTable
                 ->view('components.dashboard.tables.buttons.add')
                 ->hidden(Gate::denies('create', User::class)),
 
+            Button::name(__('ui.import_customers'))
+                ->wireAction('openImportModal')
+                ->view('components.dashboard.tables.buttons.import')
+                ->hidden(Gate::denies('create', User::class)),
+
             Button::name('restore')
                 ->type('restore')
                 ->view('components.dashboard.tables.buttons.restore')
@@ -158,6 +170,10 @@ class UsersTable extends DataTable
 
             Modal::id('showResultModal')
                 ->view('dashboard.users.show'),
+
+            Modal::id('importCustomersModal')
+                ->view('dashboard.users.import-customers')
+                ->hidden(Gate::denies('create', User::class)),
 
         ]);
     }

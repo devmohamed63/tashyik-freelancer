@@ -234,9 +234,11 @@ class ServiceProviderChatbotController
             'intent' => (string) ($reply['intent'] ?? 'general_help'),
             'meta' => [
                 'normal_answer' => (bool) ($reply['normal_answer'] ?? true),
+                'service_ids' => $reply['service_ids'] ?? [],
                 'service_provider_ids' => $reply['service_provider_ids'] ?? [],
                 'ready_to_login' => (bool) ($reply['ready_to_login'] ?? false),
                 'requires_city_selection' => (bool) ($reply['requires_city_selection'] ?? false),
+                'registration_step' => $reply['registration_step'] ?? null,
             ],
         ]);
 
@@ -249,6 +251,8 @@ class ServiceProviderChatbotController
             'normal_answer' => (bool) ($reply['normal_answer'] ?? true),
             'intent' => (string) ($reply['intent'] ?? 'general_help'),
             'message' => (string) ($reply['message'] ?? ''),
+            'services' => $reply['services'] ?? [],
+            'service_ids' => $reply['service_ids'] ?? [],
             'service_providers' => $reply['service_providers'] ?? [],
             'service_provider_ids' => $reply['service_provider_ids'] ?? [],
             'ready_to_login' => (bool) ($reply['ready_to_login'] ?? false),
@@ -261,6 +265,7 @@ class ServiceProviderChatbotController
             ],
             'requires_city_selection' => (bool) ($reply['requires_city_selection'] ?? false),
             'city_options' => $reply['city_options'] ?? [],
+            'registration_step' => $reply['registration_step'] ?? null,
             'assistant_message_id' => $assistantMessage->id,
         ]);
     }

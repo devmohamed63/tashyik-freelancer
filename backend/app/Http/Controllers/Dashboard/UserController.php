@@ -7,7 +7,13 @@ use App\Http\Requests\UserRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Spatie\Permission\Models\Role;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
 {
@@ -183,6 +189,52 @@ class UserController extends Controller
         Gate::authorize('viewAny', User::class);
 
         return view('dashboard.users.payout_requests');
+    }
+
+    /**
+     * Stream an empty xlsx template for the customers bulk-import flow.
+     * The phone column is forced to text format so leading zeros survive editing in Excel.
+     */
+    public function import_template(): StreamedResponse
+    {
+        Gate::authorize('create', User::class);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setRightToLeft(true);
+
+        $sheet->setCellValue('A1', __('validation.attributes.phone'));
+        $sheet->getStyle('A1')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 12],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'C6EFCE'],
+            ],
+        ]);
+
+        // Force the entire phone column to be treated as text so Excel keeps leading zeros.
+        $sheet->getStyle('A')->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
+        $sheet->getColumnDimension('A')->setWidth(28);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $writer = new Xlsx($spreadsheet);
+
+        $filename = 'customers-import-template.xlsx';
+
+        return response()->streamDownload(
+            function () use ($writer) {
+                $writer->save('php://output');
+            },
+            $filename,
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            ],
+        );
     }
 
     public function show_institution(User $user)

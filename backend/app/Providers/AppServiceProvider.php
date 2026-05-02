@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Service;
 use App\Models\User;
 use App\Models\Review;
 use App\Models\Order;
+use App\Observers\ServiceObserver;
 use App\Observers\ServiceProviderObserver;
 use App\Observers\ServiceProviderOrderObserver;
 use App\Observers\ServiceProviderReviewObserver;
@@ -27,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         User::observe(ServiceProviderObserver::class);
+        Service::observe(ServiceObserver::class);
         Review::observe(ServiceProviderReviewObserver::class);
         Order::observe(ServiceProviderOrderObserver::class);
 

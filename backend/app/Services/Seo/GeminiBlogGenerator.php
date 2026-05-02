@@ -113,6 +113,14 @@ class GeminiBlogGenerator
             return $geminiImage;
         }
 
+        $openaiKey = (string) config('services.image_generation.openai.api_key');
+        if ($openaiKey !== '') {
+            $openaiImage = $this->createImageFromOpenAI($combinedPrompt);
+            if ($openaiImage) {
+                return $openaiImage;
+            }
+        }
+
         return $this->createImageFromPollinations($combinedPrompt);
     }
 

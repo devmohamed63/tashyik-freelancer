@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ServiceRequest;
 use App\Jobs\GenerateSeoArticleForServiceJob;
+use App\Jobs\SyncServiceToPineconeJob;
 use App\Models\Category;
 use App\Models\Service;
 use App\Models\Settings;
@@ -66,6 +67,8 @@ class ServiceController extends Controller
         }
 
         $service->highlights()->saveMany($request->highlights);
+
+        SyncServiceToPineconeJob::dispatchSync($service->id);
 
         if (Settings::first()?->ai_blog_automation_enabled) {
             GenerateSeoArticleForServiceJob::dispatch($service->id);
@@ -146,6 +149,8 @@ class ServiceController extends Controller
 
         $service->highlights()->delete();
         $service->highlights()->saveMany($request->highlights);
+
+        SyncServiceToPineconeJob::dispatchSync($service->id);
 
         return redirect()->back()->with(['status' => __('ui.updated_successfully')]);
     }

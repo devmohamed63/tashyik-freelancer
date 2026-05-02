@@ -127,6 +127,11 @@ Route::domain(env('DASHBOARD_SUBDOMAIN').'.'.env('BASE_DOMAIN'))->group(function
             Route::get('/cities/{city}', [CityController::class, 'show'])
                 ->name('cities.show');
 
+            // Customers bulk-import: must be declared BEFORE the users resource route
+            // so it doesn't collide with /users/{user}/edit.
+            Route::get('/users/import/template', [UserController::class, 'import_template'])
+                ->name('users.import_template');
+
             // User routes
             Route::resource('/users', UserController::class)
                 ->except(['show', 'destroy']);

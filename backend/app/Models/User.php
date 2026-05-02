@@ -104,6 +104,7 @@ class User extends Authenticatable implements HasMedia
         'latitude',
         'longitude',
         'last_seen_at',
+        'imported_at',
         'balance',
         'used_welcome_coupon',
         'daftra_id',
@@ -129,6 +130,7 @@ class User extends Authenticatable implements HasMedia
         return [
             'password' => 'hashed',
             'last_seen_at' => 'datetime',
+            'imported_at' => 'datetime',
         ];
     }
 
