@@ -78,9 +78,9 @@
                 </button>
             </div>
         @else
-            {{-- Hint + template download --}}
-            <x-dashboard.alerts.info :title="__('ui.excel_import_hint', ['max' => \App\Livewire\Dashboard\Users\ImportCustomers::MAX_ROWS])" />
+            <x-dashboard.alerts.info :title="__('ui.excel_import_column_hint')" />
 
+            {{-- Template download --}}
             <a href="{{ route('dashboard.users.import_template') }}"
                 class="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
                 {{-- material-symbols:download --}}
