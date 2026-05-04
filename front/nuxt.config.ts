@@ -2,6 +2,20 @@
 
 import tailwindcss from '@tailwindcss/vite';
 
+const isProd = process.env.NODE_ENV === 'production';
+
+/** Applied to HTML responses; static assets use longer TTL via routeRules below. */
+const securityHeaders: Record<string, string> = {
+  'X-Frame-Options': 'SAMEORIGIN',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self), interest-cohort=()',
+};
+
+if (isProd) {
+  securityHeaders['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload';
+}
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -19,10 +33,32 @@ export default defineNuxtConfig({
   },
 
   scripts: {
+    // Defer third-party registry scripts (GTM) until the main thread is idle — reduces TBT on mobile PSI.
+    defaultScriptOptions: {
+      trigger: { idleTimeout: 2500 },
+    },
     registry: {
-      googleMaps: true,
       googleTagManager: true,
-      googleAnalytics: true,
+      // googleAnalytics omitted intentionally — load GA4 via GTM only to avoid duplicate gtag/gtm.js work.
+      // googleMaps omitted — Maps JS API loads only via useScriptGoogleMaps() in AppMap (address flows).
+    },
+  },
+
+  nitro: {
+    routeRules: {
+      '/_nuxt/**': {
+        headers: {
+          'cache-control': 'public, max-age=31536000, immutable',
+        },
+      },
+      '/images/**': {
+        headers: {
+          'cache-control': 'public, max-age=31536000, immutable',
+        },
+      },
+      '/**': {
+        headers: securityHeaders,
+      },
     },
   },
 
@@ -63,6 +99,7 @@ export default defineNuxtConfig({
     public: {
       appUrl: '',
       apiBaseUrl: '',
+      keywords: '',
       salesIqKey: '',
       whatsappLink: '',
       saudiBusinessCenterCertificate: '',

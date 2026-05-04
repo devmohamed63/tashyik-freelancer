@@ -19,7 +19,19 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => explode(',', env('FRONTEND_URLS', '')),
+    /*
+     * Comma-separated extra origins (local dev, preview, etc.). FRONTEND_URL is always included.
+     * Example production .env:
+     *   FRONTEND_URL=https://www.tashyik.com
+     *   FRONTEND_URLS=http://localhost:3000,http://127.0.0.1:3000
+     */
+    'allowed_origins' => array_values(array_unique(array_filter(array_map(
+        'trim',
+        array_merge(
+            [trim((string) env('FRONTEND_URL', ''))],
+            explode(',', (string) env('FRONTEND_URLS', '')),
+        ),
+    )))),
 
     'allowed_origins_patterns' => [],
 

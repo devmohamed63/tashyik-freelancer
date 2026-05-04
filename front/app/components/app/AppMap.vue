@@ -13,7 +13,12 @@
   const emit = defineEmits(['change']);
   const map = ref(null);
   const loader = ref(true);
-  const { onLoaded } = useScriptGoogleMaps();
+  // Override global scripts.defaultScriptOptions (idle deferral for GTM): load Maps API on Nuxt ready on address pages only.
+  const { onLoaded } = useScriptGoogleMaps({
+    scriptOptions: {
+      trigger: 'onNuxtReady',
+    },
+  });
 
   const position = ref({
     latitude: null,

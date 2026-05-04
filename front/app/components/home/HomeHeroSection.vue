@@ -1,5 +1,10 @@
 <script setup>
   const salesIq = useSalesIq();
+
+  /** Intrinsic size from production asset (~1176×982 webp); stabilizes CLS while CSS constrains display height. */
+  const heroSrc = '/images/home-hero-section.webp';
+  const heroWidth = 1176;
+  const heroHeight = 982;
 </script>
 
 <template>
@@ -39,7 +44,17 @@
           </svg>
           <span v-text="$t('home.hero.highlight_1')" class="text-xs md:text-base text-gray-500"></span>
         </div>
-        <img class="max-h-[500px]" src="/images/home-hero-section.webp" :alt="$t('common.brand')" />
+        <img
+          class="max-h-[500px] w-auto h-auto"
+          :src="heroSrc"
+          :srcset="`${heroSrc} ${heroWidth}w`"
+          :sizes="`(max-width: 1024px) min(100vw - 2rem, 622px), min(50vw - 3rem, ${heroWidth}px)`"
+          :width="heroWidth"
+          :height="heroHeight"
+          fetchpriority="high"
+          decoding="async"
+          :alt="$t('common.brand')"
+        />
         <div class="flex flex-col gap-3 items-center bg-white rounded-xl shadow absolute -bottom-10 -end-3 lg:-bottom-6 md:-end-6 p-5 px-5 md:px-10">
           <svg class="w-5 h-5 xl:w-7 xl:h-7 stroke-brand-500" width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M15 27.5C21.9036 27.5 27.5 21.9036 27.5 15C27.5 8.09644 21.9036 2.5 15 2.5C8.09644 2.5 2.5 8.09644 2.5 15C2.5 21.9036 8.09644 27.5 15 27.5Z" stroke-width="2.60965" stroke-linecap="round" stroke-linejoin="round" />

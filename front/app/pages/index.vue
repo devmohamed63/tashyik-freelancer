@@ -1,6 +1,19 @@
 <script setup>
   const { description } = useLayoutStore();
 
+  const heroImageSrc = '/images/home-hero-section.webp';
+
+  useHead({
+    link: [
+      {
+        rel: 'preload',
+        as: 'image',
+        href: heroImageSrc,
+        fetchpriority: 'high',
+      },
+    ],
+  });
+
   useSeoMeta({
     description: description,
     ogDescription: description,
