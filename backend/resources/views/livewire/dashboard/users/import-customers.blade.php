@@ -80,13 +80,19 @@
         @else
             <x-dashboard.alerts.info :title="__('ui.excel_import_column_hint')" />
 
-            {{-- Template download --}}
-            <a href="{{ route('dashboard.users.import_template') }}"
-                class="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
-                {{-- material-symbols:download --}}
-                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 16l-5-5h3V4h4v7h3zM5 20v-2h14v2z" /></svg>
-                {{ __('ui.download_template') }}
-            </a>
+            {{-- Template downloads --}}
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+                <a href="{{ route('dashboard.users.import_template') }}"
+                    class="inline-flex items-center gap-2 font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
+                    <svg class="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 16l-5-5h3V4h4v7h3zM5 20v-2h14v2z" /></svg>
+                    {{ __('ui.download_template') }}
+                </a>
+                <a href="{{ route('dashboard.users.import_sample_template') }}"
+                    class="inline-flex items-center gap-2 font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
+                    <svg class="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 16l-5-5h3V4h4v7h3zM5 20v-2h14v2z" /></svg>
+                    {{ __('ui.download_sample_template') }}
+                </a>
+            </div>
 
             <form class="flex flex-col gap-5" wire:submit="import" x-data="{ loading: false }" x-on:submit="loading = true">
                 <x-dashboard.inputs.file.default

@@ -22,6 +22,9 @@ class ImportCustomers extends Component
     /** Insert chunk size: balances round-trips against query length. */
     public const CHUNK_SIZE = 500;
 
+    /** Imported customer display names must fit DB string column and stay bounded. */
+    public const MAX_IMPORT_NAME_LENGTH = 100;
+
     public ?TemporaryUploadedFile $file = null;
 
     /**
@@ -62,7 +65,7 @@ class ImportCustomers extends Component
         $this->error = null;
 
         try {
-            [$validRows, $invalidRows] = $this->readPhonesFromFile($this->file->getRealPath());
+            [$validRows, $invalidRows] = $this->readRowsFromFile($this->file->getRealPath());
         } catch (\RuntimeException $e) {
             // Validation-style errors (e.g. row cap exceeded) surface their own message.
             $this->error = $e->getMessage();
@@ -83,10 +86,20 @@ class ImportCustomers extends Component
 
         // Dedupe within the file itself before hitting the DB so the diff math
         // (sent vs affected) cleanly maps to "DB duplicates".
+        // Prefer the first non-null name when the same phone appears twice.
+        /** @var array<string, array{name: ?string, row: int}> $uniquePhones */
         $uniquePhones = [];
         $totalRequested = count($validRows);
         foreach ($validRows as $row) {
-            $uniquePhones[$row['phone']] = $row['row'];
+            $phone = $row['phone'];
+            if (! isset($uniquePhones[$phone])) {
+                $uniquePhones[$phone] = ['name' => $row['name'], 'row' => $row['row']];
+
+                continue;
+            }
+            if ($uniquePhones[$phone]['name'] === null && $row['name'] !== null) {
+                $uniquePhones[$phone]['name'] = $row['name'];
+            }
         }
 
         $imported = 0;
@@ -98,16 +111,20 @@ class ImportCustomers extends Component
         $namePlaceholder = __('ui.imported_customer');
 
         foreach (array_chunk(array_keys($uniquePhones), self::CHUNK_SIZE) as $chunk) {
-            $payload = array_map(fn ($phone) => [
-                'name' => $namePlaceholder,
-                'phone' => $phone,
-                'password' => $passwordPlaceholder,
-                'type' => User::USER_ACCOUNT_TYPE,
-                'status' => User::ACTIVE_STATUS,
-                'imported_at' => $now,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ], $chunk);
+            $payload = array_map(function ($phone) use ($uniquePhones, $namePlaceholder, $passwordPlaceholder, $now) {
+                $entry = $uniquePhones[$phone];
+
+                return [
+                    'name' => $entry['name'] ?? $namePlaceholder,
+                    'phone' => $phone,
+                    'password' => $passwordPlaceholder,
+                    'type' => User::USER_ACCOUNT_TYPE,
+                    'status' => User::ACTIVE_STATUS,
+                    'imported_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }, $chunk);
 
             $affected = DB::transaction(fn () => User::insertOrIgnore($payload));
 
@@ -162,12 +179,11 @@ class ImportCustomers extends Component
 
     /**
      * Read the uploaded spreadsheet, returning [validRows, invalidRows].
-     * - validRows: list of ['row' => int, 'phone' => string] with normalised 10-digit phones.
-     * - invalidRows: list of ['row' => int, 'value' => string, 'reason' => string].
+     * Column A = optional name; column B = phone (required when row is non-empty).
      *
-     * @return array{0: list<array{row:int,phone:string}>, 1: list<array{row:int,value:string,reason:string}>}
+     * @return array{0: list<array{row:int,name:?string,phone:string}>, 1: list<array{row:int,value:string,reason:string}>}
      */
-    protected function readPhonesFromFile(string $path): array
+    protected function readRowsFromFile(string $path): array
     {
         $spreadsheet = IOFactory::load($path);
         $sheet = $spreadsheet->getActiveSheet();
@@ -183,40 +199,78 @@ class ImportCustomers extends Component
         $headerSkipped = false;
 
         for ($rowNumber = 1; $rowNumber <= $highestRow; $rowNumber++) {
-            $rawValue = $sheet->getCell([1, $rowNumber])->getValue();
+            $nameRaw = trim((string) $sheet->getCell([1, $rowNumber])->getValue());
+            $phoneRaw = trim((string) $sheet->getCell([2, $rowNumber])->getValue());
 
-            // Trim and stringify; treats Excel auto-numeric cells too.
-            $original = trim((string) $rawValue);
-
-            if ($original === '') {
+            if ($nameRaw === '' && $phoneRaw === '') {
                 continue;
             }
 
-            // Header detection: only kicks in for the very first non-empty row,
-            // and only if it doesn't look like a phone (no digits at all, or starts with letters).
-            if (!$headerSkipped && !preg_match('/\d/', $original)) {
+            // Skip the first non-empty row when neither column looks like data (no digits).
+            if (! $headerSkipped && ! preg_match('/\d/', $nameRaw.$phoneRaw)) {
                 $headerSkipped = true;
 
                 continue;
             }
             $headerSkipped = true;
 
-            $normalised = $this->normalisePhone($original);
+            $rowSummary = $this->formatImportRowSummary($nameRaw, $phoneRaw);
+
+            $parsedName = $this->sanitizeImportedCustomerName($nameRaw);
+            if ($parsedName === false) {
+                $invalid[] = [
+                    'row' => $rowNumber,
+                    'value' => $rowSummary,
+                    'reason' => __('ui.name_too_long'),
+                ];
+
+                continue;
+            }
+
+            $normalised = $this->normalisePhone($phoneRaw);
 
             if ($normalised === null) {
                 $invalid[] = [
                     'row' => $rowNumber,
-                    'value' => $original,
+                    'value' => $rowSummary,
                     'reason' => __('ui.phone_must_be_10_digits'),
                 ];
 
                 continue;
             }
 
-            $valid[] = ['row' => $rowNumber, 'phone' => $normalised];
+            $valid[] = ['row' => $rowNumber, 'name' => $parsedName, 'phone' => $normalised];
         }
 
         return [$valid, $invalid];
+    }
+
+    protected function formatImportRowSummary(string $nameRaw, string $phoneRaw): string
+    {
+        if ($nameRaw === '') {
+            return $phoneRaw;
+        }
+        if ($phoneRaw === '') {
+            return $nameRaw;
+        }
+
+        return $nameRaw.' | '.$phoneRaw;
+    }
+
+    /**
+     * @return string|false|null Non-empty trimmed name; null when empty (use placeholder on insert); false when too long.
+     */
+    protected function sanitizeImportedCustomerName(string $raw): string|false|null
+    {
+        $collapsed = trim(preg_replace('/\s+/u', ' ', $raw) ?? '');
+        if ($collapsed === '') {
+            return null;
+        }
+        if (mb_strlen($collapsed) > self::MAX_IMPORT_NAME_LENGTH) {
+            return false;
+        }
+
+        return $collapsed;
     }
 
     /**

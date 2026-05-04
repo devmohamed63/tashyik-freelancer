@@ -7,6 +7,7 @@ use App\Http\Requests\UserRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -36,9 +37,9 @@ class UserController extends Controller
 
         $typeFilter = request('typeFilter');
 
-        $totalCount   = User::isServiceProvider()->count();
+        $totalCount = User::isServiceProvider()->count();
         $pendingCount = User::isServiceProvider()->where('status', User::PENDING_STATUS)->count();
-        $activeCount  = User::isServiceProvider()->where('status', User::ACTIVE_STATUS)->count();
+        $activeCount = User::isServiceProvider()->where('status', User::ACTIVE_STATUS)->count();
         $inactiveCount = User::isServiceProvider()->where('status', User::INACTIVE_STATUS)->count();
 
         // Type-specific stats
@@ -84,7 +85,7 @@ class UserController extends Controller
         $user = User::create([
             'name' => $request->name,
             'phone' => $request->phone,
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
         ]);
 
         $user->assignRole($request->roles);
@@ -143,26 +144,46 @@ class UserController extends Controller
 
         // Service provider fields
         if ($user->type !== User::USER_ACCOUNT_TYPE) {
-            if ($request->filled('status')) $data['status'] = $request->status;
-            if ($request->filled('entity_type')) $data['entity_type'] = $request->entity_type;
-            if ($request->filled('city_id')) $data['city_id'] = $request->city_id;
-            if ($request->has('bank_name')) $data['bank_name'] = $request->bank_name;
-            if ($request->has('iban')) $data['iban'] = $request->iban;
-            if ($request->has('residence_name')) $data['residence_name'] = $request->residence_name;
-            if ($request->has('residence_number')) $data['residence_number'] = $request->residence_number;
-            if ($request->has('commercial_registration_number')) $data['commercial_registration_number'] = $request->commercial_registration_number;
-            if ($request->has('tax_registration_number')) $data['tax_registration_number'] = $request->tax_registration_number;
+            if ($request->filled('status')) {
+                $data['status'] = $request->status;
+            }
+            if ($request->filled('entity_type')) {
+                $data['entity_type'] = $request->entity_type;
+            }
+            if ($request->filled('city_id')) {
+                $data['city_id'] = $request->city_id;
+            }
+            if ($request->has('bank_name')) {
+                $data['bank_name'] = $request->bank_name;
+            }
+            if ($request->has('iban')) {
+                $data['iban'] = $request->iban;
+            }
+            if ($request->has('residence_name')) {
+                $data['residence_name'] = $request->residence_name;
+            }
+            if ($request->has('residence_number')) {
+                $data['residence_number'] = $request->residence_number;
+            }
+            if ($request->has('commercial_registration_number')) {
+                $data['commercial_registration_number'] = $request->commercial_registration_number;
+            }
+            if ($request->has('tax_registration_number')) {
+                $data['tax_registration_number'] = $request->tax_registration_number;
+            }
         }
 
         $user->update($data);
 
         if ($request->password) {
             $user->update([
-                'password' => Hash::make($request->password)
+                'password' => Hash::make($request->password),
             ]);
         }
 
-        if (!$user->hasRole('Super admin')) $user->syncRoles($request->roles);
+        if (! $user->hasRole('Super admin')) {
+            $user->syncRoles($request->roles);
+        }
 
         // Categories (service providers)
         if ($user->type !== User::USER_ACCOUNT_TYPE && $request->has('categories')) {
@@ -193,33 +214,13 @@ class UserController extends Controller
 
     /**
      * Stream an empty xlsx template for the customers bulk-import flow.
-     * The phone column is forced to text format so leading zeros survive editing in Excel.
+     * Column A = name, column B = phone. Phone column is forced to text so leading zeros survive in Excel.
      */
     public function import_template(): StreamedResponse
     {
         Gate::authorize('create', User::class);
 
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setRightToLeft(true);
-
-        $sheet->setCellValue('A1', __('validation.attributes.phone'));
-        $sheet->getStyle('A1')->applyFromArray([
-            'font' => ['bold' => true, 'size' => 12],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => 'C6EFCE'],
-            ],
-        ]);
-
-        // Force the entire phone column to be treated as text so Excel keeps leading zeros.
-        $sheet->getStyle('A')->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
-        $sheet->getColumnDimension('A')->setWidth(28);
-        $sheet->getRowDimension(1)->setRowHeight(28);
+        $spreadsheet = $this->createBlankCustomerImportSpreadsheet();
 
         $writer = new Xlsx($spreadsheet);
 
@@ -237,6 +238,69 @@ class UserController extends Controller
         );
     }
 
+    /**
+     * Same layout as {@see import_template()} plus ten fake rows for QA / training (0500000001–0500000010).
+     */
+    public function import_sample_template(): StreamedResponse
+    {
+        Gate::authorize('create', User::class);
+
+        $spreadsheet = $this->createBlankCustomerImportSpreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        for ($i = 1; $i <= 10; $i++) {
+            $row = $i + 1;
+            $sheet->setCellValueExplicit([1, $row], __('ui.import_sample_customer_name', ['n' => $i]), DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit([2, $row], sprintf('05000000%02d', $i), DataType::TYPE_STRING);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        $filename = 'customers-import-sample.xlsx';
+
+        return response()->streamDownload(
+            function () use ($writer) {
+                $writer->save('php://output');
+            },
+            $filename,
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            ],
+        );
+    }
+
+    /**
+     * Shared workbook shell for customer bulk-import templates (RTL, headers, phone column as text).
+     */
+    protected function createBlankCustomerImportSpreadsheet(): Spreadsheet
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setRightToLeft(true);
+
+        $sheet->setCellValue('A1', __('validation.attributes.name'));
+        $sheet->setCellValue('B1', __('validation.attributes.phone'));
+        $sheet->getStyle('A1:B1')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 12],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'C6EFCE'],
+            ],
+        ]);
+
+        $sheet->getStyle('B')->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
+        $sheet->getColumnDimension('A')->setWidth(28);
+        $sheet->getColumnDimension('B')->setWidth(22);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        return $spreadsheet;
+    }
+
     public function show_institution(User $user)
     {
         Gate::authorize('viewAny', User::class);
@@ -251,10 +315,10 @@ class UserController extends Controller
         $members = User::where('institution_id', $user->id)
             ->select(['id', 'name', 'phone', 'status', 'institution_id', 'created_at'])
             ->withCount([
-                'serviceProviderOrders as completed_orders' => fn($q) => $q->completed(),
+                'serviceProviderOrders as completed_orders' => fn ($q) => $q->completed(),
             ])
             ->withSum([
-                'serviceProviderOrders as total_earnings' => fn($q) => $q->completed(),
+                'serviceProviderOrders as total_earnings' => fn ($q) => $q->completed(),
             ], 'subtotal')
             ->orderBy('name')
             ->get();
@@ -276,15 +340,15 @@ class UserController extends Controller
             \App\Utils\ExcelSheet\Column::name('name', __('validation.attributes.name')),
             \App\Utils\ExcelSheet\Column::name('phone', __('validation.attributes.phone')),
             \App\Utils\ExcelSheet\Column::name('email', __('validation.attributes.email'))
-                ->callback(fn($m) => $m->email ?? '-'),
+                ->callback(fn ($m) => $m->email ?? '-'),
             \App\Utils\ExcelSheet\Column::name('status', __('ui.status'))
-                ->callback(fn($m) => __('ui.' . $m->status)),
+                ->callback(fn ($m) => __('ui.'.$m->status)),
             \App\Utils\ExcelSheet\Column::name('city', __('ui.city'))
                 ->relation('city', 'name'),
             \App\Utils\ExcelSheet\Column::name('completed_orders', __('ui.completed_orders'))
-                ->customValue(fn($m) => $m->completed_orders ?? 0),
-            \App\Utils\ExcelSheet\Column::name('total_earnings', __('ui.revenue') . ' (' . __('ui.currency') . ')')
-                ->customValue(fn($m) => number_format($m->total_earnings ?? 0, config('app.decimal_places'))),
+                ->customValue(fn ($m) => $m->completed_orders ?? 0),
+            \App\Utils\ExcelSheet\Column::name('total_earnings', __('ui.revenue').' ('.__('ui.currency').')')
+                ->customValue(fn ($m) => number_format($m->total_earnings ?? 0, config('app.decimal_places'))),
             \App\Utils\ExcelSheet\Column::name('created_at', __('ui.created_at'))
                 ->dateFormat(),
         ]);
@@ -293,10 +357,10 @@ class UserController extends Controller
             ->select(['id', 'name', 'phone', 'email', 'status', 'city_id', 'created_at'])
             ->with('city:id,name')
             ->withCount([
-                'serviceProviderOrders as completed_orders' => fn($q) => $q->completed(),
+                'serviceProviderOrders as completed_orders' => fn ($q) => $q->completed(),
             ])
             ->withSum([
-                'serviceProviderOrders as total_earnings' => fn($q) => $q->completed(),
+                'serviceProviderOrders as total_earnings' => fn ($q) => $q->completed(),
             ], 'subtotal')
             ->orderBy('name');
 

@@ -132,6 +132,9 @@ Route::domain(env('DASHBOARD_SUBDOMAIN').'.'.env('BASE_DOMAIN'))->group(function
             Route::get('/users/import/template', [UserController::class, 'import_template'])
                 ->name('users.import_template');
 
+            Route::get('/users/import/sample', [UserController::class, 'import_sample_template'])
+                ->name('users.import_sample_template');
+
             // User routes
             Route::resource('/users', UserController::class)
                 ->except(['show', 'destroy']);
