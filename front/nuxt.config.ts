@@ -16,6 +16,9 @@ if (isProd) {
   securityHeaders['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload';
 }
 
+/** Public site origin — matches `i18n.baseUrl`; used as default `runtimeConfig.public.appUrl` for canonical/hreflang when env is unset. */
+const siteBaseUrl = 'https://www.tashyik.com';
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -97,14 +100,14 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      appUrl: '',
+      appUrl: process.env.NUXT_PUBLIC_APP_URL || (isProd ? siteBaseUrl : ''),
       apiBaseUrl: '',
       keywords: '',
       salesIqKey: '',
       whatsappLink: '',
       saudiBusinessCenterCertificate: '',
       i18n: {
-        baseUrl: 'https://www.tashyik.com',
+        baseUrl: siteBaseUrl,
       },
       scripts: {
         googleMaps: {
@@ -121,7 +124,7 @@ export default defineNuxtConfig({
   },
 
   i18n: {
-    baseUrl: 'https://www.tashyik.com',
+    baseUrl: siteBaseUrl,
     detectBrowserLanguage: {
       useCookie: true,
     },
@@ -183,7 +186,7 @@ export default defineNuxtConfig({
         dir: 'ltr',
       },
     ],
-    strategy: 'prefix_except_default',
+    strategy: 'prefix_and_default',
     defaultLocale: 'ar',
     lazy: false,
     langDir: 'locales',

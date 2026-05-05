@@ -14,7 +14,7 @@
 
       auth.resetUser();
 
-      return navigateTo(localePath({ name: 'home' }));
+      return navigateTo(localePath({ name: 'index' }));
     } catch (error) {
       // Check for validation errors
       if (error.statusCode === 422) {
