@@ -34,6 +34,14 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location (Resolve-Path (Join-Path $PSScriptRoot '..'))
 
+function Remove-GitBranchIfExists {
+  param([string]$Name)
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'SilentlyContinue'
+  git branch -D $Name 2>&1 | Out-Null
+  $ErrorActionPreference = $prev
+}
+
 function Test-GitRemote {
   param([string]$Name)
   $r = git remote 2>$null
@@ -60,27 +68,31 @@ $tmpFront = '_subtree_front'
 $tmpBack = '_subtree_backend'
 
 try {
-  Write-Host '>>> Splitting front/ → tashyik-frontend (root = Nuxt app)...' -ForegroundColor Cyan
-  git branch -D $tmpFront 2>$null | Out-Null
+  Write-Host '>>> Splitting front/ -> tashyik-frontend (Nuxt at repo root)...' -ForegroundColor Cyan
+  Remove-GitBranchIfExists $tmpFront
   git subtree split --prefix=front -b $tmpFront
+  if ($LASTEXITCODE -ne 0) { throw "git subtree split --prefix=front failed (exit $LASTEXITCODE)" }
   if ($StrictPush) {
     git push frontend "${tmpFront}:main"
   } else {
     git push frontend "${tmpFront}:main" --force-with-lease
   }
+  if ($LASTEXITCODE -ne 0) { throw "git push frontend failed (exit $LASTEXITCODE)" }
 
-  Write-Host '>>> Splitting backend/ → tashyik-backend (root = Laravel)...' -ForegroundColor Cyan
-  git branch -D $tmpBack 2>$null | Out-Null
+  Write-Host '>>> Splitting backend/ -> tashyik-backend (Laravel at repo root)...' -ForegroundColor Cyan
+  Remove-GitBranchIfExists $tmpBack
   git subtree split --prefix=backend -b $tmpBack
+  if ($LASTEXITCODE -ne 0) { throw "git subtree split --prefix=backend failed (exit $LASTEXITCODE)" }
   if ($StrictPush) {
     git push backend "${tmpBack}:main"
   } else {
     git push backend "${tmpBack}:main" --force-with-lease
   }
+  if ($LASTEXITCODE -ne 0) { throw "git push backend failed (exit $LASTEXITCODE)" }
 }
 finally {
-  git branch -D $tmpFront 2>$null | Out-Null
-  git branch -D $tmpBack 2>$null | Out-Null
+  Remove-GitBranchIfExists $tmpFront
+  Remove-GitBranchIfExists $tmpBack
 }
 
 Write-Host '>>> Done. Frontend/backend repos mirror front/ and backend/ at repository root.' -ForegroundColor Green
