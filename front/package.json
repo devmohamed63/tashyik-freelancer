@@ -7,7 +7,11 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "optimize:images": "node scripts/optimize-hero-images.mjs"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.1"
   },
   "dependencies": {
     "@googlemaps/markerclusterer": "^2.6.2",

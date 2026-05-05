@@ -1,10 +1,13 @@
 <script setup>
   const salesIq = useSalesIq();
 
-  /** Intrinsic size from production asset (~1176×982 webp); stabilizes CLS while CSS constrains display height. */
-  const heroSrc = '/images/home-hero-section.webp';
-  const heroWidth = 1176;
-  const heroHeight = 982;
+  /** Primary display ~622×512 (mobile / split layout); full asset for large viewports. */
+  const heroSrcDefault = '/images/home-hero-section-622.webp';
+  const heroSrcLarge = '/images/home-hero-section.webp';
+  const heroWidth = 622;
+  const heroHeight = 512;
+  const heroWidthLarge = 1176;
+  const heroHeightLarge = 968;
 </script>
 
 <template>
@@ -20,13 +23,14 @@
             </div>
           </h1>
           <p v-text="$t('home.hero.description')" class="text-gray-600 text-lg md:text-xl xl:text-2xl leading-8"></p>
-          <div class="inline-flex gap-3 sm:gap-5 whitespace-nowrap overflow-hidden">
-            <ButtonsFilled>
-              <NuxtLinkLocale :to="{ name: 'categories' }" class="static-color">
-                {{ $t('home.hero.actions.browse_categories') }}
-              </NuxtLinkLocale>
-            </ButtonsFilled>
-            <ButtonsOutline @click="salesIq.openChat">
+          <div class="inline-flex flex-wrap gap-3 sm:gap-4 items-center">
+            <NuxtLinkLocale
+              :to="{ name: 'categories' }"
+              class="text-sm md:text-base inline-flex items-center justify-center gap-2 leading-[26px] font-normal min-h-12 cursor-pointer rounded-lg bg-brand-500 px-5 py-3 text-center text-white hover:bg-brand-600 focus:outline-none md:px-7 static-color [text-wrap:balance]"
+            >
+              {{ $t('home.hero.actions.browse_categories') }}
+            </NuxtLinkLocale>
+            <ButtonsOutline class="min-h-12" @click="salesIq.openChat">
               {{ $t('home.hero.actions.request_custom_service') }}
             </ButtonsOutline>
           </div>
@@ -46,13 +50,13 @@
         </div>
         <img
           class="max-h-[500px] w-auto h-auto"
-          :src="heroSrc"
-          :srcset="`${heroSrc} ${heroWidth}w`"
-          :sizes="`(max-width: 1024px) min(100vw - 2rem, 622px), min(50vw - 3rem, ${heroWidth}px)`"
+          :src="heroSrcDefault"
+          :srcset="`${heroSrcDefault} ${heroWidth}w, ${heroSrcLarge} ${heroWidthLarge}w`"
+          :sizes="`(max-width: 1024px) min(100vw - 2rem, ${heroWidth}px), min(50vw - 3rem, ${heroWidthLarge}px)`"
           :width="heroWidth"
           :height="heroHeight"
           fetchpriority="high"
-          decoding="async"
+          decoding="sync"
           :alt="$t('common.brand')"
         />
         <div class="flex flex-col gap-3 items-center bg-white rounded-xl shadow absolute -bottom-10 -end-3 lg:-bottom-6 md:-end-6 p-5 px-5 md:px-10">

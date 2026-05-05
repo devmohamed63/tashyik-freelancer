@@ -46,9 +46,9 @@
     <div class="container flex flex-col gap-6">
       <!-- Header -->
       <div class="flex items-center justify-between">
-        <h3 class="text-xl lg:text-3xl font-medium text-gray-800">
+        <h2 class="text-xl lg:text-3xl font-medium text-gray-800">
           {{ collection.title }}
-        </h3>
+        </h2>
       </div>
 
       <!-- Skeleton Loader -->
@@ -71,7 +71,7 @@
               v-for="service in collection.services?.slice(0, maxServices)"
               :key="service.id"
             >
-              <HomeCollectionServiceCard :service="service" />
+              <CollectionServiceCard :service="service" />
             </swiper-slide>
           </swiper-container>
 

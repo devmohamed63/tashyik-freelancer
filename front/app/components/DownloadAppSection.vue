@@ -7,7 +7,7 @@
     <div class="container px-4" id="download-app-section">
       <div class="flex flex-col md:grid grid-cols-12 gap-5 gap-x-12 py-12 md:py-32 relative pb-0">
         <div class="flex flex-col col-span-6 max-w-xl">
-          <h3 v-text="$t('download_app.title')" class="text-xl md:text-4xl md:leading-14 text-brand-50 font-medium mb-5"></h3>
+          <h2 v-text="$t('download_app.title')" class="text-xl md:text-4xl md:leading-14 text-brand-50 font-medium mb-5"></h2>
           <p v-text="$t('download_app.subtitle')" class="tex-sm md:text-lg text-brand-50 font-light"></p>
           <div class="flex flex-col gap-4 my-10">
             <div class="inline-flex items-center gap-3 text-brand-50 text-sm md:text-base font-light">
@@ -82,7 +82,17 @@
         </div>
         <div class="col-span-6 overflow-hidden md:overflow-auto">
           <span class="absolute top-96 md:top-62 xl:top-40 bg-brand-300 w-[50%] h-[400px] rounded-full blur-[150px]"></span>
-          <img class="mx-auto md:mx-0 z-10 relative md:absolute md:-end-5 top-16 md:top-44 xl:top-12 md:w-[50%]" src="/images/mobile-app.webp?v=2" alt="..." />
+          <img
+            class="mx-auto md:mx-0 z-10 relative md:absolute md:-end-5 top-16 md:top-44 xl:top-12 md:w-[50%] h-auto max-w-full"
+            src="/images/mobile-app-622.webp"
+            srcset="/images/mobile-app-622.webp 622w, /images/mobile-app.webp 1082w"
+            sizes="(max-width: 768px) 622px, 50vw"
+            width="622"
+            height="819"
+            decoding="async"
+            fetchpriority="low"
+            :alt="$t('download_app.title')"
+          />
         </div>
       </div>
     </div>

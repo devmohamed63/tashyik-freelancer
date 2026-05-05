@@ -14,18 +14,16 @@
     },
   });
 
-  const collections = ref(null);
+  const { data, error } = useApiFetch('/general/service-collections', {}, true);
 
-  try {
-    const response = await useApiFetch('/general/service-collections');
-    collections.value = response.data;
-  } catch (error) {
-    console.error('Failed to load service collections:', error);
-  }
+  watch(error, (e) => {
+    if (e) console.error('Failed to load service collections:', e);
+  });
 
   const visibleCollections = computed(() => {
-    if (!collections.value) return [];
-    return collections.value.slice(props.start, props.end);
+    const list = data.value?.data;
+    if (!list) return [];
+    return list.slice(props.start, props.end);
   });
 </script>
 

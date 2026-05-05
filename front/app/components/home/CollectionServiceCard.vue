@@ -41,9 +41,9 @@
       </span>
 
       <!-- Name -->
-      <h4 class="text-base font-medium text-gray-800 line-clamp-1">
+      <h3 class="text-base font-medium text-gray-800 line-clamp-1">
         {{ service.name }}
-      </h4>
+      </h3>
 
       <!-- Rating -->
       <div class="inline-flex items-center gap-1 text-sm text-gray-500">

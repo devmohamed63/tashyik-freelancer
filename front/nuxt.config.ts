@@ -4,9 +4,13 @@ import tailwindcss from '@tailwindcss/vite';
 
 const isProd = process.env.NODE_ENV === 'production';
 
-/** Applied to HTML responses; static assets use longer TTL via routeRules below. */
+/**
+ * Response headers for HTML routes. Full CSP belongs at CDN (Cloudflare) after staging QA.
+ * COOP uses same-origin-allow-popups to reduce breakage vs popup OAuth flows.
+ */
 const securityHeaders: Record<string, string> = {
-  'X-Frame-Options': 'SAMEORIGIN',
+  'X-Frame-Options': 'DENY',
+  'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self), interest-cohort=()',
@@ -55,6 +59,11 @@ export default defineNuxtConfig({
         },
       },
       '/images/**': {
+        headers: {
+          'cache-control': 'public, max-age=31536000, immutable',
+        },
+      },
+      '/fonts/**': {
         headers: {
           'cache-control': 'public, max-age=31536000, immutable',
         },

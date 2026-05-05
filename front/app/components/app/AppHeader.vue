@@ -1,12 +1,48 @@
 <script setup>
   const auth = useAuthStore();
   const walletBalance = ref(null);
+  const mobileDrawerInert = ref(true);
+  let drawerClassObserver = null;
+
+  function syncMobileDrawerInert() {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const el = document.getElementById('mobile-navigation-drawer');
+    if (!el) {
+      return;
+    }
+    // Flowbite: closed drawer keeps -translate-x-full (off-canvas)
+    mobileDrawerInert.value = el.classList.contains('-translate-x-full');
+  }
+
+  let drawerAttachAttempts = 0;
+
+  function attachDrawerObserver() {
+    const drawer = document.getElementById('mobile-navigation-drawer');
+    if (!drawer) {
+      drawerAttachAttempts += 1;
+      if (drawerAttachAttempts < 120) {
+        requestAnimationFrame(attachDrawerObserver);
+      }
+      return;
+    }
+    if (typeof MutationObserver === 'undefined') {
+      return;
+    }
+    syncMobileDrawerInert();
+    drawerClassObserver = new MutationObserver(() => syncMobileDrawerInert());
+    drawerClassObserver.observe(drawer, { attributes: true, attributeFilter: ['class'] });
+  }
 
   onMounted(async () => {
     useFlowbite(() => {
       initDropdowns();
       initDrawers();
     });
+
+    await nextTick();
+    attachDrawerObserver();
 
     if (auth.isLoggedIn) {
       try {
@@ -17,6 +53,10 @@
         console.error('Failed to load wallet balance:', error);
       }
     }
+  });
+
+  onBeforeUnmount(() => {
+    drawerClassObserver?.disconnect();
   });
 </script>
 
@@ -109,7 +149,12 @@
 
   <ClientOnly>
     <!-- Mobile navigation drawer -->
-    <div id="mobile-navigation-drawer" aria-labelledby="navigation drawer" class="text-gray-600 fixed top-0 left-0 z-40 h-screen overflow-y-auto transition-transform -translate-x-full bg-white w-full max-w-md dark:bg-gray-800" tabindex="-1">
+    <div
+      id="mobile-navigation-drawer"
+      :inert="mobileDrawerInert"
+      class="text-gray-600 fixed top-0 left-0 z-40 h-screen overflow-y-auto transition-transform -translate-x-full bg-white w-full max-w-md dark:bg-gray-800"
+      tabindex="-1"
+    >
       <div class="flex flex-row justify-between items-center p-3">
         <NuxtLinkLocale :to="{ name: 'index' }" tabindex="-1">
           <AppLogo class="h-[38px]" />

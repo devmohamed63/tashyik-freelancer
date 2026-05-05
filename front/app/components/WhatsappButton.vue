@@ -4,7 +4,14 @@
 </script>
 
 <template>
-  <a v-if="link" :href="link" target="_blank" class="fixed bottom-[69px] sm:bottom-20 start-[15px] sm:start-2 bg-green-500 text-white p-2.5 sm:p-3 w-11 h-11 sm:w-14 sm:h-14 rounded-full static-color z-50">
+  <a
+    v-if="link"
+    :href="link"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Contact us on WhatsApp"
+    class="fixed bottom-[69px] sm:bottom-20 start-[15px] sm:start-2 bg-green-500 text-white p-2.5 sm:p-3 w-11 h-11 sm:w-14 sm:h-14 rounded-full static-color z-50"
+  >
     <!-- flowbite:whatsapp-solid -->
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
       <!-- Icon from Flowbite Icons by Themesberg - https://github.com/themesberg/flowbite-icons/blob/main/LICENSE -->

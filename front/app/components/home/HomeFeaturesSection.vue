@@ -1,7 +1,7 @@
 <template>
   <section class="bg-brand-50">
     <div class="container px-4 py-16 flex flex-col gap-5 text-center">
-      <h3 v-text="$t('home.features.title')" class="text-2xl md:text-3xl text-gray-800 font-medium"></h3>
+      <h2 v-text="$t('home.features.title')" class="text-2xl md:text-3xl text-gray-800 font-medium"></h2>
       <p v-text="$t('home.features.subtitle')" class="md:text-xl text-gray-600"></p>
 
       <div class="mt-8 grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-10">

@@ -1,12 +1,19 @@
 <script setup>
-  const categories = ref(null);
+  const { data, error } = useApiFetch('/categories', {}, true);
+
+  watch(error, (e) => {
+    if (e) console.error('Failed to load categories:', e);
+  });
+
+  const categories = computed(() => data.value?.data ?? null);
   const categoryContainer = ref(null);
   const swiper = ref(null);
 
   const categoryChunks = computed(() => {
     const chunks = [];
-    for (let i = 0; i < categories.value?.length; i += 6) {
-      chunks.push(categories.value?.slice(i, i + 6));
+    const list = categories.value;
+    for (let i = 0; i < list?.length; i += 6) {
+      chunks.push(list?.slice(i, i + 6));
     }
     return chunks;
   });
@@ -17,23 +24,15 @@
     grabCursor: true,
     pagination: true,
   });
-
-  try {
-    const response = await useApiFetch('/categories');
-
-    categories.value = response.data;
-  } catch (error) {
-    console.error('Failed to load categories:', error);
-  }
 </script>
 
 <template>
   <section class="py-14 md:py-26">
     <div class="container flex flex-col gap-5">
-      <div class="flex flex-row gap-2 sm:gap-5 justify-between">
-        <h3 v-text="$t('home.categories.title')" class="text-xl lg:text-4xl font-medium text-gray-800"></h3>
-        <ButtonsOutline class="max-md:hidden">
-          <NuxtLinkLocale :to="{ name: 'categories' }">
+      <div class="flex flex-row gap-3 sm:gap-5 justify-between items-center flex-wrap">
+        <h2 v-text="$t('home.categories.title')" class="text-xl lg:text-4xl font-medium text-gray-800"></h2>
+        <ButtonsOutline class="max-md:hidden min-h-12 min-w-12 inline-flex items-center justify-center">
+          <NuxtLinkLocale :to="{ name: 'categories' }" class="inline-flex items-center justify-center min-h-12 px-2">
             {{ $t('home.categories.action') }}
           </NuxtLinkLocale>
         </ButtonsOutline>
@@ -76,8 +75,8 @@
         </div>
       </ClientOnly>
 
-      <ButtonsOutline class="md:hidden block mx-auto">
-        <NuxtLinkLocale :to="{ name: 'categories' }">
+      <ButtonsOutline class="md:hidden block mx-auto min-h-12 min-w-12">
+        <NuxtLinkLocale :to="{ name: 'categories' }" class="inline-flex items-center justify-center min-h-12 w-full">
           {{ $t('home.categories.action') }}
         </NuxtLinkLocale>
       </ButtonsOutline>
