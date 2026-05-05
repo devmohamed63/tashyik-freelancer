@@ -1,10 +1,17 @@
 {
-	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "../f - Copy"
-		}
-	]
+  "folders": [
+    {
+      "path": ".",
+      "name": "tashyik-freelancer (monorepo)"
+    },
+    {
+      "path": "backend",
+      "name": "Laravel → github.com/devmohamed63/tashyik-backend"
+    },
+    {
+      "path": "front",
+      "name": "Nuxt → github.com/devmohamed63/tashyik-frontend"
+    }
+  ],
+  "settings": {}
 }

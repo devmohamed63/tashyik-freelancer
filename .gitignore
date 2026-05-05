@@ -44,5 +44,11 @@ Thumbs.db
 # Logs
 *.log
 
+# Archives — do not commit bundles or IDE exports
+*.zip
+*.ZIP
+*.rar
+*.7z
+
 # Misc
 git_error.log

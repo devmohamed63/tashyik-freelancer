@@ -13,6 +13,11 @@ node_modules
 logs
 *.log
 
+# Archives
+*.zip
+*.rar
+*.7z
+
 # Misc
 .DS_Store
 .fleet
