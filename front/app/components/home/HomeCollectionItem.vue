@@ -1,4 +1,6 @@
 <script setup>
+  import CollectionServiceCard from './CollectionServiceCard.vue';
+
   const props = defineProps({
     collection: {
       type: Object,
@@ -70,6 +72,7 @@
             <swiper-slide
               v-for="service in collection.services?.slice(0, maxServices)"
               :key="service.id"
+              class="h-auto"
             >
               <CollectionServiceCard :service="service" />
             </swiper-slide>
@@ -104,6 +107,11 @@
 
   [id^="collectionSwiper-"] {
     width: 100%;
+    min-height: 280px;
     padding-bottom: 8px;
+  }
+
+  [id^="collectionSwiper-"] swiper-slide {
+    height: auto;
   }
 </style>

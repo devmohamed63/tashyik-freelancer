@@ -4,7 +4,10 @@
       type: Array,
       default: () => [],
       validator: (value) => {
-        return value.every((item) => typeof item.name === 'string' && typeof item.path === 'object');
+        return value.every((item) => {
+          if (!item || typeof item.name !== 'string') return false;
+          return item.path === undefined || typeof item.path === 'string' || typeof item.path === 'object';
+        });
       },
     },
   });

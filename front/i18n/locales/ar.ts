@@ -419,7 +419,7 @@ export default {
     order_service: 'اطلب الخدمة الحين',
     actions: {
       order_now: 'أطلب الحين!',
-      view_details: 'عرض الفاصيل',
+      view_details: 'عرض التفاصيل',
     },
     highlight_1: 'فنيين معتمدين ومتخصيين',
     highlight_2: 'دفع آمن',
