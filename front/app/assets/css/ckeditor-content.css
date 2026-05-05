@@ -1,0 +1,107 @@
+/**
+ * CKEditor / HTML body (.ck-content) — global so Tailwind expands @apply once.
+ * Avoids esbuild CSS minify errors from scoped SFC + @apply bundles.
+ */
+
+.ck-content iframe {
+  width: 100% !important;
+  overflow: hidden;
+}
+
+.ck-content div {
+  @apply dark:text-gray-200 flex flex-col gap-3 mt-3;
+}
+
+.ck-content p,
+.ck-content h1,
+.ck-content h2,
+.ck-content h3,
+.ck-content h4,
+.ck-content h5,
+.ck-content h6 {
+  scroll-margin-top: 8rem;
+  font-size: 17px;
+  font-weight: revert;
+}
+
+.ck-content ol,
+.ck-content ul,
+.ck-content li {
+  padding: revert;
+  list-style: revert;
+  @apply marker:text-brand-500 dark:marker:text-brand-300;
+}
+
+.ck-content h2,
+.ck-content h3,
+.ck-content h4 {
+  @apply border-s-[3px] text-base rtl:bg-gradient-to-l ltr:bg-gradient-to-r from-gray-100/80 dark:from-gray-700/90 to-transparent w-full leading-10 px-2 dark:text-gray-200;
+}
+
+.ck-content h2 {
+  @apply border-teal-500 dark:border-teal-300/70;
+}
+
+.ck-content h3 {
+  @apply border-blue-500 dark:border-blue-300/70;
+}
+
+.ck-content h4 {
+  @apply border-violet-500 dark:border-violet-300/70;
+}
+
+.ck-content ol,
+.ck-content ul,
+.ck-content p {
+  @apply leading-8;
+}
+
+.ck-content .image.image_resized img {
+  width: 100% !important;
+}
+
+.ck-content:not(.ck-editor__editable) figure.table {
+  @apply block overflow-auto;
+}
+
+.ck-content:not(.ck-editor__editable) figure.table::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.ck-content:not(.ck-editor__editable) figure.table::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.ck-content:not(.ck-editor__editable) figure.table::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600;
+}
+
+.ck-content table {
+  @apply !w-full !border-0;
+}
+
+.ck-content table th {
+  @apply !bg-cyan-800/10 dark:!bg-gray-700 !text-gray-700 dark:!text-gray-200 !text-sm sm:!text-base !p-1.5 sm:!p-3 !text-start !border !border-gray-200 dark:!border-gray-600;
+}
+
+.ck-content table strong,
+.ck-content table th {
+  @apply !text-sm;
+}
+
+.ck-content table tbody tr td {
+  @apply !text-sm sm:!text-base !p-1.5 sm:!p-3 !text-gray-600 dark:!text-gray-300 !bg-gray-50 dark:!bg-gray-700/40 !text-start !border !border-gray-200 dark:!border-gray-600;
+}
+
+.ck-content:not(.ck-editor__editable) blockquote {
+  @apply p-4 border-s-4 border-gray-300 bg-gray-50 dark:border-gray-500 dark:bg-gray-700/40 italic;
+}
+
+.ck-content a:not(.country-link, .content-internal-link) {
+  @apply text-blue-500 hover:text-blue-500;
+}
+
+.ck-powered-by-balloon {
+  z-index: 10 !important;
+}

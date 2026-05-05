@@ -53,3 +53,5 @@ button:hover {
 button:disabled:hover {
   cursor: unset;
 }
+
+@import './ckeditor-content.css';
